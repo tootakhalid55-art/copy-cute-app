@@ -1,17 +1,32 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { Shell, PageHeader, PrimaryBtn, EmptyState } from "@/components/haseem/Shell";
-import { Plus, Users, Search } from "lucide-react";
+import { CrudModule } from "@/components/haseem/CrudModule";
+import { money } from "@/components/haseem/Shell";
 
 export const Route = createFileRoute("/purchases/suppliers")({
   head: () => ({ meta: [{ title: "الموردون — حسيم" }] }),
   component: () => (
-    <Shell>
-      <PageHeader title="الموردون" subtitle="إدارة موردي المشتريات" action={<PrimaryBtn><Plus className="w-4 h-4" />إضافة مورد</PrimaryBtn>} />
-      <div className="flex items-center gap-2 border border-[#eceae2] rounded-lg px-3 py-2 bg-white">
-        <Search className="w-4 h-4 text-[#0f2a1d]/50" />
-        <input placeholder="ابحث بالاسم أو الرمز أو البريد..." className="bg-transparent text-sm outline-none w-full" />
-      </div>
-      <EmptyState icon={Users} title="لا يوجد موردون بعد" description="أضف موردًا للبدء." />
-    </Shell>
+    <CrudModule
+      storageKey="suppliers"
+      title="الموردون"
+      subtitle="إدارة موردي المنشأة"
+      newLabel="إضافة مورد"
+      searchIn={["name", "code", "email", "phone"]}
+      fields={[
+        { name: "name", label: "اسم المورد", required: true },
+        { name: "code", label: "الرمز", placeholder: "SUP-001" },
+        { name: "taxNumber", label: "الرقم الضريبي" },
+        { name: "phone", label: "الجوال", type: "tel" },
+        { name: "email", label: "البريد الإلكتروني", type: "email" },
+        { name: "address", label: "العنوان", type: "textarea" },
+        { name: "openingBalance", label: "الرصيد الافتتاحي", type: "number", default: 0 },
+      ]}
+      columns={[
+        { name: "name", label: "الاسم" },
+        { name: "code", label: "الرمز" },
+        { name: "phone", label: "الجوال" },
+        { name: "email", label: "البريد" },
+        { name: "openingBalance", label: "الرصيد", format: (r) => money(r.openingBalance) },
+      ]}
+    />
   ),
 });

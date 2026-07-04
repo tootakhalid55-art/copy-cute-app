@@ -1,36 +1,53 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { Shell, PageHeader, PrimaryBtn } from "@/components/haseem/Shell";
+import { Shell, PageHeader, PrimaryBtn, OutlineBtn } from "@/components/haseem/Shell";
+import { useKV } from "@/lib/haseem/store";
 import { Check } from "lucide-react";
+
+type Plan = "trial" | "basic" | "pro" | "enterprise";
+const PLANS: { id: Plan; name: string; price: string; features: string[] }[] = [
+  { id: "basic", name: "الأساسية", price: "99 ﷼ / شهر", features: ["مستخدم واحد", "100 فاتورة شهرياً", "تقارير أساسية"] },
+  { id: "pro", name: "الاحترافية", price: "249 ﷼ / شهر", features: ["3 مستخدمين", "فواتير غير محدودة", "تقارير متقدمة", "ربط منصة فاتورة"] },
+  { id: "enterprise", name: "المؤسسات", price: "599 ﷼ / شهر", features: ["مستخدمون غير محدودين", "دعم مخصص", "تكاملات API", "SLA"] },
+];
 
 export const Route = createFileRoute("/settings/billing")({
   head: () => ({ meta: [{ title: "الاشتراك — حسيم" }] }),
-  component: () => (
+  component: BillingPage,
+});
+
+function BillingPage() {
+  const [plan, setPlan] = useKV<Plan>("plan", "trial");
+
+  return (
     <Shell>
-      <PageHeader title="الاشتراك" subtitle="إدارة خطة اشتراكك ومدفوعاتك" />
-      <div className="rounded-xl bg-[#eaf5ee] border border-[#cfe6d7] p-6 flex items-center justify-between flex-wrap gap-4">
-        <div>
-          <div className="text-sm text-[#0f2a1d]/70">الخطة الحالية</div>
-          <div className="text-2xl font-bold mt-1">نسخة تجريبية</div>
-          <div className="text-xs text-[#0f2a1d]/70 mt-1">14 يوم متبقي</div>
-        </div>
-        <PrimaryBtn>اشترك الآن</PrimaryBtn>
-      </div>
+      <PageHeader
+        title="الاشتراك"
+        subtitle={plan === "trial" ? "أنت الآن في الفترة التجريبية (14 يوم)" : `الخطة الحالية: ${PLANS.find((p) => p.id === plan)?.name}`}
+      />
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {[
-          {n:"أساسي", p:"49", f:["فواتير غير محدودة","5 مستخدمين","تقارير أساسية"]},
-          {n:"احترافي", p:"99", f:["كل ميزات الأساسي","مستخدمين غير محدودين","إدارة مخزون","تقارير متقدمة"], hi:true},
-          {n:"شركات", p:"199", f:["كل ميزات الاحترافي","API مخصص","دعم أولوية","تدريب مخصص"]},
-        ].map((p)=>(
-          <div key={p.n} className={`rounded-xl border p-5 ${p.hi?"border-[#0f2a1d] bg-white shadow":"border-[#eceae2] bg-white"}`}>
-            <div className="font-semibold">{p.n}</div>
-            <div className="text-3xl font-bold mt-2">{p.p} <span className="text-sm font-normal text-[#0f2a1d]/60">﷼/شهر</span></div>
-            <ul className="mt-4 space-y-2 text-sm">
-              {p.f.map((x)=><li key={x} className="flex items-center gap-2"><Check className="w-4 h-4 text-[#0f2a1d]" />{x}</li>)}
-            </ul>
-            <PrimaryBtn className="w-full justify-center mt-4">اختيار الخطة</PrimaryBtn>
-          </div>
-        ))}
+        {PLANS.map((p) => {
+          const active = plan === p.id;
+          return (
+            <div key={p.id} className={`rounded-xl border p-5 space-y-3 ${active ? "border-[#0f2a1d] bg-[#eaf5ee]" : "border-[#eceae2] bg-white"}`}>
+              <div className="flex items-center justify-between">
+                <h3 className="font-bold text-lg">{p.name}</h3>
+                {active && <span className="text-[11px] bg-[#0f2a1d] text-white px-2 py-0.5 rounded-full">حالية</span>}
+              </div>
+              <div className="text-2xl font-bold">{p.price}</div>
+              <ul className="space-y-2 text-sm">
+                {p.features.map((f) => (
+                  <li key={f} className="flex items-center gap-2"><Check className="w-4 h-4 text-[#0f6b3a]" />{f}</li>
+                ))}
+              </ul>
+              {active ? (
+                <OutlineBtn className="w-full justify-center" onClick={() => setPlan("trial")}>إلغاء الاشتراك</OutlineBtn>
+              ) : (
+                <PrimaryBtn className="w-full justify-center" onClick={() => setPlan(p.id)}>الاشتراك في هذه الخطة</PrimaryBtn>
+              )}
+            </div>
+          );
+        })}
       </div>
     </Shell>
-  ),
-});
+  );
+}

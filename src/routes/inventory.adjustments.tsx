@@ -1,13 +1,31 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { Shell, PageHeader, PrimaryBtn, EmptyState } from "@/components/haseem/Shell";
-import { Plus, ClipboardList } from "lucide-react";
+import { CrudModule } from "@/components/haseem/CrudModule";
 
 export const Route = createFileRoute("/inventory/adjustments")({
   head: () => ({ meta: [{ title: "تسويات المخزون — حسيم" }] }),
   component: () => (
-    <Shell>
-      <PageHeader title="تسويات المخزون" subtitle="تعديل الكميات وضبط الأرصدة" action={<PrimaryBtn><Plus className="w-4 h-4" />تسوية جديدة</PrimaryBtn>} />
-      <EmptyState icon={ClipboardList} title="لا توجد تسويات" />
-    </Shell>
+    <CrudModule
+      storageKey="adjustments"
+      title="تسويات المخزون"
+      subtitle="تسجيل الجرد وفروقات المخزون"
+      newLabel="تسوية جديدة"
+      searchIn={["item", "warehouse", "reason"]}
+      fields={[
+        { name: "date", label: "التاريخ", type: "date", required: true, default: new Date().toISOString().slice(0, 10) },
+        { name: "warehouse", label: "المستودع", required: true },
+        { name: "item", label: "الصنف", required: true },
+        { name: "type", label: "النوع", type: "select", options: ["زيادة", "نقص"], default: "زيادة" },
+        { name: "qty", label: "الكمية", type: "number", required: true },
+        { name: "reason", label: "السبب", type: "textarea" },
+      ]}
+      columns={[
+        { name: "date", label: "التاريخ" },
+        { name: "warehouse", label: "المستودع" },
+        { name: "item", label: "الصنف" },
+        { name: "type", label: "النوع" },
+        { name: "qty", label: "الكمية" },
+        { name: "reason", label: "السبب" },
+      ]}
+    />
   ),
 });
