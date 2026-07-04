@@ -1,10 +1,12 @@
-import { Link, useRouterState } from "@tanstack/react-router";
+import { Link, useRouterState, useNavigate } from "@tanstack/react-router";
 import {
   Home, DollarSign, Package, ShoppingCart, Wallet, LayoutGrid,
   TrendingUp, Calculator, Settings, Plus, ChevronDown, Building2,
-  Globe, MessageCircle, PanelRight,
+  Globe, MessageCircle, PanelRight, LogOut, User as UserIcon,
 } from "lucide-react";
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
+import { useAuth } from "@/lib/haseem/auth";
+import { useKV } from "@/lib/haseem/store";
 
 type NavChild = { label: string; to: string };
 type NavItem = {
@@ -19,7 +21,7 @@ const NAV: NavItem[] = [
   {
     icon: DollarSign, label: "المبيعات",
     children: [
-      { label: "عروض الأسعار والفواتير المبدئية", to: "/sales/quotations" },
+      { label: "عروض الأسعار", to: "/sales/quotations" },
       { label: "فواتير المبيعات", to: "/sales/invoices" },
       { label: "الإشعارات الدائنة", to: "/sales/credit-notes" },
       { label: "العملاء", to: "/sales/customers" },
@@ -70,16 +72,43 @@ const NAV: NavItem[] = [
 
 export function Shell({ children }: { children: ReactNode }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const { user, ready, logout } = useAuth();
+  const navigate = useNavigate();
+  const [org] = useKV<{ name: string; taxNumber: string }>("org", {
+    name: "شركة كنار الحديثة للمقاولات",
+    taxNumber: "312756062700003",
+  });
+  const [menuOpen, setMenuOpen] = useState(false);
+
+  useEffect(() => {
+    if (ready && !user) navigate({ to: "/auth" });
+  }, [ready, user, navigate]);
+
   const initialOpen = NAV.reduce<Record<string, boolean>>((acc, s) => {
     if (s.children?.some((c) => pathname.startsWith(c.to))) acc[s.label] = true;
     return acc;
   }, {});
   const [open, setOpen] = useState<Record<string, boolean>>(initialOpen);
 
+  if (!ready || !user) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#fafaf7] text-[#0f2a1d]/50 text-sm">
+        جاري التحميل...
+      </div>
+    );
+  }
+
+  const initials = (user.name || user.email)
+    .split(/[\s@._-]+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((s) => s[0]?.toUpperCase())
+    .join("") || "U";
+
   return (
     <div dir="rtl" lang="ar" className="min-h-screen bg-[#fafaf7] text-[#0f2a1d] font-[Cairo,system-ui,sans-serif]">
       <div className="bg-[#f5a524] text-[#0f2a1d] text-center text-sm py-2 px-4 font-medium">
-        14 يوم متبقي · <a className="underline mx-1 cursor-pointer">اشترك الآن</a> وحلّ أمورك المالية تحت السيطرة.
+        14 يوم متبقي · <Link to="/settings/billing" className="underline mx-1">اشترك الآن</Link> وحلّ أمورك المالية تحت السيطرة.
       </div>
 
       <header className="flex items-center justify-between px-6 py-3 bg-white border-b border-[#eceae2] sticky top-0 z-30">
@@ -90,22 +119,54 @@ export function Shell({ children }: { children: ReactNode }) {
           <Link to="/select-organization" className="hidden md:flex items-center gap-2 border border-[#eceae2] rounded-lg px-3 py-1.5 hover:bg-[#f7f6f0]">
             <Building2 className="w-4 h-4 text-[#0f2a1d]" />
             <div className="text-right leading-tight">
-              <div className="text-sm font-semibold">شركة كنار الحديثة للمقاولات</div>
-              <div className="text-[11px] text-[#c65b3c] flex items-center gap-1">
-                <span className="w-1.5 h-1.5 rounded-full bg-[#f5a524]" />
-                غير مربوط بمنصة فاتورة
-              </div>
+              <div className="text-sm font-semibold">{org.name}</div>
+              <div className="text-[11px] text-[#0f2a1d]/60">الرقم الضريبي: {org.taxNumber}</div>
             </div>
             <ChevronDown className="w-4 h-4 text-[#0f2a1d]/60" />
           </Link>
         </div>
 
-        <div className="flex items-center gap-2">
-          <button className="flex items-center gap-2 bg-[#0f2a1d] text-white rounded-lg px-4 py-2 text-sm font-medium hover:bg-[#163a29]">
-            <Plus className="w-4 h-4" />
-            إضافة سريعة
+        <div className="flex items-center gap-2 relative">
+          <Link to="/sales/invoices/new">
+            <button className="flex items-center gap-2 bg-[#0f2a1d] text-white rounded-lg px-4 py-2 text-sm font-medium hover:bg-[#163a29]">
+              <Plus className="w-4 h-4" />
+              إضافة سريعة
+            </button>
+          </Link>
+          <button
+            onClick={() => setMenuOpen((m) => !m)}
+            className="w-9 h-9 rounded-full bg-[#0f2a1d] text-white text-xs font-bold flex items-center justify-center"
+            aria-label="حساب المستخدم"
+          >
+            {initials}
           </button>
-          <Link to="/profile" className="w-9 h-9 rounded-full bg-[#0f2a1d] text-white text-xs font-bold flex items-center justify-center">HM</Link>
+          {menuOpen && (
+            <>
+              <div className="fixed inset-0 z-40" onClick={() => setMenuOpen(false)} />
+              <div className="absolute top-full left-0 mt-1 w-56 bg-white border border-[#eceae2] rounded-lg shadow-lg z-50 py-1 text-right">
+                <div className="px-3 py-2 border-b border-[#eceae2]">
+                  <div className="text-sm font-semibold truncate">{user.name}</div>
+                  <div className="text-[11px] text-[#0f2a1d]/60 truncate">{user.email}</div>
+                </div>
+                <Link to="/profile" onClick={() => setMenuOpen(false)} className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-[#f7f6f0]">
+                  <UserIcon className="w-4 h-4" /> ملفي الشخصي
+                </Link>
+                <Link to="/settings/organization" onClick={() => setMenuOpen(false)} className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-[#f7f6f0]">
+                  <Settings className="w-4 h-4" /> الإعدادات
+                </Link>
+                <button
+                  onClick={() => {
+                    logout();
+                    setMenuOpen(false);
+                    navigate({ to: "/auth" });
+                  }}
+                  className="w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-red-50 text-red-600 border-t border-[#eceae2]"
+                >
+                  <LogOut className="w-4 h-4" /> تسجيل الخروج
+                </button>
+              </div>
+            </>
+          )}
         </div>
       </header>
 
@@ -170,7 +231,7 @@ export function Shell({ children }: { children: ReactNode }) {
 
           <div className="mt-6 flex items-center gap-2 text-xs text-[#0f2a1d]/60 px-3">
             <Globe className="w-4 h-4" />
-            English
+            العربية
           </div>
         </aside>
 
@@ -191,7 +252,7 @@ export function PageHeader({
   title, subtitle, action,
 }: { title: string; subtitle?: string; action?: ReactNode }) {
   return (
-    <div className="flex items-start justify-between gap-4">
+    <div className="flex items-start justify-between gap-4 flex-wrap">
       <div className="text-right">
         <h1 className="text-xl font-bold">{title}</h1>
         {subtitle && <p className="text-xs text-[#0f2a1d]/60 mt-1">{subtitle}</p>}
@@ -264,4 +325,26 @@ export function StatCard({ label, value, valueClass = "" }: { label: string; val
       <div className={`text-xl font-bold mt-1 ${valueClass}`}>{value} <span className="text-xs font-normal">﷼</span></div>
     </div>
   );
+}
+
+export function money(n: number) {
+  return `${(n ?? 0).toLocaleString("ar-SA", { maximumFractionDigits: 2 })} ﷼`;
+}
+
+export function Badge({ children, tone = "neutral" }: { children: ReactNode; tone?: "neutral" | "green" | "amber" | "red" | "blue" }) {
+  const tones: Record<string, string> = {
+    neutral: "bg-[#f2f0e8] text-[#0f2a1d]",
+    green: "bg-[#eaf5ee] text-[#0f6b3a]",
+    amber: "bg-[#fef3c7] text-[#92400e]",
+    red: "bg-red-50 text-red-700",
+    blue: "bg-blue-50 text-blue-700",
+  };
+  return <span className={`inline-block text-[11px] px-2 py-0.5 rounded-full ${tones[tone]}`}>{children}</span>;
+}
+
+export function statusTone(status: string): "green" | "amber" | "red" | "neutral" | "blue" {
+  if (["مؤكد", "مدفوع", "مغلق", "نشط"].includes(status)) return "green";
+  if (["مسودة", "قيد الانتظار", "جديد"].includes(status)) return "amber";
+  if (["ملغي", "مرفوض", "متأخر"].includes(status)) return "red";
+  return "neutral";
 }

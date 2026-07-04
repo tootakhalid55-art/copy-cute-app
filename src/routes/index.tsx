@@ -1,5 +1,17 @@
-import { createFileRoute, redirect } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { useEffect } from "react";
+import { useAuth } from "@/lib/haseem/auth";
 
 export const Route = createFileRoute("/")({
-  beforeLoad: () => { throw redirect({ to: "/dashboard" }); },
+  component: IndexRedirect,
 });
+
+function IndexRedirect() {
+  const { user, ready } = useAuth();
+  const navigate = useNavigate();
+  useEffect(() => {
+    if (!ready) return;
+    navigate({ to: user ? "/dashboard" : "/auth", replace: true });
+  }, [ready, user, navigate]);
+  return null;
+}
