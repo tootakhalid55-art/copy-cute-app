@@ -211,7 +211,7 @@ function TemplatesPage() {
 
               <div className="md:col-span-2">
                 <div className="text-xs text-[#0f2a1d]/70 mb-2">معاينة سريعة</div>
-                <MiniPreview tpl={{ id: "draft", name: draft.name || "قالب", ...draft }} />
+                <MiniPreview tpl={{ ...draft, id: "draft", name: draft.name || "قالب" }} />
               </div>
             </div>
             <div className="flex justify-end gap-2 px-6 py-3 border-t border-[#eceae2] bg-[#fafaf7]">
