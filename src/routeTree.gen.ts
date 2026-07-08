@@ -17,6 +17,7 @@ import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AccountingRouteImport } from './routes/accounting'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as SettingsUsersRouteImport } from './routes/settings.users'
 import { Route as SettingsOrganizationRouteImport } from './routes/settings.organization'
 import { Route as SettingsBranchesRouteImport } from './routes/settings.branches'
 import { Route as SettingsBillingRouteImport } from './routes/settings.billing'
@@ -86,6 +87,11 @@ const AccountingRoute = AccountingRouteImport.update({
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SettingsUsersRoute = SettingsUsersRouteImport.update({
+  id: '/settings/users',
+  path: '/settings/users',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SettingsOrganizationRoute = SettingsOrganizationRouteImport.update({
@@ -270,6 +276,7 @@ export interface FileRoutesByFullPath {
   '/settings/billing': typeof SettingsBillingRoute
   '/settings/branches': typeof SettingsBranchesRoute
   '/settings/organization': typeof SettingsOrganizationRoute
+  '/settings/users': typeof SettingsUsersRoute
   '/purchases/bills/new': typeof PurchasesBillsNewRoute
   '/purchases/purchase-orders/new': typeof PurchasesPurchaseOrdersNewRoute
   '/sales/credit-notes/new': typeof SalesCreditNotesNewRoute
@@ -305,6 +312,7 @@ export interface FileRoutesByTo {
   '/settings/billing': typeof SettingsBillingRoute
   '/settings/branches': typeof SettingsBranchesRoute
   '/settings/organization': typeof SettingsOrganizationRoute
+  '/settings/users': typeof SettingsUsersRoute
   '/purchases/bills/new': typeof PurchasesBillsNewRoute
   '/purchases/purchase-orders/new': typeof PurchasesPurchaseOrdersNewRoute
   '/sales/credit-notes/new': typeof SalesCreditNotesNewRoute
@@ -346,6 +354,7 @@ export interface FileRoutesById {
   '/settings/billing': typeof SettingsBillingRoute
   '/settings/branches': typeof SettingsBranchesRoute
   '/settings/organization': typeof SettingsOrganizationRoute
+  '/settings/users': typeof SettingsUsersRoute
   '/purchases/bills/new': typeof PurchasesBillsNewRoute
   '/purchases/purchase-orders/new': typeof PurchasesPurchaseOrdersNewRoute
   '/sales/credit-notes/new': typeof SalesCreditNotesNewRoute
@@ -388,6 +397,7 @@ export interface FileRouteTypes {
     | '/settings/billing'
     | '/settings/branches'
     | '/settings/organization'
+    | '/settings/users'
     | '/purchases/bills/new'
     | '/purchases/purchase-orders/new'
     | '/sales/credit-notes/new'
@@ -423,6 +433,7 @@ export interface FileRouteTypes {
     | '/settings/billing'
     | '/settings/branches'
     | '/settings/organization'
+    | '/settings/users'
     | '/purchases/bills/new'
     | '/purchases/purchase-orders/new'
     | '/sales/credit-notes/new'
@@ -463,6 +474,7 @@ export interface FileRouteTypes {
     | '/settings/billing'
     | '/settings/branches'
     | '/settings/organization'
+    | '/settings/users'
     | '/purchases/bills/new'
     | '/purchases/purchase-orders/new'
     | '/sales/credit-notes/new'
@@ -504,6 +516,7 @@ export interface RootRouteChildren {
   SettingsBillingRoute: typeof SettingsBillingRoute
   SettingsBranchesRoute: typeof SettingsBranchesRoute
   SettingsOrganizationRoute: typeof SettingsOrganizationRoute
+  SettingsUsersRoute: typeof SettingsUsersRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -562,6 +575,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/settings/users': {
+      id: '/settings/users'
+      path: '/settings/users'
+      fullPath: '/settings/users'
+      preLoaderRoute: typeof SettingsUsersRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/settings/organization': {
@@ -877,6 +897,7 @@ const rootRouteChildren: RootRouteChildren = {
   SettingsBillingRoute: SettingsBillingRoute,
   SettingsBranchesRoute: SettingsBranchesRoute,
   SettingsOrganizationRoute: SettingsOrganizationRoute,
+  SettingsUsersRoute: SettingsUsersRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
