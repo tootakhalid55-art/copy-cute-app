@@ -4,6 +4,7 @@ import { Plus, Trash2, Printer, Eye, X } from "lucide-react";
 import QRCode from "qrcode";
 import { Shell, PrimaryBtn, OutlineBtn } from "./Shell";
 import { useCollection, useKV } from "@/lib/haseem/store";
+import { useInvoiceTemplates } from "@/lib/haseem/templates";
 
 // ZATCA phase-1 TLV encoder (base64)
 function zatcaTLV(seller: string, vat: string, iso: string, total: string, taxAmt: string) {
