@@ -17,7 +17,14 @@ import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AccountingRouteImport } from './routes/accounting'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as SettingsUsersRouteImport } from './routes/settings.users'
+import { Route as SettingsTemplatesRouteImport } from './routes/settings.templates'
+import { Route as SettingsTaxesRouteImport } from './routes/settings.taxes'
+import { Route as SettingsSalesRepsRouteImport } from './routes/settings.sales-reps'
+import { Route as SettingsRolesRouteImport } from './routes/settings.roles'
 import { Route as SettingsOrganizationRouteImport } from './routes/settings.organization'
+import { Route as SettingsIntegrationsRouteImport } from './routes/settings.integrations'
+import { Route as SettingsBranchesRouteImport } from './routes/settings.branches'
 import { Route as SettingsBillingRouteImport } from './routes/settings.billing'
 import { Route as SalesQuotationsRouteImport } from './routes/sales.quotations'
 import { Route as SalesInvoicesRouteImport } from './routes/sales.invoices'
@@ -87,9 +94,44 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SettingsUsersRoute = SettingsUsersRouteImport.update({
+  id: '/settings/users',
+  path: '/settings/users',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SettingsTemplatesRoute = SettingsTemplatesRouteImport.update({
+  id: '/settings/templates',
+  path: '/settings/templates',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SettingsTaxesRoute = SettingsTaxesRouteImport.update({
+  id: '/settings/taxes',
+  path: '/settings/taxes',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SettingsSalesRepsRoute = SettingsSalesRepsRouteImport.update({
+  id: '/settings/sales-reps',
+  path: '/settings/sales-reps',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SettingsRolesRoute = SettingsRolesRouteImport.update({
+  id: '/settings/roles',
+  path: '/settings/roles',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SettingsOrganizationRoute = SettingsOrganizationRouteImport.update({
   id: '/settings/organization',
   path: '/settings/organization',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SettingsIntegrationsRoute = SettingsIntegrationsRouteImport.update({
+  id: '/settings/integrations',
+  path: '/settings/integrations',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SettingsBranchesRoute = SettingsBranchesRouteImport.update({
+  id: '/settings/branches',
+  path: '/settings/branches',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SettingsBillingRoute = SettingsBillingRouteImport.update({
@@ -262,7 +304,14 @@ export interface FileRoutesByFullPath {
   '/sales/invoices': typeof SalesInvoicesRouteWithChildren
   '/sales/quotations': typeof SalesQuotationsRouteWithChildren
   '/settings/billing': typeof SettingsBillingRoute
+  '/settings/branches': typeof SettingsBranchesRoute
+  '/settings/integrations': typeof SettingsIntegrationsRoute
   '/settings/organization': typeof SettingsOrganizationRoute
+  '/settings/roles': typeof SettingsRolesRoute
+  '/settings/sales-reps': typeof SettingsSalesRepsRoute
+  '/settings/taxes': typeof SettingsTaxesRoute
+  '/settings/templates': typeof SettingsTemplatesRoute
+  '/settings/users': typeof SettingsUsersRoute
   '/purchases/bills/new': typeof PurchasesBillsNewRoute
   '/purchases/purchase-orders/new': typeof PurchasesPurchaseOrdersNewRoute
   '/sales/credit-notes/new': typeof SalesCreditNotesNewRoute
@@ -296,7 +345,14 @@ export interface FileRoutesByTo {
   '/reports/sales-report': typeof ReportsSalesReportRoute
   '/sales/customers': typeof SalesCustomersRoute
   '/settings/billing': typeof SettingsBillingRoute
+  '/settings/branches': typeof SettingsBranchesRoute
+  '/settings/integrations': typeof SettingsIntegrationsRoute
   '/settings/organization': typeof SettingsOrganizationRoute
+  '/settings/roles': typeof SettingsRolesRoute
+  '/settings/sales-reps': typeof SettingsSalesRepsRoute
+  '/settings/taxes': typeof SettingsTaxesRoute
+  '/settings/templates': typeof SettingsTemplatesRoute
+  '/settings/users': typeof SettingsUsersRoute
   '/purchases/bills/new': typeof PurchasesBillsNewRoute
   '/purchases/purchase-orders/new': typeof PurchasesPurchaseOrdersNewRoute
   '/sales/credit-notes/new': typeof SalesCreditNotesNewRoute
@@ -336,7 +392,14 @@ export interface FileRoutesById {
   '/sales/invoices': typeof SalesInvoicesRouteWithChildren
   '/sales/quotations': typeof SalesQuotationsRouteWithChildren
   '/settings/billing': typeof SettingsBillingRoute
+  '/settings/branches': typeof SettingsBranchesRoute
+  '/settings/integrations': typeof SettingsIntegrationsRoute
   '/settings/organization': typeof SettingsOrganizationRoute
+  '/settings/roles': typeof SettingsRolesRoute
+  '/settings/sales-reps': typeof SettingsSalesRepsRoute
+  '/settings/taxes': typeof SettingsTaxesRoute
+  '/settings/templates': typeof SettingsTemplatesRoute
+  '/settings/users': typeof SettingsUsersRoute
   '/purchases/bills/new': typeof PurchasesBillsNewRoute
   '/purchases/purchase-orders/new': typeof PurchasesPurchaseOrdersNewRoute
   '/sales/credit-notes/new': typeof SalesCreditNotesNewRoute
@@ -377,7 +440,14 @@ export interface FileRouteTypes {
     | '/sales/invoices'
     | '/sales/quotations'
     | '/settings/billing'
+    | '/settings/branches'
+    | '/settings/integrations'
     | '/settings/organization'
+    | '/settings/roles'
+    | '/settings/sales-reps'
+    | '/settings/taxes'
+    | '/settings/templates'
+    | '/settings/users'
     | '/purchases/bills/new'
     | '/purchases/purchase-orders/new'
     | '/sales/credit-notes/new'
@@ -411,7 +481,14 @@ export interface FileRouteTypes {
     | '/reports/sales-report'
     | '/sales/customers'
     | '/settings/billing'
+    | '/settings/branches'
+    | '/settings/integrations'
     | '/settings/organization'
+    | '/settings/roles'
+    | '/settings/sales-reps'
+    | '/settings/taxes'
+    | '/settings/templates'
+    | '/settings/users'
     | '/purchases/bills/new'
     | '/purchases/purchase-orders/new'
     | '/sales/credit-notes/new'
@@ -450,7 +527,14 @@ export interface FileRouteTypes {
     | '/sales/invoices'
     | '/sales/quotations'
     | '/settings/billing'
+    | '/settings/branches'
+    | '/settings/integrations'
     | '/settings/organization'
+    | '/settings/roles'
+    | '/settings/sales-reps'
+    | '/settings/taxes'
+    | '/settings/templates'
+    | '/settings/users'
     | '/purchases/bills/new'
     | '/purchases/purchase-orders/new'
     | '/sales/credit-notes/new'
@@ -490,7 +574,14 @@ export interface RootRouteChildren {
   SalesInvoicesRoute: typeof SalesInvoicesRouteWithChildren
   SalesQuotationsRoute: typeof SalesQuotationsRouteWithChildren
   SettingsBillingRoute: typeof SettingsBillingRoute
+  SettingsBranchesRoute: typeof SettingsBranchesRoute
+  SettingsIntegrationsRoute: typeof SettingsIntegrationsRoute
   SettingsOrganizationRoute: typeof SettingsOrganizationRoute
+  SettingsRolesRoute: typeof SettingsRolesRoute
+  SettingsSalesRepsRoute: typeof SettingsSalesRepsRoute
+  SettingsTaxesRoute: typeof SettingsTaxesRoute
+  SettingsTemplatesRoute: typeof SettingsTemplatesRoute
+  SettingsUsersRoute: typeof SettingsUsersRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -551,11 +642,60 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/settings/users': {
+      id: '/settings/users'
+      path: '/settings/users'
+      fullPath: '/settings/users'
+      preLoaderRoute: typeof SettingsUsersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/settings/templates': {
+      id: '/settings/templates'
+      path: '/settings/templates'
+      fullPath: '/settings/templates'
+      preLoaderRoute: typeof SettingsTemplatesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/settings/taxes': {
+      id: '/settings/taxes'
+      path: '/settings/taxes'
+      fullPath: '/settings/taxes'
+      preLoaderRoute: typeof SettingsTaxesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/settings/sales-reps': {
+      id: '/settings/sales-reps'
+      path: '/settings/sales-reps'
+      fullPath: '/settings/sales-reps'
+      preLoaderRoute: typeof SettingsSalesRepsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/settings/roles': {
+      id: '/settings/roles'
+      path: '/settings/roles'
+      fullPath: '/settings/roles'
+      preLoaderRoute: typeof SettingsRolesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/settings/organization': {
       id: '/settings/organization'
       path: '/settings/organization'
       fullPath: '/settings/organization'
       preLoaderRoute: typeof SettingsOrganizationRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/settings/integrations': {
+      id: '/settings/integrations'
+      path: '/settings/integrations'
+      fullPath: '/settings/integrations'
+      preLoaderRoute: typeof SettingsIntegrationsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/settings/branches': {
+      id: '/settings/branches'
+      path: '/settings/branches'
+      fullPath: '/settings/branches'
+      preLoaderRoute: typeof SettingsBranchesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/settings/billing': {
@@ -855,7 +995,14 @@ const rootRouteChildren: RootRouteChildren = {
   SalesInvoicesRoute: SalesInvoicesRouteWithChildren,
   SalesQuotationsRoute: SalesQuotationsRouteWithChildren,
   SettingsBillingRoute: SettingsBillingRoute,
+  SettingsBranchesRoute: SettingsBranchesRoute,
+  SettingsIntegrationsRoute: SettingsIntegrationsRoute,
   SettingsOrganizationRoute: SettingsOrganizationRoute,
+  SettingsRolesRoute: SettingsRolesRoute,
+  SettingsSalesRepsRoute: SettingsSalesRepsRoute,
+  SettingsTaxesRoute: SettingsTaxesRoute,
+  SettingsTemplatesRoute: SettingsTemplatesRoute,
+  SettingsUsersRoute: SettingsUsersRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

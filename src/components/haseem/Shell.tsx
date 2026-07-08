@@ -3,14 +3,16 @@ import {
   Home, DollarSign, Package, ShoppingCart, Wallet, LayoutGrid,
   TrendingUp, Calculator, Settings, Plus, ChevronDown, Building2,
   Globe, MessageCircle, PanelRight, LogOut, User as UserIcon,
+  Building, Users, ShieldCheck, UserCog, Receipt, FileText, Plug, CreditCard,
 } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
 import { useAuth } from "@/lib/haseem/auth";
 import { useKV } from "@/lib/haseem/store";
 
-type NavChild = { label: string; to: string };
+type NavChild = { label: string; to: string; icon?: LucideIcon };
 type NavItem = {
-  icon: typeof Home;
+  icon: LucideIcon;
   label: string;
   to?: string;
   children?: NavChild[];
@@ -64,8 +66,15 @@ const NAV: NavItem[] = [
   {
     icon: Settings, label: "الإعدادات",
     children: [
-      { label: "المنشأة", to: "/settings/organization" },
-      { label: "الاشتراك", to: "/settings/billing" },
+      { label: "إعدادات المنشأة", to: "/settings/organization", icon: Building2 },
+      { label: "الفروع", to: "/settings/branches", icon: Building },
+      { label: "المستخدمون", to: "/settings/users", icon: Users },
+      { label: "الأدوار", to: "/settings/roles", icon: ShieldCheck },
+      { label: "مناديب المبيعات", to: "/settings/sales-reps", icon: UserCog },
+      { label: "الضرائب والربط", to: "/settings/taxes", icon: Receipt },
+      { label: "قوالب الفواتير", to: "/settings/templates", icon: FileText },
+      { label: "التكاملات", to: "/settings/integrations", icon: Plug },
+      { label: "الاشتراك والفوترة", to: "/settings/billing", icon: CreditCard },
     ],
   },
 ];
@@ -79,6 +88,7 @@ export function Shell({ children }: { children: ReactNode }) {
     taxNumber: "312756062700003",
   });
   const [menuOpen, setMenuOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useKV<boolean>("sidebar-collapsed", false);
 
   useEffect(() => {
     if (ready && !user) navigate({ to: "/auth" });
@@ -171,40 +181,54 @@ export function Shell({ children }: { children: ReactNode }) {
       </header>
 
       <div className="flex">
-        <aside className="w-64 shrink-0 bg-white border-l border-[#eceae2] min-h-[calc(100vh-105px)] p-3 sticky top-[65px] self-start">
+        <aside
+          className={`${
+            sidebarCollapsed ? "w-16" : "w-64"
+          } shrink-0 bg-white border-l border-[#eceae2] min-h-[calc(100vh-105px)] p-3 sticky top-[65px] self-start transition-all duration-200`}
+        >
           <nav className="space-y-1">
             {NAV.map((s) => {
               const Icon = s.icon;
               const isActive = s.to ? pathname === s.to || pathname.startsWith(s.to + "/") : false;
               const anyChildActive = s.children?.some((c) => pathname === c.to || pathname.startsWith(c.to + "/"));
-              const isOpen = open[s.label] ?? anyChildActive;
+              const isOpen = !sidebarCollapsed && (open[s.label] ?? anyChildActive);
               const activeStyle = (isActive || anyChildActive) ? "bg-[#f2f0e8] text-[#0f2a1d] font-semibold" : "text-[#0f2a1d]/85 hover:bg-[#f7f6f0]";
 
               if (s.children) {
                 return (
                   <div key={s.label}>
                     <button
-                      onClick={() => setOpen((o) => ({ ...o, [s.label]: !isOpen }))}
-                      className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-sm transition-colors ${activeStyle}`}
+                      onClick={() => {
+                        if (sidebarCollapsed) setSidebarCollapsed(false);
+                        setOpen((o) => ({ ...o, [s.label]: !isOpen }));
+                      }}
+                      title={sidebarCollapsed ? s.label : undefined}
+                      className={`w-full flex items-center ${
+                        sidebarCollapsed ? "justify-center" : "justify-between"
+                      } px-3 py-2.5 rounded-lg text-sm transition-colors ${activeStyle}`}
                     >
-                      <span className="flex items-center gap-3">
+                      <span className={`flex items-center ${sidebarCollapsed ? "" : "gap-3"}`}>
                         <Icon className="w-[18px] h-[18px]" />
-                        {s.label}
+                        {!sidebarCollapsed && s.label}
                       </span>
-                      <ChevronDown className={`w-4 h-4 opacity-60 transition-transform ${isOpen ? "rotate-180" : ""}`} />
+                      {!sidebarCollapsed && (
+                        <ChevronDown className={`w-4 h-4 opacity-60 transition-transform ${isOpen ? "rotate-180" : ""}`} />
+                      )}
                     </button>
-                    {isOpen && (
+                    {isOpen && !sidebarCollapsed && (
                       <div className="mt-1 mr-8 space-y-0.5">
                         {s.children.map((c) => {
                           const active = pathname === c.to;
+                          const CIcon = c.icon;
                           return (
                             <Link
                               key={c.to}
                               to={c.to}
-                              className={`block px-3 py-2 rounded-lg text-[13px] transition-colors ${
+                              className={`flex items-center gap-2 px-3 py-2 rounded-lg text-[13px] transition-colors ${
                                 active ? "bg-[#eaf5ee] text-[#0f2a1d] font-semibold" : "text-[#0f2a1d]/75 hover:bg-[#f7f6f0]"
                               }`}
                             >
+                              {CIcon && <CIcon className="w-3.5 h-3.5 opacity-70" />}
                               {c.label}
                             </Link>
                           );
@@ -218,21 +242,26 @@ export function Shell({ children }: { children: ReactNode }) {
                 <Link
                   key={s.label}
                   to={s.to!}
-                  className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-sm transition-colors ${activeStyle}`}
+                  title={sidebarCollapsed ? s.label : undefined}
+                  className={`w-full flex items-center ${
+                    sidebarCollapsed ? "justify-center" : "justify-between"
+                  } px-3 py-2.5 rounded-lg text-sm transition-colors ${activeStyle}`}
                 >
-                  <span className="flex items-center gap-3">
+                  <span className={`flex items-center ${sidebarCollapsed ? "" : "gap-3"}`}>
                     <Icon className="w-[18px] h-[18px]" />
-                    {s.label}
+                    {!sidebarCollapsed && s.label}
                   </span>
                 </Link>
               );
             })}
           </nav>
 
-          <div className="mt-6 flex items-center gap-2 text-xs text-[#0f2a1d]/60 px-3">
-            <Globe className="w-4 h-4" />
-            العربية
-          </div>
+          {!sidebarCollapsed && (
+            <div className="mt-6 flex items-center gap-2 text-xs text-[#0f2a1d]/60 px-3">
+              <Globe className="w-4 h-4" />
+              العربية
+            </div>
+          )}
         </aside>
 
         <main className="flex-1 p-6 space-y-5 min-w-0">{children}</main>
@@ -241,8 +270,13 @@ export function Shell({ children }: { children: ReactNode }) {
       <button className="fixed bottom-5 left-5 w-12 h-12 rounded-full bg-[#25D366] text-white flex items-center justify-center shadow-lg" aria-label="whatsapp">
         <MessageCircle className="w-6 h-6" />
       </button>
-      <button className="fixed bottom-5 right-5 w-11 h-11 rounded-lg bg-white border border-[#eceae2] flex items-center justify-center shadow" aria-label="panel">
-        <PanelRight className="w-5 h-5 text-[#0f2a1d]" />
+      <button
+        onClick={() => setSidebarCollapsed((c) => !c)}
+        className="fixed bottom-5 right-5 w-11 h-11 rounded-lg bg-white border border-[#eceae2] flex items-center justify-center shadow hover:bg-[#f7f6f0]"
+        aria-label={sidebarCollapsed ? "إظهار القائمة الجانبية" : "إخفاء القائمة الجانبية"}
+        title={sidebarCollapsed ? "إظهار القائمة الجانبية" : "إخفاء القائمة الجانبية"}
+      >
+        <PanelRight className={`w-5 h-5 text-[#0f2a1d] transition-transform ${sidebarCollapsed ? "rotate-180" : ""}`} />
       </button>
     </div>
   );
