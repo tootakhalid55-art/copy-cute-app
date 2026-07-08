@@ -24,7 +24,7 @@ export function DocumentForm({
   docPrefix: string;
 }) {
   const navigate = useNavigate();
-  const { items: parties } = useCollection<any>(partyKey);
+  const { items: parties, add: addParty } = useCollection<any>(partyKey);
   const { add } = useCollection<any>(storageKey);
 
   const [ref] = useState(
@@ -39,7 +39,17 @@ export function DocumentForm({
     { description: "", qty: 1, price: 0, tax: 15 },
   ]);
   const [previewOpen, setPreviewOpen] = useState(false);
+  const [partyModalOpen, setPartyModalOpen] = useState(false);
+  const [newParty, setNewParty] = useState({ name: "", phone: "", email: "", taxNumber: "" });
   const printRef = useRef<HTMLDivElement>(null);
+
+  const submitNewParty = () => {
+    if (!newParty.name.trim()) return;
+    const rec = addParty({ ...newParty, name: newParty.name.trim() });
+    setPartyId(rec.id);
+    setPartyModalOpen(false);
+    setNewParty({ name: "", phone: "", email: "", taxNumber: "" });
+  };
 
   const partyName = parties.find((p) => p.id === partyId)?.name ?? "—";
 
