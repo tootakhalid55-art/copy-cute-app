@@ -155,23 +155,35 @@ export function DocumentForm({
           />
         </FormField>
         <FormField label={partyLabel}>
-          <select
-            value={partyId}
-            onChange={(e) => setPartyId(e.target.value)}
-            className="border border-[#eceae2] rounded-lg px-3 py-2 bg-white"
-          >
-            <option value="">— اختر —</option>
-            {parties.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.name}
-              </option>
-            ))}
-          </select>
-          {parties.length === 0 && (
-            <span className="text-[11px] text-[#c65b3c]">
-              لا يوجد أطراف بعد — أضف أولاً من قائمة {partyLabel}.
-            </span>
-          )}
+          <div className="flex gap-2">
+            <select
+              value={partyId}
+              onChange={(e) => {
+                if (e.target.value === "__new__") {
+                  setPartyModalOpen(true);
+                } else {
+                  setPartyId(e.target.value);
+                }
+              }}
+              className="border border-[#eceae2] rounded-lg px-3 py-2 bg-white flex-1"
+            >
+              <option value="">— اختر —</option>
+              {parties.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.name}
+                </option>
+              ))}
+              <option value="__new__">➕ إضافة {partyLabel} جديد...</option>
+            </select>
+            <button
+              type="button"
+              onClick={() => setPartyModalOpen(true)}
+              className="border border-[#eceae2] rounded-lg px-2 hover:bg-[#f7f6f0] text-[#0f2a1d]"
+              title={`إضافة ${partyLabel}`}
+            >
+              <Plus className="w-4 h-4" />
+            </button>
+          </div>
         </FormField>
       </div>
 
