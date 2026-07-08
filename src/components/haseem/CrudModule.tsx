@@ -1,8 +1,9 @@
 import { useMemo, useState, type ReactNode } from "react";
 import { Plus, Pencil, Trash2, Search, X } from "lucide-react";
-import { Link } from "@tanstack/react-router";
+import { useNavigate } from "@tanstack/react-router";
 import { useCollection } from "@/lib/haseem/store";
 import { Shell, PageHeader, PrimaryBtn, OutlineBtn, EmptyState } from "./Shell";
+
 
 export type FieldDef = {
   name: string;
@@ -47,6 +48,7 @@ export function CrudModule({
   headerExtra?: ReactNode;
 }) {
   const { items, add, update, remove } = useCollection<any>(storageKey);
+  const navigate = useNavigate();
   const [q, setQ] = useState("");
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<any | null>(null);
@@ -69,19 +71,18 @@ export function CrudModule({
     setOpen(true);
   };
 
-  const primaryAction = newPath ? (
-    <Link to={newPath}>
-      <PrimaryBtn>
-        <Plus className="w-4 h-4" />
-        {newLabel}
-      </PrimaryBtn>
-    </Link>
-  ) : (
-    <PrimaryBtn onClick={openNew}>
+  const handlePrimary = () => {
+    if (newPath) navigate({ to: newPath });
+    else openNew();
+  };
+
+  const primaryAction = (
+    <PrimaryBtn onClick={handlePrimary}>
       <Plus className="w-4 h-4" />
       {newLabel}
     </PrimaryBtn>
   );
+
 
   return (
     <Shell>
