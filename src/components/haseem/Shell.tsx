@@ -66,8 +66,15 @@ const NAV: NavItem[] = [
   {
     icon: Settings, label: "الإعدادات",
     children: [
-      { label: "المنشأة", to: "/settings/organization" },
-      { label: "الاشتراك", to: "/settings/billing" },
+      { label: "إعدادات المنشأة", to: "/settings/organization", icon: Building2 },
+      { label: "الفروع", to: "/settings/branches", icon: Building },
+      { label: "المستخدمون", to: "/settings/users", icon: Users },
+      { label: "الأدوار", to: "/settings/roles", icon: ShieldCheck },
+      { label: "مناديب المبيعات", to: "/settings/sales-reps", icon: UserCog },
+      { label: "الضرائب والربط", to: "/settings/taxes", icon: Receipt },
+      { label: "قوالب الفواتير", to: "/settings/templates", icon: FileText },
+      { label: "التكاملات", to: "/settings/integrations", icon: Plug },
+      { label: "الاشتراك والفوترة", to: "/settings/billing", icon: CreditCard },
     ],
   },
 ];
