@@ -77,7 +77,6 @@ export function DocumentForm({
     setLines((ls) => ls.map((l, idx) => (idx === i ? { ...l, ...patch } : l)));
 
   const save = (finalStatus: string) => {
-    const partyName = parties.find((p) => p.id === partyId)?.name ?? "—";
     add({
       ref,
       date,
