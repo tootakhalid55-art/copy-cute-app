@@ -18,6 +18,7 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AccountingRouteImport } from './routes/accounting'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as SettingsUsersRouteImport } from './routes/settings.users'
+import { Route as SettingsTemplatesRouteImport } from './routes/settings.templates'
 import { Route as SettingsTaxesRouteImport } from './routes/settings.taxes'
 import { Route as SettingsSalesRepsRouteImport } from './routes/settings.sales-reps'
 import { Route as SettingsRolesRouteImport } from './routes/settings.roles'
@@ -95,6 +96,11 @@ const IndexRoute = IndexRouteImport.update({
 const SettingsUsersRoute = SettingsUsersRouteImport.update({
   id: '/settings/users',
   path: '/settings/users',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SettingsTemplatesRoute = SettingsTemplatesRouteImport.update({
+  id: '/settings/templates',
+  path: '/settings/templates',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SettingsTaxesRoute = SettingsTaxesRouteImport.update({
@@ -297,6 +303,7 @@ export interface FileRoutesByFullPath {
   '/settings/roles': typeof SettingsRolesRoute
   '/settings/sales-reps': typeof SettingsSalesRepsRoute
   '/settings/taxes': typeof SettingsTaxesRoute
+  '/settings/templates': typeof SettingsTemplatesRoute
   '/settings/users': typeof SettingsUsersRoute
   '/purchases/bills/new': typeof PurchasesBillsNewRoute
   '/purchases/purchase-orders/new': typeof PurchasesPurchaseOrdersNewRoute
@@ -336,6 +343,7 @@ export interface FileRoutesByTo {
   '/settings/roles': typeof SettingsRolesRoute
   '/settings/sales-reps': typeof SettingsSalesRepsRoute
   '/settings/taxes': typeof SettingsTaxesRoute
+  '/settings/templates': typeof SettingsTemplatesRoute
   '/settings/users': typeof SettingsUsersRoute
   '/purchases/bills/new': typeof PurchasesBillsNewRoute
   '/purchases/purchase-orders/new': typeof PurchasesPurchaseOrdersNewRoute
@@ -381,6 +389,7 @@ export interface FileRoutesById {
   '/settings/roles': typeof SettingsRolesRoute
   '/settings/sales-reps': typeof SettingsSalesRepsRoute
   '/settings/taxes': typeof SettingsTaxesRoute
+  '/settings/templates': typeof SettingsTemplatesRoute
   '/settings/users': typeof SettingsUsersRoute
   '/purchases/bills/new': typeof PurchasesBillsNewRoute
   '/purchases/purchase-orders/new': typeof PurchasesPurchaseOrdersNewRoute
@@ -427,6 +436,7 @@ export interface FileRouteTypes {
     | '/settings/roles'
     | '/settings/sales-reps'
     | '/settings/taxes'
+    | '/settings/templates'
     | '/settings/users'
     | '/purchases/bills/new'
     | '/purchases/purchase-orders/new'
@@ -466,6 +476,7 @@ export interface FileRouteTypes {
     | '/settings/roles'
     | '/settings/sales-reps'
     | '/settings/taxes'
+    | '/settings/templates'
     | '/settings/users'
     | '/purchases/bills/new'
     | '/purchases/purchase-orders/new'
@@ -510,6 +521,7 @@ export interface FileRouteTypes {
     | '/settings/roles'
     | '/settings/sales-reps'
     | '/settings/taxes'
+    | '/settings/templates'
     | '/settings/users'
     | '/purchases/bills/new'
     | '/purchases/purchase-orders/new'
@@ -555,6 +567,7 @@ export interface RootRouteChildren {
   SettingsRolesRoute: typeof SettingsRolesRoute
   SettingsSalesRepsRoute: typeof SettingsSalesRepsRoute
   SettingsTaxesRoute: typeof SettingsTaxesRoute
+  SettingsTemplatesRoute: typeof SettingsTemplatesRoute
   SettingsUsersRoute: typeof SettingsUsersRoute
 }
 
@@ -621,6 +634,13 @@ declare module '@tanstack/react-router' {
       path: '/settings/users'
       fullPath: '/settings/users'
       preLoaderRoute: typeof SettingsUsersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/settings/templates': {
+      id: '/settings/templates'
+      path: '/settings/templates'
+      fullPath: '/settings/templates'
+      preLoaderRoute: typeof SettingsTemplatesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/settings/taxes': {
@@ -960,6 +980,7 @@ const rootRouteChildren: RootRouteChildren = {
   SettingsRolesRoute: SettingsRolesRoute,
   SettingsSalesRepsRoute: SettingsSalesRepsRoute,
   SettingsTaxesRoute: SettingsTaxesRoute,
+  SettingsTemplatesRoute: SettingsTemplatesRoute,
   SettingsUsersRoute: SettingsUsersRoute,
 }
 export const routeTree = rootRouteImport
