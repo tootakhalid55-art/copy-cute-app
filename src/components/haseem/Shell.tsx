@@ -3,14 +3,16 @@ import {
   Home, DollarSign, Package, ShoppingCart, Wallet, LayoutGrid,
   TrendingUp, Calculator, Settings, Plus, ChevronDown, Building2,
   Globe, MessageCircle, PanelRight, LogOut, User as UserIcon,
+  Building, Users, ShieldCheck, UserCog, Receipt, FileText, Plug, CreditCard,
 } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
 import { useAuth } from "@/lib/haseem/auth";
 import { useKV } from "@/lib/haseem/store";
 
-type NavChild = { label: string; to: string };
+type NavChild = { label: string; to: string; icon?: LucideIcon };
 type NavItem = {
-  icon: typeof Home;
+  icon: LucideIcon;
   label: string;
   to?: string;
   children?: NavChild[];

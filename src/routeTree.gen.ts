@@ -23,6 +23,7 @@ import { Route as SettingsTaxesRouteImport } from './routes/settings.taxes'
 import { Route as SettingsSalesRepsRouteImport } from './routes/settings.sales-reps'
 import { Route as SettingsRolesRouteImport } from './routes/settings.roles'
 import { Route as SettingsOrganizationRouteImport } from './routes/settings.organization'
+import { Route as SettingsIntegrationsRouteImport } from './routes/settings.integrations'
 import { Route as SettingsBranchesRouteImport } from './routes/settings.branches'
 import { Route as SettingsBillingRouteImport } from './routes/settings.billing'
 import { Route as SalesQuotationsRouteImport } from './routes/sales.quotations'
@@ -121,6 +122,11 @@ const SettingsRolesRoute = SettingsRolesRouteImport.update({
 const SettingsOrganizationRoute = SettingsOrganizationRouteImport.update({
   id: '/settings/organization',
   path: '/settings/organization',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SettingsIntegrationsRoute = SettingsIntegrationsRouteImport.update({
+  id: '/settings/integrations',
+  path: '/settings/integrations',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SettingsBranchesRoute = SettingsBranchesRouteImport.update({
@@ -299,6 +305,7 @@ export interface FileRoutesByFullPath {
   '/sales/quotations': typeof SalesQuotationsRouteWithChildren
   '/settings/billing': typeof SettingsBillingRoute
   '/settings/branches': typeof SettingsBranchesRoute
+  '/settings/integrations': typeof SettingsIntegrationsRoute
   '/settings/organization': typeof SettingsOrganizationRoute
   '/settings/roles': typeof SettingsRolesRoute
   '/settings/sales-reps': typeof SettingsSalesRepsRoute
@@ -339,6 +346,7 @@ export interface FileRoutesByTo {
   '/sales/customers': typeof SalesCustomersRoute
   '/settings/billing': typeof SettingsBillingRoute
   '/settings/branches': typeof SettingsBranchesRoute
+  '/settings/integrations': typeof SettingsIntegrationsRoute
   '/settings/organization': typeof SettingsOrganizationRoute
   '/settings/roles': typeof SettingsRolesRoute
   '/settings/sales-reps': typeof SettingsSalesRepsRoute
@@ -385,6 +393,7 @@ export interface FileRoutesById {
   '/sales/quotations': typeof SalesQuotationsRouteWithChildren
   '/settings/billing': typeof SettingsBillingRoute
   '/settings/branches': typeof SettingsBranchesRoute
+  '/settings/integrations': typeof SettingsIntegrationsRoute
   '/settings/organization': typeof SettingsOrganizationRoute
   '/settings/roles': typeof SettingsRolesRoute
   '/settings/sales-reps': typeof SettingsSalesRepsRoute
@@ -432,6 +441,7 @@ export interface FileRouteTypes {
     | '/sales/quotations'
     | '/settings/billing'
     | '/settings/branches'
+    | '/settings/integrations'
     | '/settings/organization'
     | '/settings/roles'
     | '/settings/sales-reps'
@@ -472,6 +482,7 @@ export interface FileRouteTypes {
     | '/sales/customers'
     | '/settings/billing'
     | '/settings/branches'
+    | '/settings/integrations'
     | '/settings/organization'
     | '/settings/roles'
     | '/settings/sales-reps'
@@ -517,6 +528,7 @@ export interface FileRouteTypes {
     | '/sales/quotations'
     | '/settings/billing'
     | '/settings/branches'
+    | '/settings/integrations'
     | '/settings/organization'
     | '/settings/roles'
     | '/settings/sales-reps'
@@ -563,6 +575,7 @@ export interface RootRouteChildren {
   SalesQuotationsRoute: typeof SalesQuotationsRouteWithChildren
   SettingsBillingRoute: typeof SettingsBillingRoute
   SettingsBranchesRoute: typeof SettingsBranchesRoute
+  SettingsIntegrationsRoute: typeof SettingsIntegrationsRoute
   SettingsOrganizationRoute: typeof SettingsOrganizationRoute
   SettingsRolesRoute: typeof SettingsRolesRoute
   SettingsSalesRepsRoute: typeof SettingsSalesRepsRoute
@@ -669,6 +682,13 @@ declare module '@tanstack/react-router' {
       path: '/settings/organization'
       fullPath: '/settings/organization'
       preLoaderRoute: typeof SettingsOrganizationRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/settings/integrations': {
+      id: '/settings/integrations'
+      path: '/settings/integrations'
+      fullPath: '/settings/integrations'
+      preLoaderRoute: typeof SettingsIntegrationsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/settings/branches': {
@@ -976,6 +996,7 @@ const rootRouteChildren: RootRouteChildren = {
   SalesQuotationsRoute: SalesQuotationsRouteWithChildren,
   SettingsBillingRoute: SettingsBillingRoute,
   SettingsBranchesRoute: SettingsBranchesRoute,
+  SettingsIntegrationsRoute: SettingsIntegrationsRoute,
   SettingsOrganizationRoute: SettingsOrganizationRoute,
   SettingsRolesRoute: SettingsRolesRoute,
   SettingsSalesRepsRoute: SettingsSalesRepsRoute,
