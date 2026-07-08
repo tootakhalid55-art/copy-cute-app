@@ -76,12 +76,22 @@ export function DocumentForm({
   const party = parties.find((p) => p.id === partyId);
   const partyName = party?.name ?? "—";
 
-  const subtotal = lines.reduce((s, l) => s + l.qty * l.price, 0);
-  const tax = lines.reduce(
-    (s, l) => s + (l.qty * l.price * l.tax) / 100,
-    0
-  );
-  const total = subtotal + tax;
+  // Round half-up to 2 decimals (matches ZATCA / Qoyod invoice math)
+  const r2 = (n: number) => Math.round((n + Number.EPSILON) * 100) / 100;
+  // Arabic-Latin style: 1,234.56 with exactly 2 decimals
+  const fmt = (n: number) =>
+    r2(n).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const CUR = "ر.س";
+
+  // Per-line rounded values, then aggregate — same convention as Qoyod
+  const lineCalcs = lines.map((l) => {
+    const net = r2(l.qty * l.price);
+    const taxAmt = r2((net * l.tax) / 100);
+    return { net, taxAmt, gross: r2(net + taxAmt) };
+  });
+  const subtotal = r2(lineCalcs.reduce((s, c) => s + c.net, 0));
+  const tax = r2(lineCalcs.reduce((s, c) => s + c.taxAmt, 0));
+  const total = r2(subtotal + tax);
 
   useEffect(() => {
     const iso = new Date(`${date}T00:00:00`).toISOString();
@@ -314,7 +324,7 @@ export function DocumentForm({
                     />
                   </td>
                   <td className="tabular-nums">
-                    {(l.qty * l.price * (1 + l.tax / 100)).toFixed(2)} ﷼
+                    {fmt(lineCalcs[i].gross)} {CUR}
                   </td>
                   <td>
                     <button
@@ -344,9 +354,9 @@ export function DocumentForm({
             />
           </div>
           <div className="space-y-2 text-sm">
-            <Row label="المجموع الفرعي" value={`${subtotal.toFixed(2)} ﷼`} />
-            <Row label="الضريبة" value={`${tax.toFixed(2)} ﷼`} />
-            <Row label="الإجمالي" value={`${total.toFixed(2)} ﷼`} bold />
+            <Row label="المجموع الفرعي" value={`${fmt(subtotal)} ${CUR}`} />
+            <Row label="الضريبة" value={`${fmt(tax)} ${CUR}`} />
+            <Row label="الإجمالي" value={`${fmt(total)} ${CUR}`} bold />
           </div>
         </div>
       </div>
@@ -395,9 +405,9 @@ export function DocumentForm({
                   <td>{i + 1}</td>
                   <td>{l.description || "—"}</td>
                   <td>{l.qty}</td>
-                  <td>{l.price.toFixed(2)}</td>
+                  <td>{fmt(l.price)}</td>
                   <td>{l.tax}%</td>
-                  <td>{(l.qty * l.price * (1 + l.tax / 100)).toFixed(2)}</td>
+                  <td>{fmt(lineCalcs[i].gross)}</td>
                 </tr>
               ))}
             </tbody>
@@ -411,9 +421,9 @@ export function DocumentForm({
               {notes ? <><strong>ملاحظات:</strong><br />{notes}</> : <span style={{color:"#999"}}>—</span>}
             </div>
             <div className="totals">
-              <div><span>المجموع الفرعي</span><span>{subtotal.toFixed(2)} ﷼</span></div>
-              <div><span>ضريبة القيمة المضافة</span><span>{tax.toFixed(2)} ﷼</span></div>
-              <div className="grand"><span>الإجمالي</span><span>{total.toFixed(2)} ﷼</span></div>
+              <div><span>المجموع الفرعي</span><span>{fmt(subtotal)} {CUR}</span></div>
+              <div><span>ضريبة القيمة المضافة (15%)</span><span>{fmt(tax)} {CUR}</span></div>
+              <div className="grand"><span>الإجمالي شامل الضريبة</span><span>{fmt(total)} {CUR}</span></div>
             </div>
           </div>
           <div className="foot">شكراً لتعاملكم معنا · {org.name}</div>
@@ -477,9 +487,9 @@ export function DocumentForm({
                       <td className="border border-[#d4d0c4] p-2">{i + 1}</td>
                       <td className="border border-[#d4d0c4] p-2">{l.description || "—"}</td>
                       <td className="border border-[#d4d0c4] p-2">{l.qty}</td>
-                      <td className="border border-[#d4d0c4] p-2 tabular-nums">{l.price.toFixed(2)}</td>
+                      <td className="border border-[#d4d0c4] p-2 tabular-nums">{fmt(l.price)}</td>
                       <td className="border border-[#d4d0c4] p-2">{l.tax}%</td>
-                      <td className="border border-[#d4d0c4] p-2 tabular-nums">{(l.qty * l.price * (1 + l.tax / 100)).toFixed(2)}</td>
+                      <td className="border border-[#d4d0c4] p-2 tabular-nums">{fmt(lineCalcs[i].gross)}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -493,9 +503,9 @@ export function DocumentForm({
                   {notes ? <><strong>ملاحظات:</strong><br />{notes}</> : <span className="text-[#0f2a1d]/40">لا توجد ملاحظات</span>}
                 </div>
                 <div className="text-sm space-y-1">
-                  <div className="flex justify-between py-1.5 border-b border-[#eceae2]"><span>المجموع الفرعي</span><span className="tabular-nums">{subtotal.toFixed(2)} ﷼</span></div>
-                  <div className="flex justify-between py-1.5 border-b border-[#eceae2]"><span>ضريبة القيمة المضافة</span><span className="tabular-nums">{tax.toFixed(2)} ﷼</span></div>
-                  <div className="flex justify-between bg-[#0f2a1d] text-white px-3 py-2.5 rounded font-bold mt-1"><span>الإجمالي</span><span className="tabular-nums">{total.toFixed(2)} ﷼</span></div>
+                  <div className="flex justify-between py-1.5 border-b border-[#eceae2]"><span>المجموع الفرعي</span><span className="tabular-nums">{fmt(subtotal)} {CUR}</span></div>
+                  <div className="flex justify-between py-1.5 border-b border-[#eceae2]"><span>ضريبة القيمة المضافة (15%)</span><span className="tabular-nums">{fmt(tax)} {CUR}</span></div>
+                  <div className="flex justify-between bg-[#0f2a1d] text-white px-3 py-2.5 rounded font-bold mt-1"><span>الإجمالي شامل الضريبة</span><span className="tabular-nums">{fmt(total)} {CUR}</span></div>
                 </div>
               </div>
               <div className="text-center text-[11px] text-[#0f2a1d]/50 mt-6 pt-3 border-t border-[#eceae2]">شكراً لتعاملكم معنا · {org.name}</div>
