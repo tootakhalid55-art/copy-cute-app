@@ -132,12 +132,6 @@ export function DocumentForm({
     setTimeout(() => { w.print(); }, 400);
   };
 
-  const subtotal = lines.reduce((s, l) => s + l.qty * l.price, 0);
-  const tax = lines.reduce(
-    (s, l) => s + (l.qty * l.price * l.tax) / 100,
-    0
-  );
-  const total = subtotal + tax;
 
   const updateLine = (i: number, patch: Partial<Line>) =>
     setLines((ls) => ls.map((l, idx) => (idx === i ? { ...l, ...patch } : l)));
