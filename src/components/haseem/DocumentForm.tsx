@@ -76,12 +76,22 @@ export function DocumentForm({
   const party = parties.find((p) => p.id === partyId);
   const partyName = party?.name ?? "—";
 
-  const subtotal = lines.reduce((s, l) => s + l.qty * l.price, 0);
-  const tax = lines.reduce(
-    (s, l) => s + (l.qty * l.price * l.tax) / 100,
-    0
-  );
-  const total = subtotal + tax;
+  // Round half-up to 2 decimals (matches ZATCA / Qoyod invoice math)
+  const r2 = (n: number) => Math.round((n + Number.EPSILON) * 100) / 100;
+  // Arabic-Latin style: 1,234.56 with exactly 2 decimals
+  const fmt = (n: number) =>
+    r2(n).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const CUR = "ر.س";
+
+  // Per-line rounded values, then aggregate — same convention as Qoyod
+  const lineCalcs = lines.map((l) => {
+    const net = r2(l.qty * l.price);
+    const taxAmt = r2((net * l.tax) / 100);
+    return { net, taxAmt, gross: r2(net + taxAmt) };
+  });
+  const subtotal = r2(lineCalcs.reduce((s, c) => s + c.net, 0));
+  const tax = r2(lineCalcs.reduce((s, c) => s + c.taxAmt, 0));
+  const total = r2(subtotal + tax);
 
   useEffect(() => {
     const iso = new Date(`${date}T00:00:00`).toISOString();
