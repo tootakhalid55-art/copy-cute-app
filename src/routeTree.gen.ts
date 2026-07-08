@@ -36,6 +36,11 @@ import { Route as CashTransactionsRouteImport } from './routes/cash.transactions
 import { Route as CashReceiptsRouteImport } from './routes/cash.receipts'
 import { Route as CashPaymentsRouteImport } from './routes/cash.payments'
 import { Route as CashBanksRouteImport } from './routes/cash.banks'
+import { Route as SalesQuotationsIndexRouteImport } from './routes/sales.quotations.index'
+import { Route as SalesInvoicesIndexRouteImport } from './routes/sales.invoices.index'
+import { Route as SalesCreditNotesIndexRouteImport } from './routes/sales.credit-notes.index'
+import { Route as PurchasesPurchaseOrdersIndexRouteImport } from './routes/purchases.purchase-orders.index'
+import { Route as PurchasesBillsIndexRouteImport } from './routes/purchases.bills.index'
 import { Route as SalesQuotationsNewRouteImport } from './routes/sales.quotations.new'
 import { Route as SalesInvoicesNewRouteImport } from './routes/sales.invoices.new'
 import { Route as SalesCreditNotesNewRouteImport } from './routes/sales.credit-notes.new'
@@ -177,6 +182,32 @@ const CashBanksRoute = CashBanksRouteImport.update({
   path: '/cash/banks',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SalesQuotationsIndexRoute = SalesQuotationsIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => SalesQuotationsRoute,
+} as any)
+const SalesInvoicesIndexRoute = SalesInvoicesIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => SalesInvoicesRoute,
+} as any)
+const SalesCreditNotesIndexRoute = SalesCreditNotesIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => SalesCreditNotesRoute,
+} as any)
+const PurchasesPurchaseOrdersIndexRoute =
+  PurchasesPurchaseOrdersIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => PurchasesPurchaseOrdersRoute,
+  } as any)
+const PurchasesBillsIndexRoute = PurchasesBillsIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => PurchasesBillsRoute,
+} as any)
 const SalesQuotationsNewRoute = SalesQuotationsNewRouteImport.update({
   id: '/new',
   path: '/new',
@@ -237,6 +268,11 @@ export interface FileRoutesByFullPath {
   '/sales/credit-notes/new': typeof SalesCreditNotesNewRoute
   '/sales/invoices/new': typeof SalesInvoicesNewRoute
   '/sales/quotations/new': typeof SalesQuotationsNewRoute
+  '/purchases/bills/': typeof PurchasesBillsIndexRoute
+  '/purchases/purchase-orders/': typeof PurchasesPurchaseOrdersIndexRoute
+  '/sales/credit-notes/': typeof SalesCreditNotesIndexRoute
+  '/sales/invoices/': typeof SalesInvoicesIndexRoute
+  '/sales/quotations/': typeof SalesQuotationsIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -256,14 +292,9 @@ export interface FileRoutesByTo {
   '/inventory/items': typeof InventoryItemsRoute
   '/inventory/reports': typeof InventoryReportsRoute
   '/inventory/warehouses': typeof InventoryWarehousesRoute
-  '/purchases/bills': typeof PurchasesBillsRouteWithChildren
-  '/purchases/purchase-orders': typeof PurchasesPurchaseOrdersRouteWithChildren
   '/purchases/suppliers': typeof PurchasesSuppliersRoute
   '/reports/sales-report': typeof ReportsSalesReportRoute
-  '/sales/credit-notes': typeof SalesCreditNotesRouteWithChildren
   '/sales/customers': typeof SalesCustomersRoute
-  '/sales/invoices': typeof SalesInvoicesRouteWithChildren
-  '/sales/quotations': typeof SalesQuotationsRouteWithChildren
   '/settings/billing': typeof SettingsBillingRoute
   '/settings/organization': typeof SettingsOrganizationRoute
   '/purchases/bills/new': typeof PurchasesBillsNewRoute
@@ -271,6 +302,11 @@ export interface FileRoutesByTo {
   '/sales/credit-notes/new': typeof SalesCreditNotesNewRoute
   '/sales/invoices/new': typeof SalesInvoicesNewRoute
   '/sales/quotations/new': typeof SalesQuotationsNewRoute
+  '/purchases/bills': typeof PurchasesBillsIndexRoute
+  '/purchases/purchase-orders': typeof PurchasesPurchaseOrdersIndexRoute
+  '/sales/credit-notes': typeof SalesCreditNotesIndexRoute
+  '/sales/invoices': typeof SalesInvoicesIndexRoute
+  '/sales/quotations': typeof SalesQuotationsIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -306,6 +342,11 @@ export interface FileRoutesById {
   '/sales/credit-notes/new': typeof SalesCreditNotesNewRoute
   '/sales/invoices/new': typeof SalesInvoicesNewRoute
   '/sales/quotations/new': typeof SalesQuotationsNewRoute
+  '/purchases/bills/': typeof PurchasesBillsIndexRoute
+  '/purchases/purchase-orders/': typeof PurchasesPurchaseOrdersIndexRoute
+  '/sales/credit-notes/': typeof SalesCreditNotesIndexRoute
+  '/sales/invoices/': typeof SalesInvoicesIndexRoute
+  '/sales/quotations/': typeof SalesQuotationsIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -342,6 +383,11 @@ export interface FileRouteTypes {
     | '/sales/credit-notes/new'
     | '/sales/invoices/new'
     | '/sales/quotations/new'
+    | '/purchases/bills/'
+    | '/purchases/purchase-orders/'
+    | '/sales/credit-notes/'
+    | '/sales/invoices/'
+    | '/sales/quotations/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -361,14 +407,9 @@ export interface FileRouteTypes {
     | '/inventory/items'
     | '/inventory/reports'
     | '/inventory/warehouses'
-    | '/purchases/bills'
-    | '/purchases/purchase-orders'
     | '/purchases/suppliers'
     | '/reports/sales-report'
-    | '/sales/credit-notes'
     | '/sales/customers'
-    | '/sales/invoices'
-    | '/sales/quotations'
     | '/settings/billing'
     | '/settings/organization'
     | '/purchases/bills/new'
@@ -376,6 +417,11 @@ export interface FileRouteTypes {
     | '/sales/credit-notes/new'
     | '/sales/invoices/new'
     | '/sales/quotations/new'
+    | '/purchases/bills'
+    | '/purchases/purchase-orders'
+    | '/sales/credit-notes'
+    | '/sales/invoices'
+    | '/sales/quotations'
   id:
     | '__root__'
     | '/'
@@ -410,6 +456,11 @@ export interface FileRouteTypes {
     | '/sales/credit-notes/new'
     | '/sales/invoices/new'
     | '/sales/quotations/new'
+    | '/purchases/bills/'
+    | '/purchases/purchase-orders/'
+    | '/sales/credit-notes/'
+    | '/sales/invoices/'
+    | '/sales/quotations/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -633,6 +684,41 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CashBanksRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/sales/quotations/': {
+      id: '/sales/quotations/'
+      path: '/'
+      fullPath: '/sales/quotations/'
+      preLoaderRoute: typeof SalesQuotationsIndexRouteImport
+      parentRoute: typeof SalesQuotationsRoute
+    }
+    '/sales/invoices/': {
+      id: '/sales/invoices/'
+      path: '/'
+      fullPath: '/sales/invoices/'
+      preLoaderRoute: typeof SalesInvoicesIndexRouteImport
+      parentRoute: typeof SalesInvoicesRoute
+    }
+    '/sales/credit-notes/': {
+      id: '/sales/credit-notes/'
+      path: '/'
+      fullPath: '/sales/credit-notes/'
+      preLoaderRoute: typeof SalesCreditNotesIndexRouteImport
+      parentRoute: typeof SalesCreditNotesRoute
+    }
+    '/purchases/purchase-orders/': {
+      id: '/purchases/purchase-orders/'
+      path: '/'
+      fullPath: '/purchases/purchase-orders/'
+      preLoaderRoute: typeof PurchasesPurchaseOrdersIndexRouteImport
+      parentRoute: typeof PurchasesPurchaseOrdersRoute
+    }
+    '/purchases/bills/': {
+      id: '/purchases/bills/'
+      path: '/'
+      fullPath: '/purchases/bills/'
+      preLoaderRoute: typeof PurchasesBillsIndexRouteImport
+      parentRoute: typeof PurchasesBillsRoute
+    }
     '/sales/quotations/new': {
       id: '/sales/quotations/new'
       path: '/new'
@@ -673,10 +759,12 @@ declare module '@tanstack/react-router' {
 
 interface PurchasesBillsRouteChildren {
   PurchasesBillsNewRoute: typeof PurchasesBillsNewRoute
+  PurchasesBillsIndexRoute: typeof PurchasesBillsIndexRoute
 }
 
 const PurchasesBillsRouteChildren: PurchasesBillsRouteChildren = {
   PurchasesBillsNewRoute: PurchasesBillsNewRoute,
+  PurchasesBillsIndexRoute: PurchasesBillsIndexRoute,
 }
 
 const PurchasesBillsRouteWithChildren = PurchasesBillsRoute._addFileChildren(
@@ -685,11 +773,13 @@ const PurchasesBillsRouteWithChildren = PurchasesBillsRoute._addFileChildren(
 
 interface PurchasesPurchaseOrdersRouteChildren {
   PurchasesPurchaseOrdersNewRoute: typeof PurchasesPurchaseOrdersNewRoute
+  PurchasesPurchaseOrdersIndexRoute: typeof PurchasesPurchaseOrdersIndexRoute
 }
 
 const PurchasesPurchaseOrdersRouteChildren: PurchasesPurchaseOrdersRouteChildren =
   {
     PurchasesPurchaseOrdersNewRoute: PurchasesPurchaseOrdersNewRoute,
+    PurchasesPurchaseOrdersIndexRoute: PurchasesPurchaseOrdersIndexRoute,
   }
 
 const PurchasesPurchaseOrdersRouteWithChildren =
@@ -699,10 +789,12 @@ const PurchasesPurchaseOrdersRouteWithChildren =
 
 interface SalesCreditNotesRouteChildren {
   SalesCreditNotesNewRoute: typeof SalesCreditNotesNewRoute
+  SalesCreditNotesIndexRoute: typeof SalesCreditNotesIndexRoute
 }
 
 const SalesCreditNotesRouteChildren: SalesCreditNotesRouteChildren = {
   SalesCreditNotesNewRoute: SalesCreditNotesNewRoute,
+  SalesCreditNotesIndexRoute: SalesCreditNotesIndexRoute,
 }
 
 const SalesCreditNotesRouteWithChildren =
@@ -710,10 +802,12 @@ const SalesCreditNotesRouteWithChildren =
 
 interface SalesInvoicesRouteChildren {
   SalesInvoicesNewRoute: typeof SalesInvoicesNewRoute
+  SalesInvoicesIndexRoute: typeof SalesInvoicesIndexRoute
 }
 
 const SalesInvoicesRouteChildren: SalesInvoicesRouteChildren = {
   SalesInvoicesNewRoute: SalesInvoicesNewRoute,
+  SalesInvoicesIndexRoute: SalesInvoicesIndexRoute,
 }
 
 const SalesInvoicesRouteWithChildren = SalesInvoicesRoute._addFileChildren(
@@ -722,10 +816,12 @@ const SalesInvoicesRouteWithChildren = SalesInvoicesRoute._addFileChildren(
 
 interface SalesQuotationsRouteChildren {
   SalesQuotationsNewRoute: typeof SalesQuotationsNewRoute
+  SalesQuotationsIndexRoute: typeof SalesQuotationsIndexRoute
 }
 
 const SalesQuotationsRouteChildren: SalesQuotationsRouteChildren = {
   SalesQuotationsNewRoute: SalesQuotationsNewRoute,
+  SalesQuotationsIndexRoute: SalesQuotationsIndexRoute,
 }
 
 const SalesQuotationsRouteWithChildren = SalesQuotationsRoute._addFileChildren(
