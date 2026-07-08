@@ -114,6 +114,19 @@ export function DocumentForm({
   const party = parties.find((p) => p.id === partyId);
   const partyName = party?.name ?? "—";
 
+  // Selected invoice template — drives accent color & style variant in preview/print
+  const [templateId] = useKV<"classic" | "modern" | "minimal" | "colored">(
+    "invoice-template",
+    "classic"
+  );
+  const TEMPLATE_MAP = {
+    classic: { name: "كلاسيكي", accent: "#0f2a1d", onAccent: "#ffffff", soft: "#fafaf7" },
+    modern:  { name: "عصري",   accent: "#1e40af", onAccent: "#ffffff", soft: "#f5f7ff" },
+    minimal: { name: "بسيط",   accent: "#525252", onAccent: "#ffffff", soft: "#fafafa" },
+    colored: { name: "ملوّن",   accent: "#c65b3c", onAccent: "#ffffff", soft: "#fff7f2" },
+  } as const;
+  const tpl = TEMPLATE_MAP[templateId] ?? TEMPLATE_MAP.classic;
+
   // Round half-up to 2 decimals (matches ZATCA / Qoyod invoice math)
   const r2 = (n: number) => Math.round((n + Number.EPSILON) * 100) / 100;
   // Arabic-Latin style: 1,234.56 with exactly 2 decimals
@@ -149,29 +162,29 @@ export function DocumentForm({
         *{box-sizing:border-box}
         body{font-family:Cairo,"Segoe UI",system-ui,sans-serif;padding:32px;color:#0f2a1d;margin:0}
         .doc{max-width:800px;margin:0 auto}
-        .head{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:3px solid #0f2a1d;padding-bottom:16px;margin-bottom:20px}
-        .brand h1{font-size:22px;margin:0 0 4px;color:#0f2a1d}
+        .head{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:3px solid ${tpl.accent};padding-bottom:16px;margin-bottom:20px}
+        .brand h1{font-size:22px;margin:0 0 4px;color:${tpl.accent}}
         .brand p{margin:2px 0;font-size:12px;color:#555}
         .doc-title{text-align:left}
-        .doc-title h2{font-size:20px;margin:0 0 6px;color:#0f2a1d}
-        .doc-title .ref{background:#0f2a1d;color:#fff;padding:4px 10px;border-radius:6px;font-size:13px;display:inline-block}
+        .doc-title h2{font-size:20px;margin:0 0 6px;color:${tpl.accent}}
+        .doc-title .ref{background:${tpl.accent};color:${tpl.onAccent};padding:4px 10px;border-radius:6px;font-size:13px;display:inline-block}
         .parties{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px}
-        .card{border:1px solid #eceae2;border-radius:8px;padding:12px;background:#fafaf7}
+        .card{border:1px solid #eceae2;border-radius:8px;padding:12px;background:${tpl.soft}}
         .card .label{font-size:11px;color:#666;margin-bottom:6px;font-weight:600}
         .card .val{font-size:13px;line-height:1.7}
         .card .val strong{display:block;font-size:14px;margin-bottom:2px}
         table{width:100%;border-collapse:collapse;margin-bottom:16px}
         th,td{border:1px solid #d4d0c4;padding:8px 10px;text-align:right;font-size:12px}
-        th{background:#0f2a1d;color:#fff;font-weight:600}
-        tbody tr:nth-child(even){background:#fafaf7}
+        th{background:${tpl.accent};color:${tpl.onAccent};font-weight:600}
+        tbody tr:nth-child(even){background:${tpl.soft}}
         .bottom{display:grid;grid-template-columns:180px 1fr 260px;gap:20px;align-items:start;margin-top:20px}
         .qr{text-align:center}
         .qr img{border:1px solid #eceae2;padding:6px;background:#fff;border-radius:6px}
         .qr .cap{font-size:10px;color:#666;margin-top:4px}
-        .notes{font-size:12px;color:#555;padding:10px;background:#fafaf7;border-radius:6px;border-right:3px solid #0f2a1d}
+        .notes{font-size:12px;color:#555;padding:10px;background:${tpl.soft};border-radius:6px;border-right:3px solid ${tpl.accent}}
         .totals{font-size:13px}
         .totals div{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #eceae2}
-        .totals .grand{font-weight:bold;font-size:16px;background:#0f2a1d;color:#fff;padding:10px 12px;border-radius:6px;margin-top:6px;border:none}
+        .totals .grand{font-weight:bold;font-size:16px;background:${tpl.accent};color:${tpl.onAccent};padding:10px 12px;border-radius:6px;margin-top:6px;border:none}
         .foot{text-align:center;font-size:11px;color:#888;margin-top:24px;padding-top:12px;border-top:1px solid #eceae2}
         @media print { body{padding:12px} }
       </style></head><body><div class="doc">${html}</div></body></html>`);
@@ -472,7 +485,15 @@ export function DocumentForm({
         <div className="fixed inset-0 z-50 bg-black/50 flex items-start justify-center p-4 overflow-auto" onClick={() => setPreviewOpen(false)}>
           <div className="bg-white rounded-xl max-w-3xl w-full my-8 overflow-hidden" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between px-6 py-3 border-b border-[#eceae2] bg-[#fafaf7]">
-              <h2 className="text-base font-bold">معاينة الفاتورة</h2>
+              <div className="flex items-center gap-3">
+                <h2 className="text-base font-bold">معاينة الفاتورة</h2>
+                <span
+                  className="text-[11px] px-2 py-0.5 rounded-full"
+                  style={{ background: tpl.soft, color: tpl.accent, border: `1px solid ${tpl.accent}33` }}
+                >
+                  قالب: {tpl.name}
+                </span>
+              </div>
               <div className="flex gap-2">
                 <OutlineBtn type="button" onClick={handlePrint}>
                   <Printer className="w-4 h-4" /> طباعة
@@ -483,26 +504,34 @@ export function DocumentForm({
               </div>
             </div>
             <div className="p-8 text-sm">
-              <div className="flex justify-between items-start border-b-[3px] border-[#0f2a1d] pb-4 mb-5">
+              <div
+                className="flex justify-between items-start pb-4 mb-5"
+                style={{ borderBottom: `3px solid ${tpl.accent}` }}
+              >
                 <div>
-                  <h1 className="text-xl font-bold m-0">{org.name}</h1>
+                  <h1 className="text-xl font-bold m-0" style={{ color: tpl.accent }}>{org.name}</h1>
                   <p className="text-xs text-[#0f2a1d]/70 mt-1">الرقم الضريبي: {org.taxNumber}</p>
                   <p className="text-xs text-[#0f2a1d]/70">المملكة العربية السعودية</p>
                 </div>
                 <div className="text-left">
-                  <h2 className="text-lg font-bold m-0">{title}</h2>
-                  <span className="inline-block mt-1 bg-[#0f2a1d] text-white px-3 py-1 rounded text-xs">{ref}</span>
+                  <h2 className="text-lg font-bold m-0" style={{ color: tpl.accent }}>{title}</h2>
+                  <span
+                    className="inline-block mt-1 px-3 py-1 rounded text-xs"
+                    style={{ background: tpl.accent, color: tpl.onAccent }}
+                  >
+                    {ref}
+                  </span>
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4 mb-5">
-                <div className="bg-[#fafaf7] border border-[#eceae2] rounded-lg p-3">
+                <div className="border border-[#eceae2] rounded-lg p-3" style={{ background: tpl.soft }}>
                   <div className="text-[11px] text-[#0f2a1d]/60 font-semibold mb-1">{partyLabel}</div>
                   <div className="font-semibold">{partyName}</div>
                   {party?.taxNumber && <div className="text-xs text-[#0f2a1d]/70">الرقم الضريبي: {party.taxNumber}</div>}
                   {party?.phone && <div className="text-xs text-[#0f2a1d]/70">الجوال: {party.phone}</div>}
                   {party?.email && <div className="text-xs text-[#0f2a1d]/70">البريد: {party.email}</div>}
                 </div>
-                <div className="bg-[#fafaf7] border border-[#eceae2] rounded-lg p-3">
+                <div className="border border-[#eceae2] rounded-lg p-3" style={{ background: tpl.soft }}>
                   <div className="text-[11px] text-[#0f2a1d]/60 font-semibold mb-1">بيانات المستند</div>
                   <div className="text-xs">التاريخ: <strong>{date}</strong></div>
                   <div className="text-xs">الاستحقاق: <strong>{dueDate}</strong></div>
@@ -510,18 +539,18 @@ export function DocumentForm({
               </div>
               <table className="w-full border-collapse text-xs mb-4">
                 <thead>
-                  <tr className="bg-[#0f2a1d] text-white">
-                    <th className="border border-[#0f2a1d] p-2 text-right">#</th>
-                    <th className="border border-[#0f2a1d] p-2 text-right">الوصف</th>
-                    <th className="border border-[#0f2a1d] p-2 text-right">الكمية</th>
-                    <th className="border border-[#0f2a1d] p-2 text-right">السعر</th>
-                    <th className="border border-[#0f2a1d] p-2 text-right">الضريبة %</th>
-                    <th className="border border-[#0f2a1d] p-2 text-right">المبلغ</th>
+                  <tr style={{ background: tpl.accent, color: tpl.onAccent }}>
+                    <th className="p-2 text-right" style={{ border: `1px solid ${tpl.accent}` }}>#</th>
+                    <th className="p-2 text-right" style={{ border: `1px solid ${tpl.accent}` }}>الوصف</th>
+                    <th className="p-2 text-right" style={{ border: `1px solid ${tpl.accent}` }}>الكمية</th>
+                    <th className="p-2 text-right" style={{ border: `1px solid ${tpl.accent}` }}>السعر</th>
+                    <th className="p-2 text-right" style={{ border: `1px solid ${tpl.accent}` }}>الضريبة %</th>
+                    <th className="p-2 text-right" style={{ border: `1px solid ${tpl.accent}` }}>المبلغ</th>
                   </tr>
                 </thead>
                 <tbody>
                   {lines.map((l, i) => (
-                    <tr key={i} className={i % 2 ? "bg-[#fafaf7]" : ""}>
+                    <tr key={i} style={i % 2 ? { background: tpl.soft } : undefined}>
                       <td className="border border-[#d4d0c4] p-2">{i + 1}</td>
                       <td className="border border-[#d4d0c4] p-2">{l.description || "—"}</td>
                       <td className="border border-[#d4d0c4] p-2">{l.qty}</td>
@@ -537,13 +566,21 @@ export function DocumentForm({
                   {qrDataUrl && <img src={qrDataUrl} alt="ZATCA QR" className="border border-[#eceae2] p-1.5 rounded bg-white mx-auto" width={140} height={140} />}
                   <div className="text-[10px] text-[#0f2a1d]/60 mt-1">رمز الفاتورة (ZATCA)</div>
                 </div>
-                <div className="text-xs bg-[#fafaf7] rounded p-3 border-r-[3px] border-[#0f2a1d]">
+                <div
+                  className="text-xs rounded p-3"
+                  style={{ background: tpl.soft, borderRight: `3px solid ${tpl.accent}` }}
+                >
                   {notes ? <><strong>ملاحظات:</strong><br />{notes}</> : <span className="text-[#0f2a1d]/40">لا توجد ملاحظات</span>}
                 </div>
                 <div className="text-sm space-y-1">
                   <div className="flex justify-between py-1.5 border-b border-[#eceae2]"><span>المجموع الفرعي</span><span className="tabular-nums">{fmt(subtotal)} {CUR}</span></div>
                   <div className="flex justify-between py-1.5 border-b border-[#eceae2]"><span>ضريبة القيمة المضافة (15%)</span><span className="tabular-nums">{fmt(tax)} {CUR}</span></div>
-                  <div className="flex justify-between bg-[#0f2a1d] text-white px-3 py-2.5 rounded font-bold mt-1"><span>الإجمالي شامل الضريبة</span><span className="tabular-nums">{fmt(total)} {CUR}</span></div>
+                  <div
+                    className="flex justify-between px-3 py-2.5 rounded font-bold mt-1"
+                    style={{ background: tpl.accent, color: tpl.onAccent }}
+                  >
+                    <span>الإجمالي شامل الضريبة</span><span className="tabular-nums">{fmt(total)} {CUR}</span>
+                  </div>
                 </div>
               </div>
               <div className="text-center text-[11px] text-[#0f2a1d]/50 mt-6 pt-3 border-t border-[#eceae2]">شكراً لتعاملكم معنا · {org.name}</div>
