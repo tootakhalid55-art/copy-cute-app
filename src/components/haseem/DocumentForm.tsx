@@ -61,16 +61,54 @@ export function DocumentForm({
   ]);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [partyModalOpen, setPartyModalOpen] = useState(false);
-  const [newParty, setNewParty] = useState({ name: "", phone: "", email: "", taxNumber: "" });
   const [qrDataUrl, setQrDataUrl] = useState<string>("");
   const printRef = useRef<HTMLDivElement>(null);
+  const emptyParty = {
+    // Basic
+    type: "individual" as "individual" | "company",
+    name: "",
+    displayName: "",
+    email: "",
+    phone: "",
+    mobile: "",
+    website: "",
+    // Tax/registration
+    taxNumber: "",
+    commercialReg: "",
+    taxGroup: "standard",
+    category: "",
+    currency: "SAR",
+    // Financial
+    openingBalance: 0,
+    creditLimit: 0,
+    paymentTerms: "0",
+    // Address
+    country: "SA",
+    city: "",
+    region: "",
+    district: "",
+    street: "",
+    buildingNo: "",
+    postalCode: "",
+    additionalNo: "",
+    // Shipping
+    shippingAddress: "",
+    // Contact person
+    contactName: "",
+    contactPhone: "",
+    contactEmail: "",
+    notes: "",
+  };
+  const [newParty, setNewParty] = useState(emptyParty);
+  const [partyTab, setPartyTab] = useState<"basic" | "address" | "financial" | "contact">("basic");
 
   const submitNewParty = () => {
     if (!newParty.name.trim()) return;
     const rec = addParty({ ...newParty, name: newParty.name.trim() });
     setPartyId(rec.id);
     setPartyModalOpen(false);
-    setNewParty({ name: "", phone: "", email: "", taxNumber: "" });
+    setPartyTab("basic");
+    setNewParty(emptyParty);
   };
 
   const party = parties.find((p) => p.id === partyId);
@@ -516,50 +554,281 @@ export function DocumentForm({
 
 
       {partyModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4" onClick={() => setPartyModalOpen(false)}>
-          <div className="bg-white rounded-xl w-full max-w-md p-6" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center justify-between mb-4 pb-3 border-b border-[#eceae2]">
-              <h2 className="text-lg font-bold">إضافة {partyLabel}</h2>
-              <button onClick={() => setPartyModalOpen(false)} className="p-1 rounded hover:bg-[#f7f6f0]">
+        <div className="fixed inset-0 z-50 bg-black/50 flex items-start justify-center p-4 overflow-auto" onClick={() => setPartyModalOpen(false)}>
+          <div className="bg-white rounded-xl w-full max-w-3xl my-6 overflow-hidden" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between px-6 py-3 border-b border-[#eceae2] bg-[#fafaf7]">
+              <div>
+                <h2 className="text-base font-bold">إضافة {partyLabel} جديد</h2>
+                <p className="text-[11px] text-[#0f2a1d]/60">أدخل البيانات الكاملة للطرف — الحقول المميزة بـ * إلزامية</p>
+              </div>
+              <button onClick={() => setPartyModalOpen(false)} className="p-2 rounded hover:bg-[#eceae2]">
                 <X className="w-4 h-4" />
               </button>
             </div>
-            <div className="space-y-3 text-sm">
-              <FormField label="الاسم *">
-                <input
-                  autoFocus
-                  value={newParty.name}
-                  onChange={(e) => setNewParty((p) => ({ ...p, name: e.target.value }))}
-                  className="border border-[#eceae2] rounded-lg px-3 py-2"
-                  placeholder={`اسم ${partyLabel}`}
-                />
-              </FormField>
-              <FormField label="الجوال">
-                <input
-                  value={newParty.phone}
-                  onChange={(e) => setNewParty((p) => ({ ...p, phone: e.target.value }))}
-                  className="border border-[#eceae2] rounded-lg px-3 py-2"
-                />
-              </FormField>
-              <FormField label="البريد الإلكتروني">
-                <input
-                  type="email"
-                  value={newParty.email}
-                  onChange={(e) => setNewParty((p) => ({ ...p, email: e.target.value }))}
-                  className="border border-[#eceae2] rounded-lg px-3 py-2"
-                />
-              </FormField>
-              <FormField label="الرقم الضريبي">
-                <input
-                  value={newParty.taxNumber}
-                  onChange={(e) => setNewParty((p) => ({ ...p, taxNumber: e.target.value }))}
-                  className="border border-[#eceae2] rounded-lg px-3 py-2"
-                />
-              </FormField>
+
+            <div className="flex gap-1 px-6 pt-3 border-b border-[#eceae2] text-sm">
+              {([
+                ["basic", "البيانات الأساسية"],
+                ["address", "العنوان"],
+                ["financial", "البيانات المالية"],
+                ["contact", "شخص التواصل"],
+              ] as const).map(([k, label]) => (
+                <button
+                  key={k}
+                  type="button"
+                  onClick={() => setPartyTab(k)}
+                  className={`px-4 py-2 rounded-t-lg -mb-px border-b-2 ${
+                    partyTab === k
+                      ? "border-[#0f2a1d] font-semibold text-[#0f2a1d]"
+                      : "border-transparent text-[#0f2a1d]/60 hover:text-[#0f2a1d]"
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
             </div>
-            <div className="flex justify-end gap-2 mt-5 pt-3 border-t border-[#eceae2]">
-              <OutlineBtn type="button" onClick={() => setPartyModalOpen(false)}>إلغاء</OutlineBtn>
-              <PrimaryBtn onClick={submitNewParty}>حفظ</PrimaryBtn>
+
+            <div className="p-6 text-sm max-h-[60vh] overflow-auto">
+              {partyTab === "basic" && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <FormField label="نوع الطرف">
+                    <select
+                      value={newParty.type}
+                      onChange={(e) => setNewParty((p) => ({ ...p, type: e.target.value as any }))}
+                      className="border border-[#eceae2] rounded-lg px-3 py-2 bg-white"
+                    >
+                      <option value="individual">فرد</option>
+                      <option value="company">شركة / منشأة</option>
+                    </select>
+                  </FormField>
+                  <FormField label="الاسم *">
+                    <input
+                      autoFocus
+                      maxLength={100}
+                      value={newParty.name}
+                      onChange={(e) => setNewParty((p) => ({ ...p, name: e.target.value }))}
+                      className="border border-[#eceae2] rounded-lg px-3 py-2"
+                      placeholder={`اسم ${partyLabel}`}
+                    />
+                  </FormField>
+                  <FormField label="الاسم المعروض (اختياري)">
+                    <input
+                      maxLength={100}
+                      value={newParty.displayName}
+                      onChange={(e) => setNewParty((p) => ({ ...p, displayName: e.target.value }))}
+                      className="border border-[#eceae2] rounded-lg px-3 py-2"
+                    />
+                  </FormField>
+                  <FormField label="التصنيف">
+                    <input
+                      maxLength={50}
+                      value={newParty.category}
+                      onChange={(e) => setNewParty((p) => ({ ...p, category: e.target.value }))}
+                      className="border border-[#eceae2] rounded-lg px-3 py-2"
+                      placeholder="VIP / تجزئة / جملة..."
+                    />
+                  </FormField>
+                  <FormField label="البريد الإلكتروني">
+                    <input
+                      type="email"
+                      maxLength={255}
+                      value={newParty.email}
+                      onChange={(e) => setNewParty((p) => ({ ...p, email: e.target.value }))}
+                      className="border border-[#eceae2] rounded-lg px-3 py-2"
+                    />
+                  </FormField>
+                  <FormField label="الموقع الإلكتروني">
+                    <input
+                      maxLength={255}
+                      value={newParty.website}
+                      onChange={(e) => setNewParty((p) => ({ ...p, website: e.target.value }))}
+                      className="border border-[#eceae2] rounded-lg px-3 py-2"
+                      placeholder="https://"
+                    />
+                  </FormField>
+                  <FormField label="الهاتف">
+                    <input
+                      maxLength={20}
+                      value={newParty.phone}
+                      onChange={(e) => setNewParty((p) => ({ ...p, phone: e.target.value }))}
+                      className="border border-[#eceae2] rounded-lg px-3 py-2"
+                    />
+                  </FormField>
+                  <FormField label="الجوال">
+                    <input
+                      maxLength={20}
+                      value={newParty.mobile}
+                      onChange={(e) => setNewParty((p) => ({ ...p, mobile: e.target.value }))}
+                      className="border border-[#eceae2] rounded-lg px-3 py-2"
+                    />
+                  </FormField>
+                  <FormField label="الرقم الضريبي">
+                    <input
+                      maxLength={15}
+                      value={newParty.taxNumber}
+                      onChange={(e) => setNewParty((p) => ({ ...p, taxNumber: e.target.value.replace(/[^0-9]/g, "") }))}
+                      className="border border-[#eceae2] rounded-lg px-3 py-2"
+                      placeholder="15 رقم"
+                    />
+                  </FormField>
+                  <FormField label="السجل التجاري">
+                    <input
+                      maxLength={20}
+                      value={newParty.commercialReg}
+                      onChange={(e) => setNewParty((p) => ({ ...p, commercialReg: e.target.value }))}
+                      className="border border-[#eceae2] rounded-lg px-3 py-2"
+                    />
+                  </FormField>
+                  <FormField label="مجموعة الضريبة">
+                    <select
+                      value={newParty.taxGroup}
+                      onChange={(e) => setNewParty((p) => ({ ...p, taxGroup: e.target.value }))}
+                      className="border border-[#eceae2] rounded-lg px-3 py-2 bg-white"
+                    >
+                      <option value="standard">الأساسية (15%)</option>
+                      <option value="zero">صفرية (0%)</option>
+                      <option value="exempt">معفاة</option>
+                      <option value="out">خارج نطاق الضريبة</option>
+                    </select>
+                  </FormField>
+                  <FormField label="العملة">
+                    <select
+                      value={newParty.currency}
+                      onChange={(e) => setNewParty((p) => ({ ...p, currency: e.target.value }))}
+                      className="border border-[#eceae2] rounded-lg px-3 py-2 bg-white"
+                    >
+                      <option value="SAR">ريال سعودي (SAR)</option>
+                      <option value="USD">دولار أمريكي (USD)</option>
+                      <option value="EUR">يورو (EUR)</option>
+                      <option value="AED">درهم إماراتي (AED)</option>
+                    </select>
+                  </FormField>
+                </div>
+              )}
+
+              {partyTab === "address" && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <FormField label="الدولة">
+                    <select
+                      value={newParty.country}
+                      onChange={(e) => setNewParty((p) => ({ ...p, country: e.target.value }))}
+                      className="border border-[#eceae2] rounded-lg px-3 py-2 bg-white"
+                    >
+                      <option value="SA">المملكة العربية السعودية</option>
+                      <option value="AE">الإمارات</option>
+                      <option value="KW">الكويت</option>
+                      <option value="BH">البحرين</option>
+                      <option value="QA">قطر</option>
+                      <option value="OM">عُمان</option>
+                      <option value="EG">مصر</option>
+                    </select>
+                  </FormField>
+                  <FormField label="المدينة">
+                    <input maxLength={50} value={newParty.city} onChange={(e) => setNewParty((p) => ({ ...p, city: e.target.value }))} className="border border-[#eceae2] rounded-lg px-3 py-2" />
+                  </FormField>
+                  <FormField label="المنطقة">
+                    <input maxLength={50} value={newParty.region} onChange={(e) => setNewParty((p) => ({ ...p, region: e.target.value }))} className="border border-[#eceae2] rounded-lg px-3 py-2" />
+                  </FormField>
+                  <FormField label="الحي">
+                    <input maxLength={50} value={newParty.district} onChange={(e) => setNewParty((p) => ({ ...p, district: e.target.value }))} className="border border-[#eceae2] rounded-lg px-3 py-2" />
+                  </FormField>
+                  <FormField label="الشارع">
+                    <input maxLength={100} value={newParty.street} onChange={(e) => setNewParty((p) => ({ ...p, street: e.target.value }))} className="border border-[#eceae2] rounded-lg px-3 py-2" />
+                  </FormField>
+                  <FormField label="رقم المبنى">
+                    <input maxLength={10} value={newParty.buildingNo} onChange={(e) => setNewParty((p) => ({ ...p, buildingNo: e.target.value }))} className="border border-[#eceae2] rounded-lg px-3 py-2" />
+                  </FormField>
+                  <FormField label="الرمز البريدي">
+                    <input maxLength={10} value={newParty.postalCode} onChange={(e) => setNewParty((p) => ({ ...p, postalCode: e.target.value.replace(/[^0-9]/g, "") }))} className="border border-[#eceae2] rounded-lg px-3 py-2" />
+                  </FormField>
+                  <FormField label="الرقم الإضافي">
+                    <input maxLength={10} value={newParty.additionalNo} onChange={(e) => setNewParty((p) => ({ ...p, additionalNo: e.target.value.replace(/[^0-9]/g, "") }))} className="border border-[#eceae2] rounded-lg px-3 py-2" />
+                  </FormField>
+                  <div className="md:col-span-2">
+                    <FormField label="عنوان الشحن (إن اختلف)">
+                      <textarea
+                        maxLength={300}
+                        value={newParty.shippingAddress}
+                        onChange={(e) => setNewParty((p) => ({ ...p, shippingAddress: e.target.value }))}
+                        className="border border-[#eceae2] rounded-lg px-3 py-2 min-h-[70px]"
+                      />
+                    </FormField>
+                  </div>
+                </div>
+              )}
+
+              {partyTab === "financial" && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <FormField label="الرصيد الافتتاحي">
+                    <input
+                      type="number"
+                      step="0.01"
+                      value={newParty.openingBalance}
+                      onChange={(e) => setNewParty((p) => ({ ...p, openingBalance: Number(e.target.value) || 0 }))}
+                      className="border border-[#eceae2] rounded-lg px-3 py-2 tabular-nums"
+                    />
+                  </FormField>
+                  <FormField label="حد الائتمان">
+                    <input
+                      type="number"
+                      step="0.01"
+                      min={0}
+                      value={newParty.creditLimit}
+                      onChange={(e) => setNewParty((p) => ({ ...p, creditLimit: Number(e.target.value) || 0 }))}
+                      className="border border-[#eceae2] rounded-lg px-3 py-2 tabular-nums"
+                    />
+                  </FormField>
+                  <FormField label="شروط الدفع (أيام)">
+                    <select
+                      value={newParty.paymentTerms}
+                      onChange={(e) => setNewParty((p) => ({ ...p, paymentTerms: e.target.value }))}
+                      className="border border-[#eceae2] rounded-lg px-3 py-2 bg-white"
+                    >
+                      <option value="0">نقدي</option>
+                      <option value="7">7 أيام</option>
+                      <option value="15">15 يوم</option>
+                      <option value="30">30 يوم</option>
+                      <option value="45">45 يوم</option>
+                      <option value="60">60 يوم</option>
+                      <option value="90">90 يوم</option>
+                    </select>
+                  </FormField>
+                  <div className="md:col-span-2">
+                    <FormField label="ملاحظات">
+                      <textarea
+                        maxLength={500}
+                        value={newParty.notes}
+                        onChange={(e) => setNewParty((p) => ({ ...p, notes: e.target.value }))}
+                        className="border border-[#eceae2] rounded-lg px-3 py-2 min-h-[80px]"
+                      />
+                    </FormField>
+                  </div>
+                </div>
+              )}
+
+              {partyTab === "contact" && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <FormField label="اسم شخص التواصل">
+                    <input maxLength={100} value={newParty.contactName} onChange={(e) => setNewParty((p) => ({ ...p, contactName: e.target.value }))} className="border border-[#eceae2] rounded-lg px-3 py-2" />
+                  </FormField>
+                  <FormField label="جوال شخص التواصل">
+                    <input maxLength={20} value={newParty.contactPhone} onChange={(e) => setNewParty((p) => ({ ...p, contactPhone: e.target.value }))} className="border border-[#eceae2] rounded-lg px-3 py-2" />
+                  </FormField>
+                  <FormField label="بريد شخص التواصل">
+                    <input type="email" maxLength={255} value={newParty.contactEmail} onChange={(e) => setNewParty((p) => ({ ...p, contactEmail: e.target.value }))} className="border border-[#eceae2] rounded-lg px-3 py-2" />
+                  </FormField>
+                </div>
+              )}
+            </div>
+
+            <div className="flex items-center justify-between gap-2 px-6 py-3 border-t border-[#eceae2] bg-[#fafaf7]">
+              <span className="text-[11px] text-[#0f2a1d]/50">
+                {!newParty.name.trim() && "أدخل الاسم للحفظ"}
+              </span>
+              <div className="flex gap-2">
+                <OutlineBtn type="button" onClick={() => setPartyModalOpen(false)}>إلغاء</OutlineBtn>
+                <PrimaryBtn onClick={submitNewParty} disabled={!newParty.name.trim()}>حفظ</PrimaryBtn>
+              </div>
             </div>
           </div>
         </div>
