@@ -1,8 +1,9 @@
 import { useMemo, useState, type ReactNode } from "react";
 import { Plus, Pencil, Trash2, Search, X } from "lucide-react";
-import { Link } from "@tanstack/react-router";
+import { useNavigate } from "@tanstack/react-router";
 import { useCollection } from "@/lib/haseem/store";
 import { Shell, PageHeader, PrimaryBtn, OutlineBtn, EmptyState } from "./Shell";
+
 
 export type FieldDef = {
   name: string;
