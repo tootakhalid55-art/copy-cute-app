@@ -106,6 +106,12 @@ export function DocumentForm({
           <OutlineBtn type="button" onClick={() => navigate({ to: backTo })}>
             رجوع
           </OutlineBtn>
+          <OutlineBtn type="button" onClick={() => setPreviewOpen(true)}>
+            <Eye className="w-4 h-4" /> معاينة
+          </OutlineBtn>
+          <OutlineBtn type="button" onClick={handlePrint}>
+            <Printer className="w-4 h-4" /> طباعة
+          </OutlineBtn>
           <OutlineBtn type="button" onClick={() => save("مسودة")}>
             حفظ كمسودة
           </OutlineBtn>
