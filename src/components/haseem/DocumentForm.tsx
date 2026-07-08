@@ -24,7 +24,7 @@ export function DocumentForm({
   docPrefix: string;
 }) {
   const navigate = useNavigate();
-  const { items: parties } = useCollection<any>(partyKey);
+  const { items: parties, add: addParty } = useCollection<any>(partyKey);
   const { add } = useCollection<any>(storageKey);
 
   const [ref] = useState(
@@ -39,7 +39,17 @@ export function DocumentForm({
     { description: "", qty: 1, price: 0, tax: 15 },
   ]);
   const [previewOpen, setPreviewOpen] = useState(false);
+  const [partyModalOpen, setPartyModalOpen] = useState(false);
+  const [newParty, setNewParty] = useState({ name: "", phone: "", email: "", taxNumber: "" });
   const printRef = useRef<HTMLDivElement>(null);
+
+  const submitNewParty = () => {
+    if (!newParty.name.trim()) return;
+    const rec = addParty({ ...newParty, name: newParty.name.trim() });
+    setPartyId(rec.id);
+    setPartyModalOpen(false);
+    setNewParty({ name: "", phone: "", email: "", taxNumber: "" });
+  };
 
   const partyName = parties.find((p) => p.id === partyId)?.name ?? "—";
 
@@ -145,23 +155,35 @@ export function DocumentForm({
           />
         </FormField>
         <FormField label={partyLabel}>
-          <select
-            value={partyId}
-            onChange={(e) => setPartyId(e.target.value)}
-            className="border border-[#eceae2] rounded-lg px-3 py-2 bg-white"
-          >
-            <option value="">— اختر —</option>
-            {parties.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.name}
-              </option>
-            ))}
-          </select>
-          {parties.length === 0 && (
-            <span className="text-[11px] text-[#c65b3c]">
-              لا يوجد أطراف بعد — أضف أولاً من قائمة {partyLabel}.
-            </span>
-          )}
+          <div className="flex gap-2">
+            <select
+              value={partyId}
+              onChange={(e) => {
+                if (e.target.value === "__new__") {
+                  setPartyModalOpen(true);
+                } else {
+                  setPartyId(e.target.value);
+                }
+              }}
+              className="border border-[#eceae2] rounded-lg px-3 py-2 bg-white flex-1"
+            >
+              <option value="">— اختر —</option>
+              {parties.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.name}
+                </option>
+              ))}
+              <option value="__new__">➕ إضافة {partyLabel} جديد...</option>
+            </select>
+            <button
+              type="button"
+              onClick={() => setPartyModalOpen(true)}
+              className="border border-[#eceae2] rounded-lg px-2 hover:bg-[#f7f6f0] text-[#0f2a1d]"
+              title={`إضافة ${partyLabel}`}
+            >
+              <Plus className="w-4 h-4" />
+            </button>
+          </div>
         </FormField>
       </div>
 
@@ -375,6 +397,56 @@ export function DocumentForm({
                 </div>
               </div>
               {notes && <div className="text-xs"><span className="text-[#0f2a1d]/60">ملاحظات:</span> {notes}</div>}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {partyModalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4" onClick={() => setPartyModalOpen(false)}>
+          <div className="bg-white rounded-xl w-full max-w-md p-6" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4 pb-3 border-b border-[#eceae2]">
+              <h2 className="text-lg font-bold">إضافة {partyLabel}</h2>
+              <button onClick={() => setPartyModalOpen(false)} className="p-1 rounded hover:bg-[#f7f6f0]">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="space-y-3 text-sm">
+              <FormField label="الاسم *">
+                <input
+                  autoFocus
+                  value={newParty.name}
+                  onChange={(e) => setNewParty((p) => ({ ...p, name: e.target.value }))}
+                  className="border border-[#eceae2] rounded-lg px-3 py-2"
+                  placeholder={`اسم ${partyLabel}`}
+                />
+              </FormField>
+              <FormField label="الجوال">
+                <input
+                  value={newParty.phone}
+                  onChange={(e) => setNewParty((p) => ({ ...p, phone: e.target.value }))}
+                  className="border border-[#eceae2] rounded-lg px-3 py-2"
+                />
+              </FormField>
+              <FormField label="البريد الإلكتروني">
+                <input
+                  type="email"
+                  value={newParty.email}
+                  onChange={(e) => setNewParty((p) => ({ ...p, email: e.target.value }))}
+                  className="border border-[#eceae2] rounded-lg px-3 py-2"
+                />
+              </FormField>
+              <FormField label="الرقم الضريبي">
+                <input
+                  value={newParty.taxNumber}
+                  onChange={(e) => setNewParty((p) => ({ ...p, taxNumber: e.target.value }))}
+                  className="border border-[#eceae2] rounded-lg px-3 py-2"
+                />
+              </FormField>
+            </div>
+            <div className="flex justify-end gap-2 mt-5 pt-3 border-t border-[#eceae2]">
+              <OutlineBtn type="button" onClick={() => setPartyModalOpen(false)}>إلغاء</OutlineBtn>
+              <PrimaryBtn onClick={submitNewParty}>حفظ</PrimaryBtn>
             </div>
           </div>
         </div>
