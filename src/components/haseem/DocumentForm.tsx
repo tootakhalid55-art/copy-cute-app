@@ -1,8 +1,25 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { Plus, Trash2, Printer, Eye, X } from "lucide-react";
+import QRCode from "qrcode";
 import { Shell, PrimaryBtn, OutlineBtn } from "./Shell";
-import { useCollection } from "@/lib/haseem/store";
+import { useCollection, useKV } from "@/lib/haseem/store";
+
+// ZATCA phase-1 TLV encoder (base64)
+function zatcaTLV(seller: string, vat: string, iso: string, total: string, taxAmt: string) {
+  const enc = new TextEncoder();
+  const fields: [number, string][] = [
+    [1, seller], [2, vat], [3, iso], [4, total], [5, taxAmt],
+  ];
+  const chunks: number[] = [];
+  for (const [tag, val] of fields) {
+    const bytes = enc.encode(val);
+    chunks.push(tag, bytes.length, ...bytes);
+  }
+  let bin = "";
+  for (const b of chunks) bin += String.fromCharCode(b);
+  return typeof btoa !== "undefined" ? btoa(bin) : Buffer.from(bin, "binary").toString("base64");
+}
 
 type Line = { description: string; qty: number; price: number; tax: number };
 
@@ -26,6 +43,10 @@ export function DocumentForm({
   const navigate = useNavigate();
   const { items: parties, add: addParty } = useCollection<any>(partyKey);
   const { add } = useCollection<any>(storageKey);
+  const [org] = useKV<{ name: string; taxNumber: string }>("org", {
+    name: "شركة كنار الحديثة للمقاولات",
+    taxNumber: "312756062700003",
+  });
 
   const [ref] = useState(
     `${docPrefix}-${Math.floor(100000 + Math.random() * 900000)}`
@@ -41,6 +62,7 @@ export function DocumentForm({
   const [previewOpen, setPreviewOpen] = useState(false);
   const [partyModalOpen, setPartyModalOpen] = useState(false);
   const [newParty, setNewParty] = useState({ name: "", phone: "", email: "", taxNumber: "" });
+  const [qrDataUrl, setQrDataUrl] = useState<string>("");
   const printRef = useRef<HTMLDivElement>(null);
 
   const submitNewParty = () => {
@@ -51,30 +73,8 @@ export function DocumentForm({
     setNewParty({ name: "", phone: "", email: "", taxNumber: "" });
   };
 
-  const partyName = parties.find((p) => p.id === partyId)?.name ?? "—";
-
-  const handlePrint = () => {
-    const html = printRef.current?.innerHTML;
-    if (!html) { window.print(); return; }
-    const w = window.open("", "_blank", "width=900,height=700");
-    if (!w) return;
-    w.document.write(`<!doctype html><html dir="rtl" lang="ar"><head><meta charset="utf-8"><title>${title} ${ref}</title>
-      <style>
-        body{font-family:Cairo,system-ui,sans-serif;padding:24px;color:#0f2a1d}
-        table{width:100%;border-collapse:collapse;margin-top:16px}
-        th,td{border:1px solid #eceae2;padding:8px;text-align:right;font-size:13px}
-        th{background:#f7f6f0}
-        h1{font-size:20px;margin:0 0 8px}
-        .meta{display:flex;flex-wrap:wrap;gap:16px;font-size:13px;margin-bottom:16px}
-        .meta div{min-width:150px}
-        .totals{margin-top:16px;width:280px;margin-inline-start:auto;font-size:13px}
-        .totals div{display:flex;justify-content:space-between;padding:4px 0}
-        .totals .grand{border-top:1px solid #0f2a1d;font-weight:bold;font-size:15px;padding-top:8px}
-      </style></head><body>${html}</body></html>`);
-    w.document.close();
-    w.focus();
-    setTimeout(() => { w.print(); }, 300);
-  };
+  const party = parties.find((p) => p.id === partyId);
+  const partyName = party?.name ?? "—";
 
   const subtotal = lines.reduce((s, l) => s + l.qty * l.price, 0);
   const tax = lines.reduce(
@@ -82,6 +82,56 @@ export function DocumentForm({
     0
   );
   const total = subtotal + tax;
+
+  useEffect(() => {
+    const iso = new Date(`${date}T00:00:00`).toISOString();
+    const payload = zatcaTLV(org.name, org.taxNumber, iso, total.toFixed(2), tax.toFixed(2));
+    QRCode.toDataURL(payload, { margin: 1, width: 180 })
+      .then(setQrDataUrl)
+      .catch(() => setQrDataUrl(""));
+  }, [org.name, org.taxNumber, date, total, tax]);
+
+  const handlePrint = () => {
+    const html = printRef.current?.innerHTML;
+    if (!html) { window.print(); return; }
+    const w = window.open("", "_blank", "width=900,height=1000");
+    if (!w) return;
+    w.document.write(`<!doctype html><html dir="rtl" lang="ar"><head><meta charset="utf-8"><title>${title} ${ref}</title>
+      <style>
+        *{box-sizing:border-box}
+        body{font-family:Cairo,"Segoe UI",system-ui,sans-serif;padding:32px;color:#0f2a1d;margin:0}
+        .doc{max-width:800px;margin:0 auto}
+        .head{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:3px solid #0f2a1d;padding-bottom:16px;margin-bottom:20px}
+        .brand h1{font-size:22px;margin:0 0 4px;color:#0f2a1d}
+        .brand p{margin:2px 0;font-size:12px;color:#555}
+        .doc-title{text-align:left}
+        .doc-title h2{font-size:20px;margin:0 0 6px;color:#0f2a1d}
+        .doc-title .ref{background:#0f2a1d;color:#fff;padding:4px 10px;border-radius:6px;font-size:13px;display:inline-block}
+        .parties{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px}
+        .card{border:1px solid #eceae2;border-radius:8px;padding:12px;background:#fafaf7}
+        .card .label{font-size:11px;color:#666;margin-bottom:6px;font-weight:600}
+        .card .val{font-size:13px;line-height:1.7}
+        .card .val strong{display:block;font-size:14px;margin-bottom:2px}
+        table{width:100%;border-collapse:collapse;margin-bottom:16px}
+        th,td{border:1px solid #d4d0c4;padding:8px 10px;text-align:right;font-size:12px}
+        th{background:#0f2a1d;color:#fff;font-weight:600}
+        tbody tr:nth-child(even){background:#fafaf7}
+        .bottom{display:grid;grid-template-columns:180px 1fr 260px;gap:20px;align-items:start;margin-top:20px}
+        .qr{text-align:center}
+        .qr img{border:1px solid #eceae2;padding:6px;background:#fff;border-radius:6px}
+        .qr .cap{font-size:10px;color:#666;margin-top:4px}
+        .notes{font-size:12px;color:#555;padding:10px;background:#fafaf7;border-radius:6px;border-right:3px solid #0f2a1d}
+        .totals{font-size:13px}
+        .totals div{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #eceae2}
+        .totals .grand{font-weight:bold;font-size:16px;background:#0f2a1d;color:#fff;padding:10px 12px;border-radius:6px;margin-top:6px;border:none}
+        .foot{text-align:center;font-size:11px;color:#888;margin-top:24px;padding-top:12px;border-top:1px solid #eceae2}
+        @media print { body{padding:12px} }
+      </style></head><body><div class="doc">${html}</div></body></html>`);
+    w.document.close();
+    w.focus();
+    setTimeout(() => { w.print(); }, 400);
+  };
+
 
   const updateLine = (i: number, patch: Partial<Line>) =>
     setLines((ls) => ls.map((l, idx) => (idx === i ? { ...l, ...patch } : l)));
@@ -304,12 +354,34 @@ export function DocumentForm({
       {/* Hidden printable content */}
       <div className="hidden">
         <div ref={printRef}>
-          <h1>{title}</h1>
-          <div className="meta">
-            <div><strong>رقم المستند:</strong> {ref}</div>
-            <div><strong>التاريخ:</strong> {date}</div>
-            <div><strong>الاستحقاق:</strong> {dueDate}</div>
-            <div><strong>{partyLabel}:</strong> {partyName}</div>
+          <div className="head">
+            <div className="brand">
+              <h1>{org.name}</h1>
+              <p>الرقم الضريبي: {org.taxNumber}</p>
+              <p>المملكة العربية السعودية</p>
+            </div>
+            <div className="doc-title">
+              <h2>{title}</h2>
+              <span className="ref">{ref}</span>
+            </div>
+          </div>
+          <div className="parties">
+            <div className="card">
+              <div className="label">{partyLabel}</div>
+              <div className="val">
+                <strong>{partyName}</strong>
+                {party?.taxNumber && <div>الرقم الضريبي: {party.taxNumber}</div>}
+                {party?.phone && <div>الجوال: {party.phone}</div>}
+                {party?.email && <div>البريد: {party.email}</div>}
+              </div>
+            </div>
+            <div className="card">
+              <div className="label">بيانات المستند</div>
+              <div className="val">
+                <div>التاريخ: <strong style={{display:"inline"}}>{date}</strong></div>
+                <div>الاستحقاق: <strong style={{display:"inline"}}>{dueDate}</strong></div>
+              </div>
+            </div>
           </div>
           <table>
             <thead>
@@ -321,86 +393,117 @@ export function DocumentForm({
               {lines.map((l, i) => (
                 <tr key={i}>
                   <td>{i + 1}</td>
-                  <td>{l.description}</td>
+                  <td>{l.description || "—"}</td>
                   <td>{l.qty}</td>
                   <td>{l.price.toFixed(2)}</td>
-                  <td>{l.tax}</td>
+                  <td>{l.tax}%</td>
                   <td>{(l.qty * l.price * (1 + l.tax / 100)).toFixed(2)}</td>
                 </tr>
               ))}
             </tbody>
           </table>
-          <div className="totals">
-            <div><span>المجموع الفرعي</span><span>{subtotal.toFixed(2)} ﷼</span></div>
-            <div><span>الضريبة</span><span>{tax.toFixed(2)} ﷼</span></div>
-            <div className="grand"><span>الإجمالي</span><span>{total.toFixed(2)} ﷼</span></div>
+          <div className="bottom">
+            <div className="qr">
+              {qrDataUrl && <img src={qrDataUrl} alt="ZATCA QR" width={150} height={150} />}
+              <div className="cap">رمز الفاتورة (ZATCA)</div>
+            </div>
+            <div className="notes">
+              {notes ? <><strong>ملاحظات:</strong><br />{notes}</> : <span style={{color:"#999"}}>—</span>}
+            </div>
+            <div className="totals">
+              <div><span>المجموع الفرعي</span><span>{subtotal.toFixed(2)} ﷼</span></div>
+              <div><span>ضريبة القيمة المضافة</span><span>{tax.toFixed(2)} ﷼</span></div>
+              <div className="grand"><span>الإجمالي</span><span>{total.toFixed(2)} ﷼</span></div>
+            </div>
           </div>
-          {notes && <p style={{marginTop:16,fontSize:13}}><strong>ملاحظات:</strong> {notes}</p>}
+          <div className="foot">شكراً لتعاملكم معنا · {org.name}</div>
         </div>
       </div>
 
       {previewOpen && (
-        <div className="fixed inset-0 z-50 bg-black/40 flex items-start justify-center p-4 overflow-auto" onClick={() => setPreviewOpen(false)}>
-          <div className="bg-white rounded-xl max-w-3xl w-full p-6 my-8" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center justify-between mb-4 pb-3 border-b border-[#eceae2]">
-              <h2 className="text-lg font-bold">معاينة المستند</h2>
+        <div className="fixed inset-0 z-50 bg-black/50 flex items-start justify-center p-4 overflow-auto" onClick={() => setPreviewOpen(false)}>
+          <div className="bg-white rounded-xl max-w-3xl w-full my-8 overflow-hidden" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between px-6 py-3 border-b border-[#eceae2] bg-[#fafaf7]">
+              <h2 className="text-base font-bold">معاينة الفاتورة</h2>
               <div className="flex gap-2">
                 <OutlineBtn type="button" onClick={handlePrint}>
                   <Printer className="w-4 h-4" /> طباعة
                 </OutlineBtn>
-                <button onClick={() => setPreviewOpen(false)} className="p-2 rounded hover:bg-[#f7f6f0]">
+                <button onClick={() => setPreviewOpen(false)} className="p-2 rounded hover:bg-[#eceae2]">
                   <X className="w-4 h-4" />
                 </button>
               </div>
             </div>
-            <div className="text-sm space-y-4">
-              <div>
-                <h3 className="font-bold text-lg">{title}</h3>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-2 text-xs">
-                  <div><div className="text-[#0f2a1d]/60">رقم المستند</div><div className="font-semibold">{ref}</div></div>
-                  <div><div className="text-[#0f2a1d]/60">التاريخ</div><div className="font-semibold">{date}</div></div>
-                  <div><div className="text-[#0f2a1d]/60">الاستحقاق</div><div className="font-semibold">{dueDate}</div></div>
-                  <div><div className="text-[#0f2a1d]/60">{partyLabel}</div><div className="font-semibold">{partyName}</div></div>
+            <div className="p-8 text-sm">
+              <div className="flex justify-between items-start border-b-[3px] border-[#0f2a1d] pb-4 mb-5">
+                <div>
+                  <h1 className="text-xl font-bold m-0">{org.name}</h1>
+                  <p className="text-xs text-[#0f2a1d]/70 mt-1">الرقم الضريبي: {org.taxNumber}</p>
+                  <p className="text-xs text-[#0f2a1d]/70">المملكة العربية السعودية</p>
+                </div>
+                <div className="text-left">
+                  <h2 className="text-lg font-bold m-0">{title}</h2>
+                  <span className="inline-block mt-1 bg-[#0f2a1d] text-white px-3 py-1 rounded text-xs">{ref}</span>
                 </div>
               </div>
-              <table className="w-full border-collapse text-xs">
-                <thead className="bg-[#f7f6f0]">
-                  <tr>
-                    <th className="border border-[#eceae2] p-2 text-right">#</th>
-                    <th className="border border-[#eceae2] p-2 text-right">الوصف</th>
-                    <th className="border border-[#eceae2] p-2 text-right">الكمية</th>
-                    <th className="border border-[#eceae2] p-2 text-right">السعر</th>
-                    <th className="border border-[#eceae2] p-2 text-right">الضريبة %</th>
-                    <th className="border border-[#eceae2] p-2 text-right">المبلغ</th>
+              <div className="grid grid-cols-2 gap-4 mb-5">
+                <div className="bg-[#fafaf7] border border-[#eceae2] rounded-lg p-3">
+                  <div className="text-[11px] text-[#0f2a1d]/60 font-semibold mb-1">{partyLabel}</div>
+                  <div className="font-semibold">{partyName}</div>
+                  {party?.taxNumber && <div className="text-xs text-[#0f2a1d]/70">الرقم الضريبي: {party.taxNumber}</div>}
+                  {party?.phone && <div className="text-xs text-[#0f2a1d]/70">الجوال: {party.phone}</div>}
+                  {party?.email && <div className="text-xs text-[#0f2a1d]/70">البريد: {party.email}</div>}
+                </div>
+                <div className="bg-[#fafaf7] border border-[#eceae2] rounded-lg p-3">
+                  <div className="text-[11px] text-[#0f2a1d]/60 font-semibold mb-1">بيانات المستند</div>
+                  <div className="text-xs">التاريخ: <strong>{date}</strong></div>
+                  <div className="text-xs">الاستحقاق: <strong>{dueDate}</strong></div>
+                </div>
+              </div>
+              <table className="w-full border-collapse text-xs mb-4">
+                <thead>
+                  <tr className="bg-[#0f2a1d] text-white">
+                    <th className="border border-[#0f2a1d] p-2 text-right">#</th>
+                    <th className="border border-[#0f2a1d] p-2 text-right">الوصف</th>
+                    <th className="border border-[#0f2a1d] p-2 text-right">الكمية</th>
+                    <th className="border border-[#0f2a1d] p-2 text-right">السعر</th>
+                    <th className="border border-[#0f2a1d] p-2 text-right">الضريبة %</th>
+                    <th className="border border-[#0f2a1d] p-2 text-right">المبلغ</th>
                   </tr>
                 </thead>
                 <tbody>
                   {lines.map((l, i) => (
-                    <tr key={i}>
-                      <td className="border border-[#eceae2] p-2">{i + 1}</td>
-                      <td className="border border-[#eceae2] p-2">{l.description || "—"}</td>
-                      <td className="border border-[#eceae2] p-2">{l.qty}</td>
-                      <td className="border border-[#eceae2] p-2 tabular-nums">{l.price.toFixed(2)}</td>
-                      <td className="border border-[#eceae2] p-2">{l.tax}%</td>
-                      <td className="border border-[#eceae2] p-2 tabular-nums">{(l.qty * l.price * (1 + l.tax / 100)).toFixed(2)}</td>
+                    <tr key={i} className={i % 2 ? "bg-[#fafaf7]" : ""}>
+                      <td className="border border-[#d4d0c4] p-2">{i + 1}</td>
+                      <td className="border border-[#d4d0c4] p-2">{l.description || "—"}</td>
+                      <td className="border border-[#d4d0c4] p-2">{l.qty}</td>
+                      <td className="border border-[#d4d0c4] p-2 tabular-nums">{l.price.toFixed(2)}</td>
+                      <td className="border border-[#d4d0c4] p-2">{l.tax}%</td>
+                      <td className="border border-[#d4d0c4] p-2 tabular-nums">{(l.qty * l.price * (1 + l.tax / 100)).toFixed(2)}</td>
                     </tr>
                   ))}
                 </tbody>
               </table>
-              <div className="flex justify-end">
-                <div className="w-64 space-y-1 text-sm">
-                  <Row label="المجموع الفرعي" value={`${subtotal.toFixed(2)} ﷼`} />
-                  <Row label="الضريبة" value={`${tax.toFixed(2)} ﷼`} />
-                  <div className="pt-2 border-t border-[#eceae2]">
-                    <Row label="الإجمالي" value={`${total.toFixed(2)} ﷼`} bold />
-                  </div>
+              <div className="grid grid-cols-[160px_1fr_240px] gap-4 items-start">
+                <div className="text-center">
+                  {qrDataUrl && <img src={qrDataUrl} alt="ZATCA QR" className="border border-[#eceae2] p-1.5 rounded bg-white mx-auto" width={140} height={140} />}
+                  <div className="text-[10px] text-[#0f2a1d]/60 mt-1">رمز الفاتورة (ZATCA)</div>
+                </div>
+                <div className="text-xs bg-[#fafaf7] rounded p-3 border-r-[3px] border-[#0f2a1d]">
+                  {notes ? <><strong>ملاحظات:</strong><br />{notes}</> : <span className="text-[#0f2a1d]/40">لا توجد ملاحظات</span>}
+                </div>
+                <div className="text-sm space-y-1">
+                  <div className="flex justify-between py-1.5 border-b border-[#eceae2]"><span>المجموع الفرعي</span><span className="tabular-nums">{subtotal.toFixed(2)} ﷼</span></div>
+                  <div className="flex justify-between py-1.5 border-b border-[#eceae2]"><span>ضريبة القيمة المضافة</span><span className="tabular-nums">{tax.toFixed(2)} ﷼</span></div>
+                  <div className="flex justify-between bg-[#0f2a1d] text-white px-3 py-2.5 rounded font-bold mt-1"><span>الإجمالي</span><span className="tabular-nums">{total.toFixed(2)} ﷼</span></div>
                 </div>
               </div>
-              {notes && <div className="text-xs"><span className="text-[#0f2a1d]/60">ملاحظات:</span> {notes}</div>}
+              <div className="text-center text-[11px] text-[#0f2a1d]/50 mt-6 pt-3 border-t border-[#eceae2]">شكراً لتعاملكم معنا · {org.name}</div>
             </div>
           </div>
         </div>
       )}
+
 
       {partyModalOpen && (
         <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4" onClick={() => setPartyModalOpen(false)}>
