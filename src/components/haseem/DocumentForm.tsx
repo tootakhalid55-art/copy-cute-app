@@ -162,29 +162,29 @@ export function DocumentForm({
         *{box-sizing:border-box}
         body{font-family:Cairo,"Segoe UI",system-ui,sans-serif;padding:32px;color:#0f2a1d;margin:0}
         .doc{max-width:800px;margin:0 auto}
-        .head{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:3px solid #0f2a1d;padding-bottom:16px;margin-bottom:20px}
-        .brand h1{font-size:22px;margin:0 0 4px;color:#0f2a1d}
+        .head{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:3px solid ${tpl.accent};padding-bottom:16px;margin-bottom:20px}
+        .brand h1{font-size:22px;margin:0 0 4px;color:${tpl.accent}}
         .brand p{margin:2px 0;font-size:12px;color:#555}
         .doc-title{text-align:left}
-        .doc-title h2{font-size:20px;margin:0 0 6px;color:#0f2a1d}
-        .doc-title .ref{background:#0f2a1d;color:#fff;padding:4px 10px;border-radius:6px;font-size:13px;display:inline-block}
+        .doc-title h2{font-size:20px;margin:0 0 6px;color:${tpl.accent}}
+        .doc-title .ref{background:${tpl.accent};color:${tpl.onAccent};padding:4px 10px;border-radius:6px;font-size:13px;display:inline-block}
         .parties{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px}
-        .card{border:1px solid #eceae2;border-radius:8px;padding:12px;background:#fafaf7}
+        .card{border:1px solid #eceae2;border-radius:8px;padding:12px;background:${tpl.soft}}
         .card .label{font-size:11px;color:#666;margin-bottom:6px;font-weight:600}
         .card .val{font-size:13px;line-height:1.7}
         .card .val strong{display:block;font-size:14px;margin-bottom:2px}
         table{width:100%;border-collapse:collapse;margin-bottom:16px}
         th,td{border:1px solid #d4d0c4;padding:8px 10px;text-align:right;font-size:12px}
-        th{background:#0f2a1d;color:#fff;font-weight:600}
-        tbody tr:nth-child(even){background:#fafaf7}
+        th{background:${tpl.accent};color:${tpl.onAccent};font-weight:600}
+        tbody tr:nth-child(even){background:${tpl.soft}}
         .bottom{display:grid;grid-template-columns:180px 1fr 260px;gap:20px;align-items:start;margin-top:20px}
         .qr{text-align:center}
         .qr img{border:1px solid #eceae2;padding:6px;background:#fff;border-radius:6px}
         .qr .cap{font-size:10px;color:#666;margin-top:4px}
-        .notes{font-size:12px;color:#555;padding:10px;background:#fafaf7;border-radius:6px;border-right:3px solid #0f2a1d}
+        .notes{font-size:12px;color:#555;padding:10px;background:${tpl.soft};border-radius:6px;border-right:3px solid ${tpl.accent}}
         .totals{font-size:13px}
         .totals div{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #eceae2}
-        .totals .grand{font-weight:bold;font-size:16px;background:#0f2a1d;color:#fff;padding:10px 12px;border-radius:6px;margin-top:6px;border:none}
+        .totals .grand{font-weight:bold;font-size:16px;background:${tpl.accent};color:${tpl.onAccent};padding:10px 12px;border-radius:6px;margin-top:6px;border:none}
         .foot{text-align:center;font-size:11px;color:#888;margin-top:24px;padding-top:12px;border-top:1px solid #eceae2}
         @media print { body{padding:12px} }
       </style></head><body><div class="doc">${html}</div></body></html>`);
