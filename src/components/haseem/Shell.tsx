@@ -88,6 +88,7 @@ export function Shell({ children }: { children: ReactNode }) {
     taxNumber: "312756062700003",
   });
   const [menuOpen, setMenuOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useKV<boolean>("sidebar-collapsed", false);
 
   useEffect(() => {
     if (ready && !user) navigate({ to: "/auth" });
