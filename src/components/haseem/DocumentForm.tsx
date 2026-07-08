@@ -38,6 +38,33 @@ export function DocumentForm({
   const [lines, setLines] = useState<Line[]>([
     { description: "", qty: 1, price: 0, tax: 15 },
   ]);
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const printRef = useRef<HTMLDivElement>(null);
+
+  const partyName = parties.find((p) => p.id === partyId)?.name ?? "—";
+
+  const handlePrint = () => {
+    const html = printRef.current?.innerHTML;
+    if (!html) { window.print(); return; }
+    const w = window.open("", "_blank", "width=900,height=700");
+    if (!w) return;
+    w.document.write(`<!doctype html><html dir="rtl" lang="ar"><head><meta charset="utf-8"><title>${title} ${ref}</title>
+      <style>
+        body{font-family:Cairo,system-ui,sans-serif;padding:24px;color:#0f2a1d}
+        table{width:100%;border-collapse:collapse;margin-top:16px}
+        th,td{border:1px solid #eceae2;padding:8px;text-align:right;font-size:13px}
+        th{background:#f7f6f0}
+        h1{font-size:20px;margin:0 0 8px}
+        .meta{display:flex;flex-wrap:wrap;gap:16px;font-size:13px;margin-bottom:16px}
+        .meta div{min-width:150px}
+        .totals{margin-top:16px;width:280px;margin-inline-start:auto;font-size:13px}
+        .totals div{display:flex;justify-content:space-between;padding:4px 0}
+        .totals .grand{border-top:1px solid #0f2a1d;font-weight:bold;font-size:15px;padding-top:8px}
+      </style></head><body>${html}</body></html>`);
+    w.document.close();
+    w.focus();
+    setTimeout(() => { w.print(); }, 300);
+  };
 
   const subtotal = lines.reduce((s, l) => s + l.qty * l.price, 0);
   const tax = lines.reduce(
