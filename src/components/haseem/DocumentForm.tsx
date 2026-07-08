@@ -61,16 +61,52 @@ export function DocumentForm({
   ]);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [partyModalOpen, setPartyModalOpen] = useState(false);
-  const [newParty, setNewParty] = useState({ name: "", phone: "", email: "", taxNumber: "" });
-  const [qrDataUrl, setQrDataUrl] = useState<string>("");
-  const printRef = useRef<HTMLDivElement>(null);
+  const emptyParty = {
+    // Basic
+    type: "individual" as "individual" | "company",
+    name: "",
+    displayName: "",
+    email: "",
+    phone: "",
+    mobile: "",
+    website: "",
+    // Tax/registration
+    taxNumber: "",
+    commercialReg: "",
+    taxGroup: "standard",
+    category: "",
+    currency: "SAR",
+    // Financial
+    openingBalance: 0,
+    creditLimit: 0,
+    paymentTerms: "0",
+    // Address
+    country: "SA",
+    city: "",
+    region: "",
+    district: "",
+    street: "",
+    buildingNo: "",
+    postalCode: "",
+    additionalNo: "",
+    // Shipping
+    shippingAddress: "",
+    // Contact person
+    contactName: "",
+    contactPhone: "",
+    contactEmail: "",
+    notes: "",
+  };
+  const [newParty, setNewParty] = useState(emptyParty);
+  const [partyTab, setPartyTab] = useState<"basic" | "address" | "financial" | "contact">("basic");
 
   const submitNewParty = () => {
     if (!newParty.name.trim()) return;
     const rec = addParty({ ...newParty, name: newParty.name.trim() });
     setPartyId(rec.id);
     setPartyModalOpen(false);
-    setNewParty({ name: "", phone: "", email: "", taxNumber: "" });
+    setPartyTab("basic");
+    setNewParty(emptyParty);
   };
 
   const party = parties.find((p) => p.id === partyId);
