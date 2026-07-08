@@ -116,17 +116,7 @@ export function DocumentForm({
   const partyName = party?.name ?? "—";
 
   // Selected invoice template — drives accent color & style variant in preview/print
-  const [templateId] = useKV<"classic" | "modern" | "minimal" | "colored">(
-    "invoice-template",
-    "classic"
-  );
-  const TEMPLATE_MAP = {
-    classic: { name: "كلاسيكي", accent: "#0f2a1d", onAccent: "#ffffff", soft: "#fafaf7" },
-    modern:  { name: "عصري",   accent: "#1e40af", onAccent: "#ffffff", soft: "#f5f7ff" },
-    minimal: { name: "بسيط",   accent: "#525252", onAccent: "#ffffff", soft: "#fafafa" },
-    colored: { name: "ملوّن",   accent: "#c65b3c", onAccent: "#ffffff", soft: "#fff7f2" },
-  } as const;
-  const tpl = TEMPLATE_MAP[templateId] ?? TEMPLATE_MAP.classic;
+  const { selected: tpl } = useInvoiceTemplates();
 
   // Round half-up to 2 decimals (matches ZATCA / Qoyod invoice math)
   const r2 = (n: number) => Math.round((n + Number.EPSILON) * 100) / 100;
