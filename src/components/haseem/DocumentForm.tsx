@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, useNavigate } from "@tanstack/react-router";
+import { useNavigate } from "@tanstack/react-router";
 import { Plus, Trash2 } from "lucide-react";
 import { Shell, PrimaryBtn, OutlineBtn } from "./Shell";
 import { useCollection } from "@/lib/haseem/store";
