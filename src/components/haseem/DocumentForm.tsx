@@ -278,6 +278,107 @@ export function DocumentForm({
           </div>
         </div>
       </div>
+
+      {/* Hidden printable content */}
+      <div className="hidden">
+        <div ref={printRef}>
+          <h1>{title}</h1>
+          <div className="meta">
+            <div><strong>رقم المستند:</strong> {ref}</div>
+            <div><strong>التاريخ:</strong> {date}</div>
+            <div><strong>الاستحقاق:</strong> {dueDate}</div>
+            <div><strong>{partyLabel}:</strong> {partyName}</div>
+          </div>
+          <table>
+            <thead>
+              <tr>
+                <th>#</th><th>الوصف</th><th>الكمية</th><th>السعر</th><th>الضريبة %</th><th>المبلغ</th>
+              </tr>
+            </thead>
+            <tbody>
+              {lines.map((l, i) => (
+                <tr key={i}>
+                  <td>{i + 1}</td>
+                  <td>{l.description}</td>
+                  <td>{l.qty}</td>
+                  <td>{l.price.toFixed(2)}</td>
+                  <td>{l.tax}</td>
+                  <td>{(l.qty * l.price * (1 + l.tax / 100)).toFixed(2)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <div className="totals">
+            <div><span>المجموع الفرعي</span><span>{subtotal.toFixed(2)} ﷼</span></div>
+            <div><span>الضريبة</span><span>{tax.toFixed(2)} ﷼</span></div>
+            <div className="grand"><span>الإجمالي</span><span>{total.toFixed(2)} ﷼</span></div>
+          </div>
+          {notes && <p style={{marginTop:16,fontSize:13}}><strong>ملاحظات:</strong> {notes}</p>}
+        </div>
+      </div>
+
+      {previewOpen && (
+        <div className="fixed inset-0 z-50 bg-black/40 flex items-start justify-center p-4 overflow-auto" onClick={() => setPreviewOpen(false)}>
+          <div className="bg-white rounded-xl max-w-3xl w-full p-6 my-8" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4 pb-3 border-b border-[#eceae2]">
+              <h2 className="text-lg font-bold">معاينة المستند</h2>
+              <div className="flex gap-2">
+                <OutlineBtn type="button" onClick={handlePrint}>
+                  <Printer className="w-4 h-4" /> طباعة
+                </OutlineBtn>
+                <button onClick={() => setPreviewOpen(false)} className="p-2 rounded hover:bg-[#f7f6f0]">
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+            <div className="text-sm space-y-4">
+              <div>
+                <h3 className="font-bold text-lg">{title}</h3>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-2 text-xs">
+                  <div><div className="text-[#0f2a1d]/60">رقم المستند</div><div className="font-semibold">{ref}</div></div>
+                  <div><div className="text-[#0f2a1d]/60">التاريخ</div><div className="font-semibold">{date}</div></div>
+                  <div><div className="text-[#0f2a1d]/60">الاستحقاق</div><div className="font-semibold">{dueDate}</div></div>
+                  <div><div className="text-[#0f2a1d]/60">{partyLabel}</div><div className="font-semibold">{partyName}</div></div>
+                </div>
+              </div>
+              <table className="w-full border-collapse text-xs">
+                <thead className="bg-[#f7f6f0]">
+                  <tr>
+                    <th className="border border-[#eceae2] p-2 text-right">#</th>
+                    <th className="border border-[#eceae2] p-2 text-right">الوصف</th>
+                    <th className="border border-[#eceae2] p-2 text-right">الكمية</th>
+                    <th className="border border-[#eceae2] p-2 text-right">السعر</th>
+                    <th className="border border-[#eceae2] p-2 text-right">الضريبة %</th>
+                    <th className="border border-[#eceae2] p-2 text-right">المبلغ</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {lines.map((l, i) => (
+                    <tr key={i}>
+                      <td className="border border-[#eceae2] p-2">{i + 1}</td>
+                      <td className="border border-[#eceae2] p-2">{l.description || "—"}</td>
+                      <td className="border border-[#eceae2] p-2">{l.qty}</td>
+                      <td className="border border-[#eceae2] p-2 tabular-nums">{l.price.toFixed(2)}</td>
+                      <td className="border border-[#eceae2] p-2">{l.tax}%</td>
+                      <td className="border border-[#eceae2] p-2 tabular-nums">{(l.qty * l.price * (1 + l.tax / 100)).toFixed(2)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              <div className="flex justify-end">
+                <div className="w-64 space-y-1 text-sm">
+                  <Row label="المجموع الفرعي" value={`${subtotal.toFixed(2)} ﷼`} />
+                  <Row label="الضريبة" value={`${tax.toFixed(2)} ﷼`} />
+                  <div className="pt-2 border-t border-[#eceae2]">
+                    <Row label="الإجمالي" value={`${total.toFixed(2)} ﷼`} bold />
+                  </div>
+                </div>
+              </div>
+              {notes && <div className="text-xs"><span className="text-[#0f2a1d]/60">ملاحظات:</span> {notes}</div>}
+            </div>
+          </div>
+        </div>
+      )}
     </Shell>
   );
 }
