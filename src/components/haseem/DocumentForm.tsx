@@ -61,6 +61,8 @@ export function DocumentForm({
   ]);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [partyModalOpen, setPartyModalOpen] = useState(false);
+  const [qrDataUrl, setQrDataUrl] = useState<string>("");
+  const printRef = useRef<HTMLDivElement>(null);
   const emptyParty = {
     // Basic
     type: "individual" as "individual" | "company",
