@@ -1,26 +1,6 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { CrudModule } from "@/components/haseem/CrudModule";
-import { Badge, money, statusTone } from "@/components/haseem/Shell";
+import { Outlet, createFileRoute } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/sales/invoices")({
   head: () => ({ meta: [{ title: "فواتير المبيعات — حسيم" }] }),
-  component: () => (
-    <CrudModule
-      storageKey="invoices"
-      title="فواتير المبيعات"
-      subtitle="إدارة الفواتير وتتبع المستحقات"
-      newLabel="إنشاء فاتورة"
-      newPath="/sales/invoices/new"
-      searchIn={["ref", "partyName", "status"]}
-      fields={[]}
-      columns={[
-        { name: "ref", label: "الرقم" },
-        { name: "date", label: "التاريخ" },
-        { name: "partyName", label: "العميل" },
-        { name: "dueDate", label: "الاستحقاق" },
-        { name: "total", label: "الإجمالي", format: (r) => money(r.total) },
-        { name: "status", label: "الحالة", format: (r) => <Badge tone={statusTone(r.status)}>{r.status}</Badge> },
-      ]}
-    />
-  ),
+  component: () => <Outlet />,
 });
