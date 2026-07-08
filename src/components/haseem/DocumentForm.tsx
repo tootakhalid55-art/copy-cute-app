@@ -1,8 +1,25 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { Plus, Trash2, Printer, Eye, X } from "lucide-react";
+import QRCode from "qrcode";
 import { Shell, PrimaryBtn, OutlineBtn } from "./Shell";
-import { useCollection } from "@/lib/haseem/store";
+import { useCollection, useKV } from "@/lib/haseem/store";
+
+// ZATCA phase-1 TLV encoder (base64)
+function zatcaTLV(seller: string, vat: string, iso: string, total: string, taxAmt: string) {
+  const enc = new TextEncoder();
+  const fields: [number, string][] = [
+    [1, seller], [2, vat], [3, iso], [4, total], [5, taxAmt],
+  ];
+  const chunks: number[] = [];
+  for (const [tag, val] of fields) {
+    const bytes = enc.encode(val);
+    chunks.push(tag, bytes.length, ...bytes);
+  }
+  let bin = "";
+  for (const b of chunks) bin += String.fromCharCode(b);
+  return typeof btoa !== "undefined" ? btoa(bin) : Buffer.from(bin, "binary").toString("base64");
+}
 
 type Line = { description: string; qty: number; price: number; tax: number };
 
