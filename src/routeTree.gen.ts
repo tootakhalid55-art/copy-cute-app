@@ -18,6 +18,7 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AccountingRouteImport } from './routes/accounting'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as SettingsOrganizationRouteImport } from './routes/settings.organization'
+import { Route as SettingsBranchesRouteImport } from './routes/settings.branches'
 import { Route as SettingsBillingRouteImport } from './routes/settings.billing'
 import { Route as SalesQuotationsRouteImport } from './routes/sales.quotations'
 import { Route as SalesInvoicesRouteImport } from './routes/sales.invoices'
@@ -90,6 +91,11 @@ const IndexRoute = IndexRouteImport.update({
 const SettingsOrganizationRoute = SettingsOrganizationRouteImport.update({
   id: '/settings/organization',
   path: '/settings/organization',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SettingsBranchesRoute = SettingsBranchesRouteImport.update({
+  id: '/settings/branches',
+  path: '/settings/branches',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SettingsBillingRoute = SettingsBillingRouteImport.update({
@@ -262,6 +268,7 @@ export interface FileRoutesByFullPath {
   '/sales/invoices': typeof SalesInvoicesRouteWithChildren
   '/sales/quotations': typeof SalesQuotationsRouteWithChildren
   '/settings/billing': typeof SettingsBillingRoute
+  '/settings/branches': typeof SettingsBranchesRoute
   '/settings/organization': typeof SettingsOrganizationRoute
   '/purchases/bills/new': typeof PurchasesBillsNewRoute
   '/purchases/purchase-orders/new': typeof PurchasesPurchaseOrdersNewRoute
@@ -296,6 +303,7 @@ export interface FileRoutesByTo {
   '/reports/sales-report': typeof ReportsSalesReportRoute
   '/sales/customers': typeof SalesCustomersRoute
   '/settings/billing': typeof SettingsBillingRoute
+  '/settings/branches': typeof SettingsBranchesRoute
   '/settings/organization': typeof SettingsOrganizationRoute
   '/purchases/bills/new': typeof PurchasesBillsNewRoute
   '/purchases/purchase-orders/new': typeof PurchasesPurchaseOrdersNewRoute
@@ -336,6 +344,7 @@ export interface FileRoutesById {
   '/sales/invoices': typeof SalesInvoicesRouteWithChildren
   '/sales/quotations': typeof SalesQuotationsRouteWithChildren
   '/settings/billing': typeof SettingsBillingRoute
+  '/settings/branches': typeof SettingsBranchesRoute
   '/settings/organization': typeof SettingsOrganizationRoute
   '/purchases/bills/new': typeof PurchasesBillsNewRoute
   '/purchases/purchase-orders/new': typeof PurchasesPurchaseOrdersNewRoute
@@ -377,6 +386,7 @@ export interface FileRouteTypes {
     | '/sales/invoices'
     | '/sales/quotations'
     | '/settings/billing'
+    | '/settings/branches'
     | '/settings/organization'
     | '/purchases/bills/new'
     | '/purchases/purchase-orders/new'
@@ -411,6 +421,7 @@ export interface FileRouteTypes {
     | '/reports/sales-report'
     | '/sales/customers'
     | '/settings/billing'
+    | '/settings/branches'
     | '/settings/organization'
     | '/purchases/bills/new'
     | '/purchases/purchase-orders/new'
@@ -450,6 +461,7 @@ export interface FileRouteTypes {
     | '/sales/invoices'
     | '/sales/quotations'
     | '/settings/billing'
+    | '/settings/branches'
     | '/settings/organization'
     | '/purchases/bills/new'
     | '/purchases/purchase-orders/new'
@@ -490,6 +502,7 @@ export interface RootRouteChildren {
   SalesInvoicesRoute: typeof SalesInvoicesRouteWithChildren
   SalesQuotationsRoute: typeof SalesQuotationsRouteWithChildren
   SettingsBillingRoute: typeof SettingsBillingRoute
+  SettingsBranchesRoute: typeof SettingsBranchesRoute
   SettingsOrganizationRoute: typeof SettingsOrganizationRoute
 }
 
@@ -556,6 +569,13 @@ declare module '@tanstack/react-router' {
       path: '/settings/organization'
       fullPath: '/settings/organization'
       preLoaderRoute: typeof SettingsOrganizationRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/settings/branches': {
+      id: '/settings/branches'
+      path: '/settings/branches'
+      fullPath: '/settings/branches'
+      preLoaderRoute: typeof SettingsBranchesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/settings/billing': {
@@ -855,6 +875,7 @@ const rootRouteChildren: RootRouteChildren = {
   SalesInvoicesRoute: SalesInvoicesRouteWithChildren,
   SalesQuotationsRoute: SalesQuotationsRouteWithChildren,
   SettingsBillingRoute: SettingsBillingRoute,
+  SettingsBranchesRoute: SettingsBranchesRoute,
   SettingsOrganizationRoute: SettingsOrganizationRoute,
 }
 export const routeTree = rootRouteImport
