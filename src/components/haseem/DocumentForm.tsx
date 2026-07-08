@@ -77,15 +77,16 @@ export function DocumentForm({
           )}
         </div>
         <div className="flex gap-2 flex-wrap">
-          <Link to={backTo}>
-            <OutlineBtn type="button">رجوع</OutlineBtn>
-          </Link>
+          <OutlineBtn type="button" onClick={() => navigate({ to: backTo })}>
+            رجوع
+          </OutlineBtn>
           <OutlineBtn type="button" onClick={() => save("مسودة")}>
             حفظ كمسودة
           </OutlineBtn>
           <PrimaryBtn onClick={() => save("مؤكد")}>حفظ واعتماد</PrimaryBtn>
         </div>
       </div>
+
 
       <div className="rounded-xl bg-white border border-[#eceae2] p-5 grid grid-cols-1 md:grid-cols-4 gap-4 text-sm">
         <FormField label="رقم المستند">
