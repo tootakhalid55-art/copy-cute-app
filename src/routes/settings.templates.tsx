@@ -211,10 +211,10 @@ function TemplatesPage() {
 
       <div className="rounded-xl bg-white border border-[#eceae2] p-4 flex items-center justify-between flex-wrap gap-3">
         <div className="text-sm">
-          القالب الافتراضي حالياً:{" "}
+          القالب الافتراضي لـ <span className="font-semibold">{DOC_KINDS.find((k) => k.id === activeKind)?.label}</span>:{" "}
           <span className="font-semibold">{all.find((t) => t.id === selectedId)?.name}</span>
         </div>
-        <OutlineBtn type="button" onClick={() => setSelectedId("classic")}>
+        <OutlineBtn type="button" onClick={() => setSelectedId(all[0]?.id ?? "classic")}>
           استعادة الافتراضي
         </OutlineBtn>
       </div>
