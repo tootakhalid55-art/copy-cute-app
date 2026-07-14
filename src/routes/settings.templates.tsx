@@ -56,14 +56,14 @@ function TemplatesPage() {
     if (selectedId === id) setSelectedId("classic");
   };
   const duplicate = (t: InvoiceTemplate) => {
-    const rec = custom.add({
+    setDraft({
       name: `${t.name} — نسخة`,
       desc: t.desc ?? "",
       accent: t.accent,
       onAccent: t.onAccent,
       soft: t.soft,
-    } as any);
-    setSelectedId(rec.id);
+    });
+    setEditorOpen(true);
   };
 
   return (
