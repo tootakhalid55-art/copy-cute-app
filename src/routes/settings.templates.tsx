@@ -78,14 +78,32 @@ function TemplatesPage() {
   return (
     <Shell>
       <PageHeader
-        title="قوالب الفواتير"
-        subtitle="اختر التصميم الافتراضي أو أنشئ قالباً خاصاً بك"
+        title="قوالب المستندات"
+        subtitle="لكل نوع مستند قوالبه الخاصة — اختر النوع ثم عدّل أو أنشئ قالباً"
         action={
           <PrimaryBtn onClick={openCreate}>
             <Plus className="w-4 h-4" /> قالب جديد
           </PrimaryBtn>
         }
       />
+
+      <div className="flex flex-wrap gap-2 border-b border-[#eceae2] pb-2">
+        {DOC_KINDS.map((k) => (
+          <button
+            key={k.id}
+            type="button"
+            onClick={() => setActiveKind(k.id)}
+            className={`px-3 py-1.5 rounded-lg text-sm border transition ${
+              activeKind === k.id
+                ? "bg-[#0f2a1d] text-white border-[#0f2a1d]"
+                : "bg-white border-[#eceae2] hover:bg-[#f7f6f0]"
+            }`}
+          >
+            {k.label}
+          </button>
+        ))}
+      </div>
+
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {all.map((t) => {
