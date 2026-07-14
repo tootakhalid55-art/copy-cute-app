@@ -15,13 +15,8 @@ export const BUILTIN_TEMPLATES: InvoiceTemplate[] = [
   { id: "modern",  name: "عصري",   desc: "تصميم بألوان هادئة وحدود دقيقة.",                accent: "#1e40af", onAccent: "#ffffff", soft: "#f5f7ff", builtin: true },
   { id: "minimal", name: "بسيط",   desc: "أقل حبر، مثالي للطباعة السريعة.",                 accent: "#525252", onAccent: "#ffffff", soft: "#fafafa", builtin: true },
   { id: "colored", name: "ملوّن",   desc: "لمسة برتقالية بارزة للعلامة.",                    accent: "#c65b3c", onAccent: "#ffffff", soft: "#fff7f2", builtin: true },
-  // قوالب مستوحاة من Wafeq
-  { id: "wafeq-standard", name: "وافِق — قياسي", desc: "قالب افتراضي بأزرق هادئ وترويسة أنيقة.", accent: "#2563eb", onAccent: "#ffffff", soft: "#eff6ff", builtin: true },
-  { id: "wafeq-modern",   name: "وافِق — عصري",   desc: "تصميم نظيف بلمسة تركوازية.",             accent: "#0d9488", onAccent: "#ffffff", soft: "#f0fdfa", builtin: true },
-  { id: "wafeq-classic",  name: "وافِق — كلاسيكي", desc: "أسود وأبيض احترافي للطباعة الرسمية.",   accent: "#111827", onAccent: "#ffffff", soft: "#f9fafb", builtin: true },
-  { id: "wafeq-simple",   name: "وافِق — مبسّط",   desc: "بلا ألوان صاخبة، تركيز على المحتوى.",     accent: "#374151", onAccent: "#ffffff", soft: "#ffffff", builtin: true },
-  { id: "wafeq-detailed", name: "وافِق — تفصيلي",  desc: "خلفية دافئة تُبرز الحقول التفصيلية.",     accent: "#7c3aed", onAccent: "#ffffff", soft: "#f5f3ff", builtin: true },
-  { id: "wafeq-elegant",  name: "وافِق — راقٍ",    desc: "بورجوندي فاخر لعلامات تجارية مميزة.",    accent: "#9f1239", onAccent: "#ffffff", soft: "#fff1f2", builtin: true },
+  // القالب الافتراضي المستخدم في وافِق (فاتورة، عرض سعر، إشعار دائن، أمر شراء، إشعار تسليم)
+  { id: "wafeq-default", name: "وافِق — افتراضي", desc: "قالب أبيض نظيف بحدود رمادية دقيقة وجدول بنود ثنائي اللغة، مطابق لقالب وافِق الرسمي.", accent: "#1f2937", onAccent: "#ffffff", soft: "#f9fafb", builtin: true },
 ];
 
 export function useInvoiceTemplates() {
