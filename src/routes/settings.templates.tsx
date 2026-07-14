@@ -400,5 +400,3 @@ function FullPreview({ tpl }: { tpl: InvoiceTemplate }) {
   );
 }
 
-// Reference so TS doesn't complain if unused elsewhere
-export { BUILTIN_TEMPLATES };
