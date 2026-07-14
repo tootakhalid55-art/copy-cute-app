@@ -1,5 +1,5 @@
 import { useMemo, useState, type ReactNode } from "react";
-import { Plus, Pencil, Trash2, Search, X } from "lucide-react";
+import { Plus, Pencil, Trash2, Search, X, Eye } from "lucide-react";
 import { useNavigate } from "@tanstack/react-router";
 import { useCollection } from "@/lib/haseem/store";
 import { Shell, PageHeader, PrimaryBtn, OutlineBtn, EmptyState } from "./Shell";
@@ -138,7 +138,19 @@ export function CrudModule({
                     ))}
                     <td className="py-2.5 px-3">
                       <div className="flex justify-end gap-1">
-                        {!newPath && (
+                        {newPath ? (
+                          <button
+                            onClick={() => {
+                              const base = newPath.replace(/\/new$/, "");
+                              navigate({ to: `${base}/${row.id}` });
+                            }}
+                            className="p-1.5 hover:bg-[#f2f0e8] rounded"
+                            aria-label="عرض / تعديل"
+                            title="عرض / تعديل"
+                          >
+                            <Eye className="w-3.5 h-3.5" />
+                          </button>
+                        ) : (
                           <button
                             onClick={() => openEdit(row)}
                             className="p-1.5 hover:bg-[#f2f0e8] rounded"
