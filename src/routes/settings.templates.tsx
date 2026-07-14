@@ -24,31 +24,37 @@ const EMPTY_DRAFT: Draft = {
 };
 
 function TemplatesPage() {
-  const { all, custom, selectedId, setSelectedId } = useInvoiceTemplates();
+  const { all, custom, selectedId, setSelectedId, overrideBuiltin, resetBuiltin, isOverridden } = useInvoiceTemplates();
   const [editorOpen, setEditorOpen] = useState(false);
   const [previewId, setPreviewId] = useState<string | null>(null);
   const [draft, setDraft] = useState<Draft>(EMPTY_DRAFT);
+  const [editingBuiltinId, setEditingBuiltinId] = useState<string | null>(null);
   const previewTpl = all.find((t) => t.id === previewId);
 
   const openCreate = () => {
     setDraft(EMPTY_DRAFT);
+    setEditingBuiltinId(null);
     setEditorOpen(true);
   };
   const openEdit = (t: InvoiceTemplate) => {
     setDraft({ id: t.id, name: t.name, desc: t.desc ?? "", accent: t.accent, onAccent: t.onAccent, soft: t.soft });
+    setEditingBuiltinId(t.builtin ? t.id : null);
     setEditorOpen(true);
   };
   const saveDraft = () => {
     const name = draft.name.trim();
     if (!name) return;
     const payload = { name, desc: draft.desc?.trim() || "", accent: draft.accent, onAccent: draft.onAccent, soft: draft.soft };
-    if (draft.id && custom.items.some((c) => c.id === draft.id)) {
+    if (editingBuiltinId) {
+      overrideBuiltin(editingBuiltinId, payload);
+    } else if (draft.id && custom.items.some((c) => c.id === draft.id)) {
       custom.update(draft.id, payload);
     } else {
       const rec = custom.add(payload as any);
       setSelectedId(rec.id);
     }
     setEditorOpen(false);
+    setEditingBuiltinId(null);
   };
   const removeCustom = (id: string) => {
     if (!confirm("حذف هذا القالب؟")) return;
@@ -63,6 +69,7 @@ function TemplatesPage() {
       onAccent: t.onAccent,
       soft: t.soft,
     });
+    setEditingBuiltinId(null);
     setEditorOpen(true);
   };
 
