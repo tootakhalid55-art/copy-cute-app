@@ -68,8 +68,8 @@ function IEPage() {
     <Shell>
       <PageHeader title="الاستيراد والتصدير" subtitle="نسخ احتياطية واستعادة لبيانات النظام" action={
         <div className="flex gap-2">
-          <label className="cursor-pointer">
-            <OutlineBtn as="span" onClick={() => {}}><Upload className="w-4 h-4" /> استيراد نسخة كاملة</OutlineBtn>
+          <label className="inline-flex items-center gap-2 bg-white border border-[#eceae2] text-[#0f2a1d] rounded-lg px-4 py-2 text-sm hover:bg-[#f7f6f0] cursor-pointer">
+            <Upload className="w-4 h-4" /> استيراد نسخة كاملة
             <input type="file" accept=".json" className="hidden" onChange={(e) => e.target.files?.[0] && importAll(e.target.files[0])} />
           </label>
           <PrimaryBtn onClick={exportAll}><Download className="w-4 h-4" /> تصدير الكل</PrimaryBtn>
