@@ -24,31 +24,37 @@ const EMPTY_DRAFT: Draft = {
 };
 
 function TemplatesPage() {
-  const { all, custom, selectedId, setSelectedId } = useInvoiceTemplates();
+  const { all, custom, selectedId, setSelectedId, overrideBuiltin, resetBuiltin, isOverridden } = useInvoiceTemplates();
   const [editorOpen, setEditorOpen] = useState(false);
   const [previewId, setPreviewId] = useState<string | null>(null);
   const [draft, setDraft] = useState<Draft>(EMPTY_DRAFT);
+  const [editingBuiltinId, setEditingBuiltinId] = useState<string | null>(null);
   const previewTpl = all.find((t) => t.id === previewId);
 
   const openCreate = () => {
     setDraft(EMPTY_DRAFT);
+    setEditingBuiltinId(null);
     setEditorOpen(true);
   };
   const openEdit = (t: InvoiceTemplate) => {
     setDraft({ id: t.id, name: t.name, desc: t.desc ?? "", accent: t.accent, onAccent: t.onAccent, soft: t.soft });
+    setEditingBuiltinId(t.builtin ? t.id : null);
     setEditorOpen(true);
   };
   const saveDraft = () => {
     const name = draft.name.trim();
     if (!name) return;
     const payload = { name, desc: draft.desc?.trim() || "", accent: draft.accent, onAccent: draft.onAccent, soft: draft.soft };
-    if (draft.id && custom.items.some((c) => c.id === draft.id)) {
+    if (editingBuiltinId) {
+      overrideBuiltin(editingBuiltinId, payload);
+    } else if (draft.id && custom.items.some((c) => c.id === draft.id)) {
       custom.update(draft.id, payload);
     } else {
       const rec = custom.add(payload as any);
       setSelectedId(rec.id);
     }
     setEditorOpen(false);
+    setEditingBuiltinId(null);
   };
   const removeCustom = (id: string) => {
     if (!confirm("حذف هذا القالب؟")) return;
@@ -63,6 +69,7 @@ function TemplatesPage() {
       onAccent: t.onAccent,
       soft: t.soft,
     });
+    setEditingBuiltinId(null);
     setEditorOpen(true);
   };
 
@@ -129,14 +136,34 @@ function TemplatesPage() {
                   <Eye className="w-3.5 h-3.5" /> استعراض
                 </button>
                 {t.builtin ? (
-                  <button
-                    type="button"
-                    onClick={() => duplicate(t)}
-                    className="flex-1 inline-flex items-center justify-center gap-1 border border-[#eceae2] rounded px-2 py-1.5 text-xs hover:bg-[#f7f6f0]"
-                    title="إنشاء نسخة قابلة للتعديل"
-                  >
-                    <Pencil className="w-3.5 h-3.5" /> تخصيص
-                  </button>
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => openEdit(t)}
+                      className="flex-1 inline-flex items-center justify-center gap-1 border border-[#eceae2] rounded px-2 py-1.5 text-xs hover:bg-[#f7f6f0]"
+                      title="تعديل ألوان القالب"
+                    >
+                      <Pencil className="w-3.5 h-3.5" /> تعديل
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => duplicate(t)}
+                      className="flex-1 inline-flex items-center justify-center gap-1 border border-[#eceae2] rounded px-2 py-1.5 text-xs hover:bg-[#f7f6f0]"
+                      title="إنشاء نسخة قابلة للتعديل"
+                    >
+                      <FileText className="w-3.5 h-3.5" /> نسخ
+                    </button>
+                    {isOverridden(t.id) && (
+                      <button
+                        type="button"
+                        onClick={() => resetBuiltin(t.id)}
+                        className="inline-flex items-center justify-center border border-[#eceae2] rounded px-2 py-1.5 text-xs hover:bg-[#f7f6f0]"
+                        title="إعادة تعيين"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+                  </>
                 ) : (
                   <>
                     <button
