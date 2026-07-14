@@ -4,6 +4,8 @@ import {
   TrendingUp, Calculator, Settings, Plus, ChevronDown, Building2,
   Globe, MessageCircle, PanelRight, LogOut, User as UserIcon,
   Building, Users, ShieldCheck, UserCog, Receipt, FileText, Plug, CreditCard,
+  Repeat, FileMinus, BookOpen, BookText, ScrollText, PieChart, BarChart3,
+  ClipboardList, ArrowLeftRight, Coins, Hash, History, Download,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
@@ -19,13 +21,22 @@ type NavItem = {
 };
 
 const NAV: NavItem[] = [
-  { icon: Home, label: "لوحة المعلومات", to: "/dashboard" },
+  {
+    icon: Home, label: "لوحة المعلومات",
+    children: [
+      { label: "نظرة عامة", to: "/dashboard" },
+      { label: "الأرباح والخسائر", to: "/dashboard/profit-and-loss" },
+      { label: "التدفق النقدي", to: "/dashboard/cash-flow" },
+    ],
+  },
   {
     icon: DollarSign, label: "المبيعات",
     children: [
       { label: "عروض الأسعار", to: "/sales/quotations" },
       { label: "فواتير المبيعات", to: "/sales/invoices" },
+      { label: "الفواتير المتكررة", to: "/sales/recurring", icon: Repeat },
       { label: "الإشعارات الدائنة", to: "/sales/credit-notes" },
+      { label: "كشوف حساب العملاء", to: "/sales/statements", icon: ScrollText },
       { label: "العملاء", to: "/sales/customers" },
     ],
   },
@@ -43,6 +54,7 @@ const NAV: NavItem[] = [
     children: [
       { label: "فواتير المشتريات", to: "/purchases/bills" },
       { label: "أوامر الشراء", to: "/purchases/purchase-orders" },
+      { label: "الإشعارات المدينة", to: "/purchases/debit-notes", icon: FileMinus },
       { label: "الموردون", to: "/purchases/suppliers" },
       { label: "المصروفات", to: "/expenses" },
     ],
@@ -53,16 +65,36 @@ const NAV: NavItem[] = [
       { label: "البنوك والخزائن", to: "/cash/banks" },
       { label: "التحويلات", to: "/cash/transfers" },
       { label: "المعاملات", to: "/cash/transactions" },
+      { label: "التسويات البنكية", to: "/cash/reconciliation", icon: ArrowLeftRight },
       { label: "سندات القبض", to: "/cash/receipts" },
       { label: "سندات الصرف", to: "/cash/payments" },
     ],
   },
   { icon: LayoutGrid, label: "المشاريع", to: "/projects" },
   {
-    icon: TrendingUp, label: "التقارير",
-    children: [{ label: "تقرير المبيعات", to: "/reports/sales-report" }],
+    icon: Calculator, label: "المحاسبة",
+    children: [
+      { label: "نظرة عامة", to: "/accounting", icon: Calculator },
+      { label: "دليل الحسابات", to: "/accounting/chart-of-accounts", icon: BookOpen },
+      { label: "القيود اليومية", to: "/accounting/journal-entries", icon: BookText },
+      { label: "الأستاذ العام", to: "/accounting/general-ledger", icon: ClipboardList },
+    ],
   },
-  { icon: Calculator, label: "المحاسبة", to: "/accounting" },
+  {
+    icon: TrendingUp, label: "التقارير",
+    children: [
+      { label: "قائمة الدخل", to: "/reports/profit-and-loss", icon: PieChart },
+      { label: "الميزانية العمومية", to: "/reports/balance-sheet", icon: BarChart3 },
+      { label: "ميزان المراجعة", to: "/reports/trial-balance", icon: ClipboardList },
+      { label: "إقرار ضريبة القيمة المضافة", to: "/reports/vat-return", icon: Receipt },
+      { label: "أعمار الذمم المدينة", to: "/reports/aged-receivables" },
+      { label: "أعمار الذمم الدائنة", to: "/reports/aged-payables" },
+      { label: "المبيعات حسب العميل", to: "/reports/sales-by-customer" },
+      { label: "المبيعات حسب الصنف", to: "/reports/sales-by-item" },
+      { label: "المشتريات حسب المورد", to: "/reports/purchases-by-supplier" },
+      { label: "تقرير المبيعات", to: "/reports/sales-report" },
+    ],
+  },
   {
     icon: Settings, label: "الإعدادات",
     children: [
@@ -72,7 +104,12 @@ const NAV: NavItem[] = [
       { label: "الأدوار", to: "/settings/roles", icon: ShieldCheck },
       { label: "مناديب المبيعات", to: "/settings/sales-reps", icon: UserCog },
       { label: "الضرائب والربط", to: "/settings/taxes", icon: Receipt },
+      { label: "العملات وأسعار الصرف", to: "/settings/currencies", icon: Coins },
+      { label: "طرق الدفع", to: "/settings/payment-methods", icon: CreditCard },
+      { label: "الترقيم التلقائي", to: "/settings/numbering", icon: Hash },
       { label: "قوالب الفواتير", to: "/settings/templates", icon: FileText },
+      { label: "الاستيراد والتصدير", to: "/settings/import-export", icon: Download },
+      { label: "سجل التدقيق", to: "/settings/audit-log", icon: History },
       { label: "التكاملات", to: "/settings/integrations", icon: Plug },
       { label: "الاشتراك والفوترة", to: "/settings/billing", icon: CreditCard },
     ],

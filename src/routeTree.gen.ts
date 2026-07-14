@@ -22,31 +22,55 @@ import { Route as SettingsTemplatesRouteImport } from './routes/settings.templat
 import { Route as SettingsTaxesRouteImport } from './routes/settings.taxes'
 import { Route as SettingsSalesRepsRouteImport } from './routes/settings.sales-reps'
 import { Route as SettingsRolesRouteImport } from './routes/settings.roles'
+import { Route as SettingsPaymentMethodsRouteImport } from './routes/settings.payment-methods'
 import { Route as SettingsOrganizationRouteImport } from './routes/settings.organization'
+import { Route as SettingsNumberingRouteImport } from './routes/settings.numbering'
 import { Route as SettingsIntegrationsRouteImport } from './routes/settings.integrations'
+import { Route as SettingsImportExportRouteImport } from './routes/settings.import-export'
+import { Route as SettingsCurrenciesRouteImport } from './routes/settings.currencies'
 import { Route as SettingsBranchesRouteImport } from './routes/settings.branches'
 import { Route as SettingsBillingRouteImport } from './routes/settings.billing'
+import { Route as SettingsAuditLogRouteImport } from './routes/settings.audit-log'
+import { Route as SalesStatementsRouteImport } from './routes/sales.statements'
+import { Route as SalesRecurringRouteImport } from './routes/sales.recurring'
 import { Route as SalesQuotationsRouteImport } from './routes/sales.quotations'
 import { Route as SalesInvoicesRouteImport } from './routes/sales.invoices'
 import { Route as SalesCustomersRouteImport } from './routes/sales.customers'
 import { Route as SalesCreditNotesRouteImport } from './routes/sales.credit-notes'
+import { Route as ReportsVatReturnRouteImport } from './routes/reports.vat-return'
+import { Route as ReportsTrialBalanceRouteImport } from './routes/reports.trial-balance'
 import { Route as ReportsSalesReportRouteImport } from './routes/reports.sales-report'
+import { Route as ReportsSalesByItemRouteImport } from './routes/reports.sales-by-item'
+import { Route as ReportsSalesByCustomerRouteImport } from './routes/reports.sales-by-customer'
+import { Route as ReportsPurchasesBySupplierRouteImport } from './routes/reports.purchases-by-supplier'
+import { Route as ReportsProfitAndLossRouteImport } from './routes/reports.profit-and-loss'
+import { Route as ReportsBalanceSheetRouteImport } from './routes/reports.balance-sheet'
+import { Route as ReportsAgedReceivablesRouteImport } from './routes/reports.aged-receivables'
+import { Route as ReportsAgedPayablesRouteImport } from './routes/reports.aged-payables'
 import { Route as PurchasesSuppliersRouteImport } from './routes/purchases.suppliers'
 import { Route as PurchasesPurchaseOrdersRouteImport } from './routes/purchases.purchase-orders'
+import { Route as PurchasesDebitNotesRouteImport } from './routes/purchases.debit-notes'
 import { Route as PurchasesBillsRouteImport } from './routes/purchases.bills'
 import { Route as InventoryWarehousesRouteImport } from './routes/inventory.warehouses'
 import { Route as InventoryReportsRouteImport } from './routes/inventory.reports'
 import { Route as InventoryItemsRouteImport } from './routes/inventory.items'
 import { Route as InventoryAdjustmentsRouteImport } from './routes/inventory.adjustments'
+import { Route as DashboardProfitAndLossRouteImport } from './routes/dashboard.profit-and-loss'
+import { Route as DashboardCashFlowRouteImport } from './routes/dashboard.cash-flow'
 import { Route as CashTransfersRouteImport } from './routes/cash.transfers'
 import { Route as CashTransactionsRouteImport } from './routes/cash.transactions'
+import { Route as CashReconciliationRouteImport } from './routes/cash.reconciliation'
 import { Route as CashReceiptsRouteImport } from './routes/cash.receipts'
 import { Route as CashPaymentsRouteImport } from './routes/cash.payments'
 import { Route as CashBanksRouteImport } from './routes/cash.banks'
+import { Route as AccountingJournalEntriesRouteImport } from './routes/accounting.journal-entries'
+import { Route as AccountingGeneralLedgerRouteImport } from './routes/accounting.general-ledger'
+import { Route as AccountingChartOfAccountsRouteImport } from './routes/accounting.chart-of-accounts'
 import { Route as SalesQuotationsIndexRouteImport } from './routes/sales.quotations.index'
 import { Route as SalesInvoicesIndexRouteImport } from './routes/sales.invoices.index'
 import { Route as SalesCreditNotesIndexRouteImport } from './routes/sales.credit-notes.index'
 import { Route as PurchasesPurchaseOrdersIndexRouteImport } from './routes/purchases.purchase-orders.index'
+import { Route as PurchasesDebitNotesIndexRouteImport } from './routes/purchases.debit-notes.index'
 import { Route as PurchasesBillsIndexRouteImport } from './routes/purchases.bills.index'
 import { Route as SalesQuotationsNewRouteImport } from './routes/sales.quotations.new'
 import { Route as SalesQuotationsIdRouteImport } from './routes/sales.quotations.$id'
@@ -56,6 +80,8 @@ import { Route as SalesCreditNotesNewRouteImport } from './routes/sales.credit-n
 import { Route as SalesCreditNotesIdRouteImport } from './routes/sales.credit-notes.$id'
 import { Route as PurchasesPurchaseOrdersNewRouteImport } from './routes/purchases.purchase-orders.new'
 import { Route as PurchasesPurchaseOrdersIdRouteImport } from './routes/purchases.purchase-orders.$id'
+import { Route as PurchasesDebitNotesNewRouteImport } from './routes/purchases.debit-notes.new'
+import { Route as PurchasesDebitNotesIdRouteImport } from './routes/purchases.debit-notes.$id'
 import { Route as PurchasesBillsNewRouteImport } from './routes/purchases.bills.new'
 import { Route as PurchasesBillsIdRouteImport } from './routes/purchases.bills.$id'
 
@@ -124,14 +150,34 @@ const SettingsRolesRoute = SettingsRolesRouteImport.update({
   path: '/settings/roles',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SettingsPaymentMethodsRoute = SettingsPaymentMethodsRouteImport.update({
+  id: '/settings/payment-methods',
+  path: '/settings/payment-methods',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SettingsOrganizationRoute = SettingsOrganizationRouteImport.update({
   id: '/settings/organization',
   path: '/settings/organization',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SettingsNumberingRoute = SettingsNumberingRouteImport.update({
+  id: '/settings/numbering',
+  path: '/settings/numbering',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SettingsIntegrationsRoute = SettingsIntegrationsRouteImport.update({
   id: '/settings/integrations',
   path: '/settings/integrations',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SettingsImportExportRoute = SettingsImportExportRouteImport.update({
+  id: '/settings/import-export',
+  path: '/settings/import-export',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SettingsCurrenciesRoute = SettingsCurrenciesRouteImport.update({
+  id: '/settings/currencies',
+  path: '/settings/currencies',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SettingsBranchesRoute = SettingsBranchesRouteImport.update({
@@ -142,6 +188,21 @@ const SettingsBranchesRoute = SettingsBranchesRouteImport.update({
 const SettingsBillingRoute = SettingsBillingRouteImport.update({
   id: '/settings/billing',
   path: '/settings/billing',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SettingsAuditLogRoute = SettingsAuditLogRouteImport.update({
+  id: '/settings/audit-log',
+  path: '/settings/audit-log',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SalesStatementsRoute = SalesStatementsRouteImport.update({
+  id: '/sales/statements',
+  path: '/sales/statements',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SalesRecurringRoute = SalesRecurringRouteImport.update({
+  id: '/sales/recurring',
+  path: '/sales/recurring',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SalesQuotationsRoute = SalesQuotationsRouteImport.update({
@@ -164,9 +225,55 @@ const SalesCreditNotesRoute = SalesCreditNotesRouteImport.update({
   path: '/sales/credit-notes',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ReportsVatReturnRoute = ReportsVatReturnRouteImport.update({
+  id: '/reports/vat-return',
+  path: '/reports/vat-return',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ReportsTrialBalanceRoute = ReportsTrialBalanceRouteImport.update({
+  id: '/reports/trial-balance',
+  path: '/reports/trial-balance',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ReportsSalesReportRoute = ReportsSalesReportRouteImport.update({
   id: '/reports/sales-report',
   path: '/reports/sales-report',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ReportsSalesByItemRoute = ReportsSalesByItemRouteImport.update({
+  id: '/reports/sales-by-item',
+  path: '/reports/sales-by-item',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ReportsSalesByCustomerRoute = ReportsSalesByCustomerRouteImport.update({
+  id: '/reports/sales-by-customer',
+  path: '/reports/sales-by-customer',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ReportsPurchasesBySupplierRoute =
+  ReportsPurchasesBySupplierRouteImport.update({
+    id: '/reports/purchases-by-supplier',
+    path: '/reports/purchases-by-supplier',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ReportsProfitAndLossRoute = ReportsProfitAndLossRouteImport.update({
+  id: '/reports/profit-and-loss',
+  path: '/reports/profit-and-loss',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ReportsBalanceSheetRoute = ReportsBalanceSheetRouteImport.update({
+  id: '/reports/balance-sheet',
+  path: '/reports/balance-sheet',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ReportsAgedReceivablesRoute = ReportsAgedReceivablesRouteImport.update({
+  id: '/reports/aged-receivables',
+  path: '/reports/aged-receivables',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ReportsAgedPayablesRoute = ReportsAgedPayablesRouteImport.update({
+  id: '/reports/aged-payables',
+  path: '/reports/aged-payables',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PurchasesSuppliersRoute = PurchasesSuppliersRouteImport.update({
@@ -177,6 +284,11 @@ const PurchasesSuppliersRoute = PurchasesSuppliersRouteImport.update({
 const PurchasesPurchaseOrdersRoute = PurchasesPurchaseOrdersRouteImport.update({
   id: '/purchases/purchase-orders',
   path: '/purchases/purchase-orders',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PurchasesDebitNotesRoute = PurchasesDebitNotesRouteImport.update({
+  id: '/purchases/debit-notes',
+  path: '/purchases/debit-notes',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PurchasesBillsRoute = PurchasesBillsRouteImport.update({
@@ -204,6 +316,16 @@ const InventoryAdjustmentsRoute = InventoryAdjustmentsRouteImport.update({
   path: '/inventory/adjustments',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DashboardProfitAndLossRoute = DashboardProfitAndLossRouteImport.update({
+  id: '/profit-and-loss',
+  path: '/profit-and-loss',
+  getParentRoute: () => DashboardRoute,
+} as any)
+const DashboardCashFlowRoute = DashboardCashFlowRouteImport.update({
+  id: '/cash-flow',
+  path: '/cash-flow',
+  getParentRoute: () => DashboardRoute,
+} as any)
 const CashTransfersRoute = CashTransfersRouteImport.update({
   id: '/cash/transfers',
   path: '/cash/transfers',
@@ -212,6 +334,11 @@ const CashTransfersRoute = CashTransfersRouteImport.update({
 const CashTransactionsRoute = CashTransactionsRouteImport.update({
   id: '/cash/transactions',
   path: '/cash/transactions',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CashReconciliationRoute = CashReconciliationRouteImport.update({
+  id: '/cash/reconciliation',
+  path: '/cash/reconciliation',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CashReceiptsRoute = CashReceiptsRouteImport.update({
@@ -229,6 +356,23 @@ const CashBanksRoute = CashBanksRouteImport.update({
   path: '/cash/banks',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AccountingJournalEntriesRoute =
+  AccountingJournalEntriesRouteImport.update({
+    id: '/journal-entries',
+    path: '/journal-entries',
+    getParentRoute: () => AccountingRoute,
+  } as any)
+const AccountingGeneralLedgerRoute = AccountingGeneralLedgerRouteImport.update({
+  id: '/general-ledger',
+  path: '/general-ledger',
+  getParentRoute: () => AccountingRoute,
+} as any)
+const AccountingChartOfAccountsRoute =
+  AccountingChartOfAccountsRouteImport.update({
+    id: '/chart-of-accounts',
+    path: '/chart-of-accounts',
+    getParentRoute: () => AccountingRoute,
+  } as any)
 const SalesQuotationsIndexRoute = SalesQuotationsIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -249,6 +393,12 @@ const PurchasesPurchaseOrdersIndexRoute =
     id: '/',
     path: '/',
     getParentRoute: () => PurchasesPurchaseOrdersRoute,
+  } as any)
+const PurchasesDebitNotesIndexRoute =
+  PurchasesDebitNotesIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => PurchasesDebitNotesRoute,
   } as any)
 const PurchasesBillsIndexRoute = PurchasesBillsIndexRouteImport.update({
   id: '/',
@@ -297,6 +447,16 @@ const PurchasesPurchaseOrdersIdRoute =
     path: '/$id',
     getParentRoute: () => PurchasesPurchaseOrdersRoute,
   } as any)
+const PurchasesDebitNotesNewRoute = PurchasesDebitNotesNewRouteImport.update({
+  id: '/new',
+  path: '/new',
+  getParentRoute: () => PurchasesDebitNotesRoute,
+} as any)
+const PurchasesDebitNotesIdRoute = PurchasesDebitNotesIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => PurchasesDebitNotesRoute,
+} as any)
 const PurchasesBillsNewRoute = PurchasesBillsNewRouteImport.update({
   id: '/new',
   path: '/new',
@@ -310,34 +470,57 @@ const PurchasesBillsIdRoute = PurchasesBillsIdRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/accounting': typeof AccountingRoute
+  '/accounting': typeof AccountingRouteWithChildren
   '/auth': typeof AuthRoute
-  '/dashboard': typeof DashboardRoute
+  '/dashboard': typeof DashboardRouteWithChildren
   '/expenses': typeof ExpensesRoute
   '/profile': typeof ProfileRoute
   '/projects': typeof ProjectsRoute
   '/select-organization': typeof SelectOrganizationRoute
+  '/accounting/chart-of-accounts': typeof AccountingChartOfAccountsRoute
+  '/accounting/general-ledger': typeof AccountingGeneralLedgerRoute
+  '/accounting/journal-entries': typeof AccountingJournalEntriesRoute
   '/cash/banks': typeof CashBanksRoute
   '/cash/payments': typeof CashPaymentsRoute
   '/cash/receipts': typeof CashReceiptsRoute
+  '/cash/reconciliation': typeof CashReconciliationRoute
   '/cash/transactions': typeof CashTransactionsRoute
   '/cash/transfers': typeof CashTransfersRoute
+  '/dashboard/cash-flow': typeof DashboardCashFlowRoute
+  '/dashboard/profit-and-loss': typeof DashboardProfitAndLossRoute
   '/inventory/adjustments': typeof InventoryAdjustmentsRoute
   '/inventory/items': typeof InventoryItemsRoute
   '/inventory/reports': typeof InventoryReportsRoute
   '/inventory/warehouses': typeof InventoryWarehousesRoute
   '/purchases/bills': typeof PurchasesBillsRouteWithChildren
+  '/purchases/debit-notes': typeof PurchasesDebitNotesRouteWithChildren
   '/purchases/purchase-orders': typeof PurchasesPurchaseOrdersRouteWithChildren
   '/purchases/suppliers': typeof PurchasesSuppliersRoute
+  '/reports/aged-payables': typeof ReportsAgedPayablesRoute
+  '/reports/aged-receivables': typeof ReportsAgedReceivablesRoute
+  '/reports/balance-sheet': typeof ReportsBalanceSheetRoute
+  '/reports/profit-and-loss': typeof ReportsProfitAndLossRoute
+  '/reports/purchases-by-supplier': typeof ReportsPurchasesBySupplierRoute
+  '/reports/sales-by-customer': typeof ReportsSalesByCustomerRoute
+  '/reports/sales-by-item': typeof ReportsSalesByItemRoute
   '/reports/sales-report': typeof ReportsSalesReportRoute
+  '/reports/trial-balance': typeof ReportsTrialBalanceRoute
+  '/reports/vat-return': typeof ReportsVatReturnRoute
   '/sales/credit-notes': typeof SalesCreditNotesRouteWithChildren
   '/sales/customers': typeof SalesCustomersRoute
   '/sales/invoices': typeof SalesInvoicesRouteWithChildren
   '/sales/quotations': typeof SalesQuotationsRouteWithChildren
+  '/sales/recurring': typeof SalesRecurringRoute
+  '/sales/statements': typeof SalesStatementsRoute
+  '/settings/audit-log': typeof SettingsAuditLogRoute
   '/settings/billing': typeof SettingsBillingRoute
   '/settings/branches': typeof SettingsBranchesRoute
+  '/settings/currencies': typeof SettingsCurrenciesRoute
+  '/settings/import-export': typeof SettingsImportExportRoute
   '/settings/integrations': typeof SettingsIntegrationsRoute
+  '/settings/numbering': typeof SettingsNumberingRoute
   '/settings/organization': typeof SettingsOrganizationRoute
+  '/settings/payment-methods': typeof SettingsPaymentMethodsRoute
   '/settings/roles': typeof SettingsRolesRoute
   '/settings/sales-reps': typeof SettingsSalesRepsRoute
   '/settings/taxes': typeof SettingsTaxesRoute
@@ -345,6 +528,8 @@ export interface FileRoutesByFullPath {
   '/settings/users': typeof SettingsUsersRoute
   '/purchases/bills/$id': typeof PurchasesBillsIdRoute
   '/purchases/bills/new': typeof PurchasesBillsNewRoute
+  '/purchases/debit-notes/$id': typeof PurchasesDebitNotesIdRoute
+  '/purchases/debit-notes/new': typeof PurchasesDebitNotesNewRoute
   '/purchases/purchase-orders/$id': typeof PurchasesPurchaseOrdersIdRoute
   '/purchases/purchase-orders/new': typeof PurchasesPurchaseOrdersNewRoute
   '/sales/credit-notes/$id': typeof SalesCreditNotesIdRoute
@@ -354,6 +539,7 @@ export interface FileRoutesByFullPath {
   '/sales/quotations/$id': typeof SalesQuotationsIdRoute
   '/sales/quotations/new': typeof SalesQuotationsNewRoute
   '/purchases/bills/': typeof PurchasesBillsIndexRoute
+  '/purchases/debit-notes/': typeof PurchasesDebitNotesIndexRoute
   '/purchases/purchase-orders/': typeof PurchasesPurchaseOrdersIndexRoute
   '/sales/credit-notes/': typeof SalesCreditNotesIndexRoute
   '/sales/invoices/': typeof SalesInvoicesIndexRoute
@@ -361,29 +547,51 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/accounting': typeof AccountingRoute
+  '/accounting': typeof AccountingRouteWithChildren
   '/auth': typeof AuthRoute
-  '/dashboard': typeof DashboardRoute
+  '/dashboard': typeof DashboardRouteWithChildren
   '/expenses': typeof ExpensesRoute
   '/profile': typeof ProfileRoute
   '/projects': typeof ProjectsRoute
   '/select-organization': typeof SelectOrganizationRoute
+  '/accounting/chart-of-accounts': typeof AccountingChartOfAccountsRoute
+  '/accounting/general-ledger': typeof AccountingGeneralLedgerRoute
+  '/accounting/journal-entries': typeof AccountingJournalEntriesRoute
   '/cash/banks': typeof CashBanksRoute
   '/cash/payments': typeof CashPaymentsRoute
   '/cash/receipts': typeof CashReceiptsRoute
+  '/cash/reconciliation': typeof CashReconciliationRoute
   '/cash/transactions': typeof CashTransactionsRoute
   '/cash/transfers': typeof CashTransfersRoute
+  '/dashboard/cash-flow': typeof DashboardCashFlowRoute
+  '/dashboard/profit-and-loss': typeof DashboardProfitAndLossRoute
   '/inventory/adjustments': typeof InventoryAdjustmentsRoute
   '/inventory/items': typeof InventoryItemsRoute
   '/inventory/reports': typeof InventoryReportsRoute
   '/inventory/warehouses': typeof InventoryWarehousesRoute
   '/purchases/suppliers': typeof PurchasesSuppliersRoute
+  '/reports/aged-payables': typeof ReportsAgedPayablesRoute
+  '/reports/aged-receivables': typeof ReportsAgedReceivablesRoute
+  '/reports/balance-sheet': typeof ReportsBalanceSheetRoute
+  '/reports/profit-and-loss': typeof ReportsProfitAndLossRoute
+  '/reports/purchases-by-supplier': typeof ReportsPurchasesBySupplierRoute
+  '/reports/sales-by-customer': typeof ReportsSalesByCustomerRoute
+  '/reports/sales-by-item': typeof ReportsSalesByItemRoute
   '/reports/sales-report': typeof ReportsSalesReportRoute
+  '/reports/trial-balance': typeof ReportsTrialBalanceRoute
+  '/reports/vat-return': typeof ReportsVatReturnRoute
   '/sales/customers': typeof SalesCustomersRoute
+  '/sales/recurring': typeof SalesRecurringRoute
+  '/sales/statements': typeof SalesStatementsRoute
+  '/settings/audit-log': typeof SettingsAuditLogRoute
   '/settings/billing': typeof SettingsBillingRoute
   '/settings/branches': typeof SettingsBranchesRoute
+  '/settings/currencies': typeof SettingsCurrenciesRoute
+  '/settings/import-export': typeof SettingsImportExportRoute
   '/settings/integrations': typeof SettingsIntegrationsRoute
+  '/settings/numbering': typeof SettingsNumberingRoute
   '/settings/organization': typeof SettingsOrganizationRoute
+  '/settings/payment-methods': typeof SettingsPaymentMethodsRoute
   '/settings/roles': typeof SettingsRolesRoute
   '/settings/sales-reps': typeof SettingsSalesRepsRoute
   '/settings/taxes': typeof SettingsTaxesRoute
@@ -391,6 +599,8 @@ export interface FileRoutesByTo {
   '/settings/users': typeof SettingsUsersRoute
   '/purchases/bills/$id': typeof PurchasesBillsIdRoute
   '/purchases/bills/new': typeof PurchasesBillsNewRoute
+  '/purchases/debit-notes/$id': typeof PurchasesDebitNotesIdRoute
+  '/purchases/debit-notes/new': typeof PurchasesDebitNotesNewRoute
   '/purchases/purchase-orders/$id': typeof PurchasesPurchaseOrdersIdRoute
   '/purchases/purchase-orders/new': typeof PurchasesPurchaseOrdersNewRoute
   '/sales/credit-notes/$id': typeof SalesCreditNotesIdRoute
@@ -400,6 +610,7 @@ export interface FileRoutesByTo {
   '/sales/quotations/$id': typeof SalesQuotationsIdRoute
   '/sales/quotations/new': typeof SalesQuotationsNewRoute
   '/purchases/bills': typeof PurchasesBillsIndexRoute
+  '/purchases/debit-notes': typeof PurchasesDebitNotesIndexRoute
   '/purchases/purchase-orders': typeof PurchasesPurchaseOrdersIndexRoute
   '/sales/credit-notes': typeof SalesCreditNotesIndexRoute
   '/sales/invoices': typeof SalesInvoicesIndexRoute
@@ -408,34 +619,57 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/accounting': typeof AccountingRoute
+  '/accounting': typeof AccountingRouteWithChildren
   '/auth': typeof AuthRoute
-  '/dashboard': typeof DashboardRoute
+  '/dashboard': typeof DashboardRouteWithChildren
   '/expenses': typeof ExpensesRoute
   '/profile': typeof ProfileRoute
   '/projects': typeof ProjectsRoute
   '/select-organization': typeof SelectOrganizationRoute
+  '/accounting/chart-of-accounts': typeof AccountingChartOfAccountsRoute
+  '/accounting/general-ledger': typeof AccountingGeneralLedgerRoute
+  '/accounting/journal-entries': typeof AccountingJournalEntriesRoute
   '/cash/banks': typeof CashBanksRoute
   '/cash/payments': typeof CashPaymentsRoute
   '/cash/receipts': typeof CashReceiptsRoute
+  '/cash/reconciliation': typeof CashReconciliationRoute
   '/cash/transactions': typeof CashTransactionsRoute
   '/cash/transfers': typeof CashTransfersRoute
+  '/dashboard/cash-flow': typeof DashboardCashFlowRoute
+  '/dashboard/profit-and-loss': typeof DashboardProfitAndLossRoute
   '/inventory/adjustments': typeof InventoryAdjustmentsRoute
   '/inventory/items': typeof InventoryItemsRoute
   '/inventory/reports': typeof InventoryReportsRoute
   '/inventory/warehouses': typeof InventoryWarehousesRoute
   '/purchases/bills': typeof PurchasesBillsRouteWithChildren
+  '/purchases/debit-notes': typeof PurchasesDebitNotesRouteWithChildren
   '/purchases/purchase-orders': typeof PurchasesPurchaseOrdersRouteWithChildren
   '/purchases/suppliers': typeof PurchasesSuppliersRoute
+  '/reports/aged-payables': typeof ReportsAgedPayablesRoute
+  '/reports/aged-receivables': typeof ReportsAgedReceivablesRoute
+  '/reports/balance-sheet': typeof ReportsBalanceSheetRoute
+  '/reports/profit-and-loss': typeof ReportsProfitAndLossRoute
+  '/reports/purchases-by-supplier': typeof ReportsPurchasesBySupplierRoute
+  '/reports/sales-by-customer': typeof ReportsSalesByCustomerRoute
+  '/reports/sales-by-item': typeof ReportsSalesByItemRoute
   '/reports/sales-report': typeof ReportsSalesReportRoute
+  '/reports/trial-balance': typeof ReportsTrialBalanceRoute
+  '/reports/vat-return': typeof ReportsVatReturnRoute
   '/sales/credit-notes': typeof SalesCreditNotesRouteWithChildren
   '/sales/customers': typeof SalesCustomersRoute
   '/sales/invoices': typeof SalesInvoicesRouteWithChildren
   '/sales/quotations': typeof SalesQuotationsRouteWithChildren
+  '/sales/recurring': typeof SalesRecurringRoute
+  '/sales/statements': typeof SalesStatementsRoute
+  '/settings/audit-log': typeof SettingsAuditLogRoute
   '/settings/billing': typeof SettingsBillingRoute
   '/settings/branches': typeof SettingsBranchesRoute
+  '/settings/currencies': typeof SettingsCurrenciesRoute
+  '/settings/import-export': typeof SettingsImportExportRoute
   '/settings/integrations': typeof SettingsIntegrationsRoute
+  '/settings/numbering': typeof SettingsNumberingRoute
   '/settings/organization': typeof SettingsOrganizationRoute
+  '/settings/payment-methods': typeof SettingsPaymentMethodsRoute
   '/settings/roles': typeof SettingsRolesRoute
   '/settings/sales-reps': typeof SettingsSalesRepsRoute
   '/settings/taxes': typeof SettingsTaxesRoute
@@ -443,6 +677,8 @@ export interface FileRoutesById {
   '/settings/users': typeof SettingsUsersRoute
   '/purchases/bills/$id': typeof PurchasesBillsIdRoute
   '/purchases/bills/new': typeof PurchasesBillsNewRoute
+  '/purchases/debit-notes/$id': typeof PurchasesDebitNotesIdRoute
+  '/purchases/debit-notes/new': typeof PurchasesDebitNotesNewRoute
   '/purchases/purchase-orders/$id': typeof PurchasesPurchaseOrdersIdRoute
   '/purchases/purchase-orders/new': typeof PurchasesPurchaseOrdersNewRoute
   '/sales/credit-notes/$id': typeof SalesCreditNotesIdRoute
@@ -452,6 +688,7 @@ export interface FileRoutesById {
   '/sales/quotations/$id': typeof SalesQuotationsIdRoute
   '/sales/quotations/new': typeof SalesQuotationsNewRoute
   '/purchases/bills/': typeof PurchasesBillsIndexRoute
+  '/purchases/debit-notes/': typeof PurchasesDebitNotesIndexRoute
   '/purchases/purchase-orders/': typeof PurchasesPurchaseOrdersIndexRoute
   '/sales/credit-notes/': typeof SalesCreditNotesIndexRoute
   '/sales/invoices/': typeof SalesInvoicesIndexRoute
@@ -468,27 +705,50 @@ export interface FileRouteTypes {
     | '/profile'
     | '/projects'
     | '/select-organization'
+    | '/accounting/chart-of-accounts'
+    | '/accounting/general-ledger'
+    | '/accounting/journal-entries'
     | '/cash/banks'
     | '/cash/payments'
     | '/cash/receipts'
+    | '/cash/reconciliation'
     | '/cash/transactions'
     | '/cash/transfers'
+    | '/dashboard/cash-flow'
+    | '/dashboard/profit-and-loss'
     | '/inventory/adjustments'
     | '/inventory/items'
     | '/inventory/reports'
     | '/inventory/warehouses'
     | '/purchases/bills'
+    | '/purchases/debit-notes'
     | '/purchases/purchase-orders'
     | '/purchases/suppliers'
+    | '/reports/aged-payables'
+    | '/reports/aged-receivables'
+    | '/reports/balance-sheet'
+    | '/reports/profit-and-loss'
+    | '/reports/purchases-by-supplier'
+    | '/reports/sales-by-customer'
+    | '/reports/sales-by-item'
     | '/reports/sales-report'
+    | '/reports/trial-balance'
+    | '/reports/vat-return'
     | '/sales/credit-notes'
     | '/sales/customers'
     | '/sales/invoices'
     | '/sales/quotations'
+    | '/sales/recurring'
+    | '/sales/statements'
+    | '/settings/audit-log'
     | '/settings/billing'
     | '/settings/branches'
+    | '/settings/currencies'
+    | '/settings/import-export'
     | '/settings/integrations'
+    | '/settings/numbering'
     | '/settings/organization'
+    | '/settings/payment-methods'
     | '/settings/roles'
     | '/settings/sales-reps'
     | '/settings/taxes'
@@ -496,6 +756,8 @@ export interface FileRouteTypes {
     | '/settings/users'
     | '/purchases/bills/$id'
     | '/purchases/bills/new'
+    | '/purchases/debit-notes/$id'
+    | '/purchases/debit-notes/new'
     | '/purchases/purchase-orders/$id'
     | '/purchases/purchase-orders/new'
     | '/sales/credit-notes/$id'
@@ -505,6 +767,7 @@ export interface FileRouteTypes {
     | '/sales/quotations/$id'
     | '/sales/quotations/new'
     | '/purchases/bills/'
+    | '/purchases/debit-notes/'
     | '/purchases/purchase-orders/'
     | '/sales/credit-notes/'
     | '/sales/invoices/'
@@ -519,22 +782,44 @@ export interface FileRouteTypes {
     | '/profile'
     | '/projects'
     | '/select-organization'
+    | '/accounting/chart-of-accounts'
+    | '/accounting/general-ledger'
+    | '/accounting/journal-entries'
     | '/cash/banks'
     | '/cash/payments'
     | '/cash/receipts'
+    | '/cash/reconciliation'
     | '/cash/transactions'
     | '/cash/transfers'
+    | '/dashboard/cash-flow'
+    | '/dashboard/profit-and-loss'
     | '/inventory/adjustments'
     | '/inventory/items'
     | '/inventory/reports'
     | '/inventory/warehouses'
     | '/purchases/suppliers'
+    | '/reports/aged-payables'
+    | '/reports/aged-receivables'
+    | '/reports/balance-sheet'
+    | '/reports/profit-and-loss'
+    | '/reports/purchases-by-supplier'
+    | '/reports/sales-by-customer'
+    | '/reports/sales-by-item'
     | '/reports/sales-report'
+    | '/reports/trial-balance'
+    | '/reports/vat-return'
     | '/sales/customers'
+    | '/sales/recurring'
+    | '/sales/statements'
+    | '/settings/audit-log'
     | '/settings/billing'
     | '/settings/branches'
+    | '/settings/currencies'
+    | '/settings/import-export'
     | '/settings/integrations'
+    | '/settings/numbering'
     | '/settings/organization'
+    | '/settings/payment-methods'
     | '/settings/roles'
     | '/settings/sales-reps'
     | '/settings/taxes'
@@ -542,6 +827,8 @@ export interface FileRouteTypes {
     | '/settings/users'
     | '/purchases/bills/$id'
     | '/purchases/bills/new'
+    | '/purchases/debit-notes/$id'
+    | '/purchases/debit-notes/new'
     | '/purchases/purchase-orders/$id'
     | '/purchases/purchase-orders/new'
     | '/sales/credit-notes/$id'
@@ -551,6 +838,7 @@ export interface FileRouteTypes {
     | '/sales/quotations/$id'
     | '/sales/quotations/new'
     | '/purchases/bills'
+    | '/purchases/debit-notes'
     | '/purchases/purchase-orders'
     | '/sales/credit-notes'
     | '/sales/invoices'
@@ -565,27 +853,50 @@ export interface FileRouteTypes {
     | '/profile'
     | '/projects'
     | '/select-organization'
+    | '/accounting/chart-of-accounts'
+    | '/accounting/general-ledger'
+    | '/accounting/journal-entries'
     | '/cash/banks'
     | '/cash/payments'
     | '/cash/receipts'
+    | '/cash/reconciliation'
     | '/cash/transactions'
     | '/cash/transfers'
+    | '/dashboard/cash-flow'
+    | '/dashboard/profit-and-loss'
     | '/inventory/adjustments'
     | '/inventory/items'
     | '/inventory/reports'
     | '/inventory/warehouses'
     | '/purchases/bills'
+    | '/purchases/debit-notes'
     | '/purchases/purchase-orders'
     | '/purchases/suppliers'
+    | '/reports/aged-payables'
+    | '/reports/aged-receivables'
+    | '/reports/balance-sheet'
+    | '/reports/profit-and-loss'
+    | '/reports/purchases-by-supplier'
+    | '/reports/sales-by-customer'
+    | '/reports/sales-by-item'
     | '/reports/sales-report'
+    | '/reports/trial-balance'
+    | '/reports/vat-return'
     | '/sales/credit-notes'
     | '/sales/customers'
     | '/sales/invoices'
     | '/sales/quotations'
+    | '/sales/recurring'
+    | '/sales/statements'
+    | '/settings/audit-log'
     | '/settings/billing'
     | '/settings/branches'
+    | '/settings/currencies'
+    | '/settings/import-export'
     | '/settings/integrations'
+    | '/settings/numbering'
     | '/settings/organization'
+    | '/settings/payment-methods'
     | '/settings/roles'
     | '/settings/sales-reps'
     | '/settings/taxes'
@@ -593,6 +904,8 @@ export interface FileRouteTypes {
     | '/settings/users'
     | '/purchases/bills/$id'
     | '/purchases/bills/new'
+    | '/purchases/debit-notes/$id'
+    | '/purchases/debit-notes/new'
     | '/purchases/purchase-orders/$id'
     | '/purchases/purchase-orders/new'
     | '/sales/credit-notes/$id'
@@ -602,6 +915,7 @@ export interface FileRouteTypes {
     | '/sales/quotations/$id'
     | '/sales/quotations/new'
     | '/purchases/bills/'
+    | '/purchases/debit-notes/'
     | '/purchases/purchase-orders/'
     | '/sales/credit-notes/'
     | '/sales/invoices/'
@@ -610,9 +924,9 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  AccountingRoute: typeof AccountingRoute
+  AccountingRoute: typeof AccountingRouteWithChildren
   AuthRoute: typeof AuthRoute
-  DashboardRoute: typeof DashboardRoute
+  DashboardRoute: typeof DashboardRouteWithChildren
   ExpensesRoute: typeof ExpensesRoute
   ProfileRoute: typeof ProfileRoute
   ProjectsRoute: typeof ProjectsRoute
@@ -620,6 +934,7 @@ export interface RootRouteChildren {
   CashBanksRoute: typeof CashBanksRoute
   CashPaymentsRoute: typeof CashPaymentsRoute
   CashReceiptsRoute: typeof CashReceiptsRoute
+  CashReconciliationRoute: typeof CashReconciliationRoute
   CashTransactionsRoute: typeof CashTransactionsRoute
   CashTransfersRoute: typeof CashTransfersRoute
   InventoryAdjustmentsRoute: typeof InventoryAdjustmentsRoute
@@ -627,17 +942,34 @@ export interface RootRouteChildren {
   InventoryReportsRoute: typeof InventoryReportsRoute
   InventoryWarehousesRoute: typeof InventoryWarehousesRoute
   PurchasesBillsRoute: typeof PurchasesBillsRouteWithChildren
+  PurchasesDebitNotesRoute: typeof PurchasesDebitNotesRouteWithChildren
   PurchasesPurchaseOrdersRoute: typeof PurchasesPurchaseOrdersRouteWithChildren
   PurchasesSuppliersRoute: typeof PurchasesSuppliersRoute
+  ReportsAgedPayablesRoute: typeof ReportsAgedPayablesRoute
+  ReportsAgedReceivablesRoute: typeof ReportsAgedReceivablesRoute
+  ReportsBalanceSheetRoute: typeof ReportsBalanceSheetRoute
+  ReportsProfitAndLossRoute: typeof ReportsProfitAndLossRoute
+  ReportsPurchasesBySupplierRoute: typeof ReportsPurchasesBySupplierRoute
+  ReportsSalesByCustomerRoute: typeof ReportsSalesByCustomerRoute
+  ReportsSalesByItemRoute: typeof ReportsSalesByItemRoute
   ReportsSalesReportRoute: typeof ReportsSalesReportRoute
+  ReportsTrialBalanceRoute: typeof ReportsTrialBalanceRoute
+  ReportsVatReturnRoute: typeof ReportsVatReturnRoute
   SalesCreditNotesRoute: typeof SalesCreditNotesRouteWithChildren
   SalesCustomersRoute: typeof SalesCustomersRoute
   SalesInvoicesRoute: typeof SalesInvoicesRouteWithChildren
   SalesQuotationsRoute: typeof SalesQuotationsRouteWithChildren
+  SalesRecurringRoute: typeof SalesRecurringRoute
+  SalesStatementsRoute: typeof SalesStatementsRoute
+  SettingsAuditLogRoute: typeof SettingsAuditLogRoute
   SettingsBillingRoute: typeof SettingsBillingRoute
   SettingsBranchesRoute: typeof SettingsBranchesRoute
+  SettingsCurrenciesRoute: typeof SettingsCurrenciesRoute
+  SettingsImportExportRoute: typeof SettingsImportExportRoute
   SettingsIntegrationsRoute: typeof SettingsIntegrationsRoute
+  SettingsNumberingRoute: typeof SettingsNumberingRoute
   SettingsOrganizationRoute: typeof SettingsOrganizationRoute
+  SettingsPaymentMethodsRoute: typeof SettingsPaymentMethodsRoute
   SettingsRolesRoute: typeof SettingsRolesRoute
   SettingsSalesRepsRoute: typeof SettingsSalesRepsRoute
   SettingsTaxesRoute: typeof SettingsTaxesRoute
@@ -738,6 +1070,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SettingsRolesRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/settings/payment-methods': {
+      id: '/settings/payment-methods'
+      path: '/settings/payment-methods'
+      fullPath: '/settings/payment-methods'
+      preLoaderRoute: typeof SettingsPaymentMethodsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/settings/organization': {
       id: '/settings/organization'
       path: '/settings/organization'
@@ -745,11 +1084,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SettingsOrganizationRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/settings/numbering': {
+      id: '/settings/numbering'
+      path: '/settings/numbering'
+      fullPath: '/settings/numbering'
+      preLoaderRoute: typeof SettingsNumberingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/settings/integrations': {
       id: '/settings/integrations'
       path: '/settings/integrations'
       fullPath: '/settings/integrations'
       preLoaderRoute: typeof SettingsIntegrationsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/settings/import-export': {
+      id: '/settings/import-export'
+      path: '/settings/import-export'
+      fullPath: '/settings/import-export'
+      preLoaderRoute: typeof SettingsImportExportRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/settings/currencies': {
+      id: '/settings/currencies'
+      path: '/settings/currencies'
+      fullPath: '/settings/currencies'
+      preLoaderRoute: typeof SettingsCurrenciesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/settings/branches': {
@@ -764,6 +1124,27 @@ declare module '@tanstack/react-router' {
       path: '/settings/billing'
       fullPath: '/settings/billing'
       preLoaderRoute: typeof SettingsBillingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/settings/audit-log': {
+      id: '/settings/audit-log'
+      path: '/settings/audit-log'
+      fullPath: '/settings/audit-log'
+      preLoaderRoute: typeof SettingsAuditLogRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/sales/statements': {
+      id: '/sales/statements'
+      path: '/sales/statements'
+      fullPath: '/sales/statements'
+      preLoaderRoute: typeof SalesStatementsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/sales/recurring': {
+      id: '/sales/recurring'
+      path: '/sales/recurring'
+      fullPath: '/sales/recurring'
+      preLoaderRoute: typeof SalesRecurringRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/sales/quotations': {
@@ -794,11 +1175,74 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SalesCreditNotesRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/reports/vat-return': {
+      id: '/reports/vat-return'
+      path: '/reports/vat-return'
+      fullPath: '/reports/vat-return'
+      preLoaderRoute: typeof ReportsVatReturnRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/reports/trial-balance': {
+      id: '/reports/trial-balance'
+      path: '/reports/trial-balance'
+      fullPath: '/reports/trial-balance'
+      preLoaderRoute: typeof ReportsTrialBalanceRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/reports/sales-report': {
       id: '/reports/sales-report'
       path: '/reports/sales-report'
       fullPath: '/reports/sales-report'
       preLoaderRoute: typeof ReportsSalesReportRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/reports/sales-by-item': {
+      id: '/reports/sales-by-item'
+      path: '/reports/sales-by-item'
+      fullPath: '/reports/sales-by-item'
+      preLoaderRoute: typeof ReportsSalesByItemRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/reports/sales-by-customer': {
+      id: '/reports/sales-by-customer'
+      path: '/reports/sales-by-customer'
+      fullPath: '/reports/sales-by-customer'
+      preLoaderRoute: typeof ReportsSalesByCustomerRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/reports/purchases-by-supplier': {
+      id: '/reports/purchases-by-supplier'
+      path: '/reports/purchases-by-supplier'
+      fullPath: '/reports/purchases-by-supplier'
+      preLoaderRoute: typeof ReportsPurchasesBySupplierRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/reports/profit-and-loss': {
+      id: '/reports/profit-and-loss'
+      path: '/reports/profit-and-loss'
+      fullPath: '/reports/profit-and-loss'
+      preLoaderRoute: typeof ReportsProfitAndLossRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/reports/balance-sheet': {
+      id: '/reports/balance-sheet'
+      path: '/reports/balance-sheet'
+      fullPath: '/reports/balance-sheet'
+      preLoaderRoute: typeof ReportsBalanceSheetRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/reports/aged-receivables': {
+      id: '/reports/aged-receivables'
+      path: '/reports/aged-receivables'
+      fullPath: '/reports/aged-receivables'
+      preLoaderRoute: typeof ReportsAgedReceivablesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/reports/aged-payables': {
+      id: '/reports/aged-payables'
+      path: '/reports/aged-payables'
+      fullPath: '/reports/aged-payables'
+      preLoaderRoute: typeof ReportsAgedPayablesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/purchases/suppliers': {
@@ -813,6 +1257,13 @@ declare module '@tanstack/react-router' {
       path: '/purchases/purchase-orders'
       fullPath: '/purchases/purchase-orders'
       preLoaderRoute: typeof PurchasesPurchaseOrdersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/purchases/debit-notes': {
+      id: '/purchases/debit-notes'
+      path: '/purchases/debit-notes'
+      fullPath: '/purchases/debit-notes'
+      preLoaderRoute: typeof PurchasesDebitNotesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/purchases/bills': {
@@ -850,6 +1301,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof InventoryAdjustmentsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/dashboard/profit-and-loss': {
+      id: '/dashboard/profit-and-loss'
+      path: '/profit-and-loss'
+      fullPath: '/dashboard/profit-and-loss'
+      preLoaderRoute: typeof DashboardProfitAndLossRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/cash-flow': {
+      id: '/dashboard/cash-flow'
+      path: '/cash-flow'
+      fullPath: '/dashboard/cash-flow'
+      preLoaderRoute: typeof DashboardCashFlowRouteImport
+      parentRoute: typeof DashboardRoute
+    }
     '/cash/transfers': {
       id: '/cash/transfers'
       path: '/cash/transfers'
@@ -862,6 +1327,13 @@ declare module '@tanstack/react-router' {
       path: '/cash/transactions'
       fullPath: '/cash/transactions'
       preLoaderRoute: typeof CashTransactionsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/cash/reconciliation': {
+      id: '/cash/reconciliation'
+      path: '/cash/reconciliation'
+      fullPath: '/cash/reconciliation'
+      preLoaderRoute: typeof CashReconciliationRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/cash/receipts': {
@@ -884,6 +1356,27 @@ declare module '@tanstack/react-router' {
       fullPath: '/cash/banks'
       preLoaderRoute: typeof CashBanksRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/accounting/journal-entries': {
+      id: '/accounting/journal-entries'
+      path: '/journal-entries'
+      fullPath: '/accounting/journal-entries'
+      preLoaderRoute: typeof AccountingJournalEntriesRouteImport
+      parentRoute: typeof AccountingRoute
+    }
+    '/accounting/general-ledger': {
+      id: '/accounting/general-ledger'
+      path: '/general-ledger'
+      fullPath: '/accounting/general-ledger'
+      preLoaderRoute: typeof AccountingGeneralLedgerRouteImport
+      parentRoute: typeof AccountingRoute
+    }
+    '/accounting/chart-of-accounts': {
+      id: '/accounting/chart-of-accounts'
+      path: '/chart-of-accounts'
+      fullPath: '/accounting/chart-of-accounts'
+      preLoaderRoute: typeof AccountingChartOfAccountsRouteImport
+      parentRoute: typeof AccountingRoute
     }
     '/sales/quotations/': {
       id: '/sales/quotations/'
@@ -912,6 +1405,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/purchases/purchase-orders/'
       preLoaderRoute: typeof PurchasesPurchaseOrdersIndexRouteImport
       parentRoute: typeof PurchasesPurchaseOrdersRoute
+    }
+    '/purchases/debit-notes/': {
+      id: '/purchases/debit-notes/'
+      path: '/'
+      fullPath: '/purchases/debit-notes/'
+      preLoaderRoute: typeof PurchasesDebitNotesIndexRouteImport
+      parentRoute: typeof PurchasesDebitNotesRoute
     }
     '/purchases/bills/': {
       id: '/purchases/bills/'
@@ -976,6 +1476,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PurchasesPurchaseOrdersIdRouteImport
       parentRoute: typeof PurchasesPurchaseOrdersRoute
     }
+    '/purchases/debit-notes/new': {
+      id: '/purchases/debit-notes/new'
+      path: '/new'
+      fullPath: '/purchases/debit-notes/new'
+      preLoaderRoute: typeof PurchasesDebitNotesNewRouteImport
+      parentRoute: typeof PurchasesDebitNotesRoute
+    }
+    '/purchases/debit-notes/$id': {
+      id: '/purchases/debit-notes/$id'
+      path: '/$id'
+      fullPath: '/purchases/debit-notes/$id'
+      preLoaderRoute: typeof PurchasesDebitNotesIdRouteImport
+      parentRoute: typeof PurchasesDebitNotesRoute
+    }
     '/purchases/bills/new': {
       id: '/purchases/bills/new'
       path: '/new'
@@ -993,6 +1507,36 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface AccountingRouteChildren {
+  AccountingChartOfAccountsRoute: typeof AccountingChartOfAccountsRoute
+  AccountingGeneralLedgerRoute: typeof AccountingGeneralLedgerRoute
+  AccountingJournalEntriesRoute: typeof AccountingJournalEntriesRoute
+}
+
+const AccountingRouteChildren: AccountingRouteChildren = {
+  AccountingChartOfAccountsRoute: AccountingChartOfAccountsRoute,
+  AccountingGeneralLedgerRoute: AccountingGeneralLedgerRoute,
+  AccountingJournalEntriesRoute: AccountingJournalEntriesRoute,
+}
+
+const AccountingRouteWithChildren = AccountingRoute._addFileChildren(
+  AccountingRouteChildren,
+)
+
+interface DashboardRouteChildren {
+  DashboardCashFlowRoute: typeof DashboardCashFlowRoute
+  DashboardProfitAndLossRoute: typeof DashboardProfitAndLossRoute
+}
+
+const DashboardRouteChildren: DashboardRouteChildren = {
+  DashboardCashFlowRoute: DashboardCashFlowRoute,
+  DashboardProfitAndLossRoute: DashboardProfitAndLossRoute,
+}
+
+const DashboardRouteWithChildren = DashboardRoute._addFileChildren(
+  DashboardRouteChildren,
+)
+
 interface PurchasesBillsRouteChildren {
   PurchasesBillsIdRoute: typeof PurchasesBillsIdRoute
   PurchasesBillsNewRoute: typeof PurchasesBillsNewRoute
@@ -1008,6 +1552,21 @@ const PurchasesBillsRouteChildren: PurchasesBillsRouteChildren = {
 const PurchasesBillsRouteWithChildren = PurchasesBillsRoute._addFileChildren(
   PurchasesBillsRouteChildren,
 )
+
+interface PurchasesDebitNotesRouteChildren {
+  PurchasesDebitNotesIdRoute: typeof PurchasesDebitNotesIdRoute
+  PurchasesDebitNotesNewRoute: typeof PurchasesDebitNotesNewRoute
+  PurchasesDebitNotesIndexRoute: typeof PurchasesDebitNotesIndexRoute
+}
+
+const PurchasesDebitNotesRouteChildren: PurchasesDebitNotesRouteChildren = {
+  PurchasesDebitNotesIdRoute: PurchasesDebitNotesIdRoute,
+  PurchasesDebitNotesNewRoute: PurchasesDebitNotesNewRoute,
+  PurchasesDebitNotesIndexRoute: PurchasesDebitNotesIndexRoute,
+}
+
+const PurchasesDebitNotesRouteWithChildren =
+  PurchasesDebitNotesRoute._addFileChildren(PurchasesDebitNotesRouteChildren)
 
 interface PurchasesPurchaseOrdersRouteChildren {
   PurchasesPurchaseOrdersIdRoute: typeof PurchasesPurchaseOrdersIdRoute
@@ -1076,9 +1635,9 @@ const SalesQuotationsRouteWithChildren = SalesQuotationsRoute._addFileChildren(
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  AccountingRoute: AccountingRoute,
+  AccountingRoute: AccountingRouteWithChildren,
   AuthRoute: AuthRoute,
-  DashboardRoute: DashboardRoute,
+  DashboardRoute: DashboardRouteWithChildren,
   ExpensesRoute: ExpensesRoute,
   ProfileRoute: ProfileRoute,
   ProjectsRoute: ProjectsRoute,
@@ -1086,6 +1645,7 @@ const rootRouteChildren: RootRouteChildren = {
   CashBanksRoute: CashBanksRoute,
   CashPaymentsRoute: CashPaymentsRoute,
   CashReceiptsRoute: CashReceiptsRoute,
+  CashReconciliationRoute: CashReconciliationRoute,
   CashTransactionsRoute: CashTransactionsRoute,
   CashTransfersRoute: CashTransfersRoute,
   InventoryAdjustmentsRoute: InventoryAdjustmentsRoute,
@@ -1093,17 +1653,34 @@ const rootRouteChildren: RootRouteChildren = {
   InventoryReportsRoute: InventoryReportsRoute,
   InventoryWarehousesRoute: InventoryWarehousesRoute,
   PurchasesBillsRoute: PurchasesBillsRouteWithChildren,
+  PurchasesDebitNotesRoute: PurchasesDebitNotesRouteWithChildren,
   PurchasesPurchaseOrdersRoute: PurchasesPurchaseOrdersRouteWithChildren,
   PurchasesSuppliersRoute: PurchasesSuppliersRoute,
+  ReportsAgedPayablesRoute: ReportsAgedPayablesRoute,
+  ReportsAgedReceivablesRoute: ReportsAgedReceivablesRoute,
+  ReportsBalanceSheetRoute: ReportsBalanceSheetRoute,
+  ReportsProfitAndLossRoute: ReportsProfitAndLossRoute,
+  ReportsPurchasesBySupplierRoute: ReportsPurchasesBySupplierRoute,
+  ReportsSalesByCustomerRoute: ReportsSalesByCustomerRoute,
+  ReportsSalesByItemRoute: ReportsSalesByItemRoute,
   ReportsSalesReportRoute: ReportsSalesReportRoute,
+  ReportsTrialBalanceRoute: ReportsTrialBalanceRoute,
+  ReportsVatReturnRoute: ReportsVatReturnRoute,
   SalesCreditNotesRoute: SalesCreditNotesRouteWithChildren,
   SalesCustomersRoute: SalesCustomersRoute,
   SalesInvoicesRoute: SalesInvoicesRouteWithChildren,
   SalesQuotationsRoute: SalesQuotationsRouteWithChildren,
+  SalesRecurringRoute: SalesRecurringRoute,
+  SalesStatementsRoute: SalesStatementsRoute,
+  SettingsAuditLogRoute: SettingsAuditLogRoute,
   SettingsBillingRoute: SettingsBillingRoute,
   SettingsBranchesRoute: SettingsBranchesRoute,
+  SettingsCurrenciesRoute: SettingsCurrenciesRoute,
+  SettingsImportExportRoute: SettingsImportExportRoute,
   SettingsIntegrationsRoute: SettingsIntegrationsRoute,
+  SettingsNumberingRoute: SettingsNumberingRoute,
   SettingsOrganizationRoute: SettingsOrganizationRoute,
+  SettingsPaymentMethodsRoute: SettingsPaymentMethodsRoute,
   SettingsRolesRoute: SettingsRolesRoute,
   SettingsSalesRepsRoute: SettingsSalesRepsRoute,
   SettingsTaxesRoute: SettingsTaxesRoute,
