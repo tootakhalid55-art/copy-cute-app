@@ -204,19 +204,12 @@ export function DocumentForm({
     setLines((ls) => ls.map((l, idx) => (idx === i ? { ...l, ...patch } : l)));
 
   const save = (finalStatus: string) => {
-    add({
-      ref,
-      date,
-      dueDate,
-      partyId,
-      partyName,
-      notes,
-      status: finalStatus,
-      lines,
-      subtotal,
-      tax,
-      total,
-    });
+    const payload = {
+      ref, date, dueDate, partyId, partyName, notes,
+      status: finalStatus, lines, subtotal, tax, total,
+    };
+    if (existing) update(existing.id, payload);
+    else add(payload);
     navigate({ to: backTo });
   };
 
