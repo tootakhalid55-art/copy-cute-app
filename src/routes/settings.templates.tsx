@@ -136,14 +136,34 @@ function TemplatesPage() {
                   <Eye className="w-3.5 h-3.5" /> استعراض
                 </button>
                 {t.builtin ? (
-                  <button
-                    type="button"
-                    onClick={() => duplicate(t)}
-                    className="flex-1 inline-flex items-center justify-center gap-1 border border-[#eceae2] rounded px-2 py-1.5 text-xs hover:bg-[#f7f6f0]"
-                    title="إنشاء نسخة قابلة للتعديل"
-                  >
-                    <Pencil className="w-3.5 h-3.5" /> تخصيص
-                  </button>
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => openEdit(t)}
+                      className="flex-1 inline-flex items-center justify-center gap-1 border border-[#eceae2] rounded px-2 py-1.5 text-xs hover:bg-[#f7f6f0]"
+                      title="تعديل ألوان القالب"
+                    >
+                      <Pencil className="w-3.5 h-3.5" /> تعديل
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => duplicate(t)}
+                      className="flex-1 inline-flex items-center justify-center gap-1 border border-[#eceae2] rounded px-2 py-1.5 text-xs hover:bg-[#f7f6f0]"
+                      title="إنشاء نسخة قابلة للتعديل"
+                    >
+                      <FileText className="w-3.5 h-3.5" /> نسخ
+                    </button>
+                    {isOverridden(t.id) && (
+                      <button
+                        type="button"
+                        onClick={() => resetBuiltin(t.id)}
+                        className="inline-flex items-center justify-center border border-[#eceae2] rounded px-2 py-1.5 text-xs hover:bg-[#f7f6f0]"
+                        title="إعادة تعيين"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+                  </>
                 ) : (
                   <>
                     <button
