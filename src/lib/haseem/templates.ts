@@ -22,6 +22,7 @@ export const BUILTIN_TEMPLATES: InvoiceTemplate[] = [
   { id: "wafeq-blue",    name: "وافِق — أزرق",   desc: "نسخة زرقاء رسمية بترويسة هادئة.", accent: "#1d4ed8", onAccent: "#ffffff", soft: "#eff6ff", builtin: true },
   { id: "wafeq-emerald", name: "وافِق — زمردي",  desc: "لمسة خضراء عصرية للشركات الخدمية.", accent: "#047857", onAccent: "#ffffff", soft: "#ecfdf5", builtin: true },
   { id: "wafeq-slate",   name: "وافِق — رصاصي", desc: "رمادي داكن أنيق للمكاتب والاستشارات.", accent: "#334155", onAccent: "#ffffff", soft: "#f1f5f9", builtin: true },
+  { id: "wafeq-bilingual", name: "وافِق — ثنائي اللغة", desc: "قالب وافِق الرسمي ثنائي اللغة (عربي/إنجليزي) بجدول أنيق وترويسة مزدوجة.", accent: "#1f2a44", onAccent: "#ffffff", soft: "#f6f7f9", builtin: true },
 
   // قوالب إضافية متنوعة
   { id: "royal",    name: "ملكي",    desc: "بنفسجي عميق يعكس الفخامة.", accent: "#5b21b6", onAccent: "#ffffff", soft: "#f5f3ff", builtin: true },
