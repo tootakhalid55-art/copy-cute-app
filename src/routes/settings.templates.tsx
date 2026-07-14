@@ -61,7 +61,7 @@ function TemplatesPage() {
   const removeCustom = (id: string) => {
     if (!confirm("حذف هذا القالب؟")) return;
     custom.remove(id);
-    if (selectedId === id) setSelectedId("classic");
+    if (selectedId === id) setSelectedId(all[0]?.id ?? "classic");
   };
   const duplicate = (t: InvoiceTemplate) => {
     setDraft({
