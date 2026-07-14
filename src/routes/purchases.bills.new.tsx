@@ -11,6 +11,7 @@ export const Route = createFileRoute("/purchases/bills/new")({
       title="إنشاء فاتورة شراء"
       backTo="/purchases/bills"
       docPrefix="BILL"
+      kind="bill"
     />
   ),
 });

@@ -13,6 +13,7 @@ export const Route = createFileRoute("/sales/credit-notes/$id")({
         title="تعديل إشعار دائن"
         backTo="/sales/credit-notes"
         docPrefix="CN"
+      kind="credit-note"
         docId={id}
       />
     );

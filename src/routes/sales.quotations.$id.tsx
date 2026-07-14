@@ -13,6 +13,7 @@ export const Route = createFileRoute("/sales/quotations/$id")({
         title="تعديل عرض سعر"
         backTo="/sales/quotations"
         docPrefix="QT"
+      kind="quotation"
         docId={id}
       />
     );

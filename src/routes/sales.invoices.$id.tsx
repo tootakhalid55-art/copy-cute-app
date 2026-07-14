@@ -13,6 +13,7 @@ export const Route = createFileRoute("/sales/invoices/$id")({
         title="تعديل فاتورة مبيعات"
         backTo="/sales/invoices"
         docPrefix="INV"
+      kind="invoice"
         docId={id}
       />
     );

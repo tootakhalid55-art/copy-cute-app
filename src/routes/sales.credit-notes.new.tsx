@@ -11,6 +11,7 @@ export const Route = createFileRoute("/sales/credit-notes/new")({
       title="إنشاء إشعار دائن"
       backTo="/sales/credit-notes"
       docPrefix="CN"
+      kind="credit-note"
     />
   ),
 });

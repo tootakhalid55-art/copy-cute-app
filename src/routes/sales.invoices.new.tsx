@@ -12,6 +12,7 @@ export const Route = createFileRoute("/sales/invoices/new")({
       subtitle="أدخل بيانات الفاتورة ثم احفظها"
       backTo="/sales/invoices"
       docPrefix="INV"
+      kind="invoice"
     />
   ),
 });

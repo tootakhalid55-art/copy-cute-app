@@ -13,6 +13,7 @@ export const Route = createFileRoute("/purchases/bills/$id")({
         title="تعديل فاتورة شراء"
         backTo="/purchases/bills"
         docPrefix="BILL"
+      kind="bill"
         docId={id}
       />
     );
