@@ -3,13 +3,14 @@ import { createFileRoute } from "@tanstack/react-router";
 import { CheckCircle2, FileText, Plus, Pencil, Trash2, Eye, X, Save } from "lucide-react";
 import { Shell, PageHeader, OutlineBtn, PrimaryBtn } from "@/components/haseem/Shell";
 import {
-  BUILTIN_TEMPLATES,
   useInvoiceTemplates,
+  DOC_KINDS,
+  type DocKind,
   type InvoiceTemplate,
 } from "@/lib/haseem/templates";
 
 export const Route = createFileRoute("/settings/templates")({
-  head: () => ({ meta: [{ title: "قوالب الفواتير — حسيم" }] }),
+  head: () => ({ meta: [{ title: "قوالب المستندات — حسيم" }] }),
   component: TemplatesPage,
 });
 
@@ -24,7 +25,8 @@ const EMPTY_DRAFT: Draft = {
 };
 
 function TemplatesPage() {
-  const { all, custom, selectedId, setSelectedId, overrideBuiltin, resetBuiltin, isOverridden } = useInvoiceTemplates();
+  const [activeKind, setActiveKind] = useState<DocKind>("invoice");
+  const { all, custom, selectedId, setSelectedId, overrideBuiltin, resetBuiltin, isOverridden } = useInvoiceTemplates(activeKind);
   const [editorOpen, setEditorOpen] = useState(false);
   const [previewId, setPreviewId] = useState<string | null>(null);
   const [draft, setDraft] = useState<Draft>(EMPTY_DRAFT);
