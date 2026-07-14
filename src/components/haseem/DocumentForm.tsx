@@ -33,6 +33,7 @@ export function DocumentForm({
   backTo,
   docPrefix,
   docId,
+  kind,
 }: {
   storageKey: string;
   partyKey: string;
@@ -42,6 +43,7 @@ export function DocumentForm({
   backTo: string;
   docPrefix: string;
   docId?: string;
+  kind?: DocKind;
 }) {
   const navigate = useNavigate();
   const { items: parties, add: addParty } = useCollection<any>(partyKey);
