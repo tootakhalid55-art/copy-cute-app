@@ -32,6 +32,7 @@ export function DocumentForm({
   subtitle,
   backTo,
   docPrefix,
+  docId,
 }: {
   storageKey: string;
   partyKey: string;
@@ -40,26 +41,40 @@ export function DocumentForm({
   subtitle?: string;
   backTo: string;
   docPrefix: string;
+  docId?: string;
 }) {
   const navigate = useNavigate();
   const { items: parties, add: addParty } = useCollection<any>(partyKey);
-  const { add } = useCollection<any>(storageKey);
+  const { items: docs, add, update } = useCollection<any>(storageKey);
+  const existing = docId ? docs.find((d) => d.id === docId) : null;
   const [org] = useKV<{ name: string; taxNumber: string }>("org", {
     name: "شركة كنار الحديثة للمقاولات",
     taxNumber: "312756062700003",
   });
 
-  const [ref] = useState(
-    `${docPrefix}-${Math.floor(100000 + Math.random() * 900000)}`
+  const [ref, setRef] = useState(
+    existing?.ref ?? `${docPrefix}-${Math.floor(100000 + Math.random() * 900000)}`
   );
   const today = new Date().toISOString().slice(0, 10);
-  const [date, setDate] = useState(today);
-  const [dueDate, setDueDate] = useState(today);
-  const [partyId, setPartyId] = useState("");
-  const [notes, setNotes] = useState("");
-  const [lines, setLines] = useState<Line[]>([
-    { description: "", qty: 1, price: 0, tax: 15 },
-  ]);
+  const [date, setDate] = useState(existing?.date ?? today);
+  const [dueDate, setDueDate] = useState(existing?.dueDate ?? today);
+  const [partyId, setPartyId] = useState(existing?.partyId ?? "");
+  const [notes, setNotes] = useState(existing?.notes ?? "");
+  const [lines, setLines] = useState<Line[]>(
+    existing?.lines ?? [{ description: "", qty: 1, price: 0, tax: 15 }]
+  );
+  // Hydrate when the record loads asynchronously
+  useEffect(() => {
+    if (existing) {
+      setRef(existing.ref);
+      setDate(existing.date);
+      setDueDate(existing.dueDate);
+      setPartyId(existing.partyId ?? "");
+      setNotes(existing.notes ?? "");
+      setLines(existing.lines ?? [{ description: "", qty: 1, price: 0, tax: 15 }]);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [docId, existing?.id]);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [partyModalOpen, setPartyModalOpen] = useState(false);
   const [qrDataUrl, setQrDataUrl] = useState<string>("");
