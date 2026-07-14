@@ -133,7 +133,7 @@ export function DocumentForm({
   const partyName = party?.name ?? "—";
 
   // Selected invoice template — drives accent color & style variant in preview/print
-  const { selected: tpl } = useInvoiceTemplates();
+  const { selected: tpl } = useInvoiceTemplates(kind);
 
   // Round half-up to 2 decimals (matches ZATCA / Qoyod invoice math)
   const r2 = (n: number) => Math.round((n + Number.EPSILON) * 100) / 100;
