@@ -3,13 +3,14 @@ import { createFileRoute } from "@tanstack/react-router";
 import { CheckCircle2, FileText, Plus, Pencil, Trash2, Eye, X, Save } from "lucide-react";
 import { Shell, PageHeader, OutlineBtn, PrimaryBtn } from "@/components/haseem/Shell";
 import {
-  BUILTIN_TEMPLATES,
   useInvoiceTemplates,
+  DOC_KINDS,
+  type DocKind,
   type InvoiceTemplate,
 } from "@/lib/haseem/templates";
 
 export const Route = createFileRoute("/settings/templates")({
-  head: () => ({ meta: [{ title: "قوالب الفواتير — حسيم" }] }),
+  head: () => ({ meta: [{ title: "قوالب المستندات — حسيم" }] }),
   component: TemplatesPage,
 });
 
@@ -24,7 +25,8 @@ const EMPTY_DRAFT: Draft = {
 };
 
 function TemplatesPage() {
-  const { all, custom, selectedId, setSelectedId, overrideBuiltin, resetBuiltin, isOverridden } = useInvoiceTemplates();
+  const [activeKind, setActiveKind] = useState<DocKind>("invoice");
+  const { all, custom, selectedId, setSelectedId, overrideBuiltin, resetBuiltin, isOverridden } = useInvoiceTemplates(activeKind);
   const [editorOpen, setEditorOpen] = useState(false);
   const [previewId, setPreviewId] = useState<string | null>(null);
   const [draft, setDraft] = useState<Draft>(EMPTY_DRAFT);
@@ -59,7 +61,7 @@ function TemplatesPage() {
   const removeCustom = (id: string) => {
     if (!confirm("حذف هذا القالب؟")) return;
     custom.remove(id);
-    if (selectedId === id) setSelectedId("classic");
+    if (selectedId === id) setSelectedId(all[0]?.id ?? "classic");
   };
   const duplicate = (t: InvoiceTemplate) => {
     setDraft({
@@ -76,14 +78,32 @@ function TemplatesPage() {
   return (
     <Shell>
       <PageHeader
-        title="قوالب الفواتير"
-        subtitle="اختر التصميم الافتراضي أو أنشئ قالباً خاصاً بك"
+        title="قوالب المستندات"
+        subtitle="لكل نوع مستند قوالبه الخاصة — اختر النوع ثم عدّل أو أنشئ قالباً"
         action={
           <PrimaryBtn onClick={openCreate}>
             <Plus className="w-4 h-4" /> قالب جديد
           </PrimaryBtn>
         }
       />
+
+      <div className="flex flex-wrap gap-2 border-b border-[#eceae2] pb-2">
+        {DOC_KINDS.map((k) => (
+          <button
+            key={k.id}
+            type="button"
+            onClick={() => setActiveKind(k.id)}
+            className={`px-3 py-1.5 rounded-lg text-sm border transition ${
+              activeKind === k.id
+                ? "bg-[#0f2a1d] text-white border-[#0f2a1d]"
+                : "bg-white border-[#eceae2] hover:bg-[#f7f6f0]"
+            }`}
+          >
+            {k.label}
+          </button>
+        ))}
+      </div>
+
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {all.map((t) => {
@@ -191,10 +211,10 @@ function TemplatesPage() {
 
       <div className="rounded-xl bg-white border border-[#eceae2] p-4 flex items-center justify-between flex-wrap gap-3">
         <div className="text-sm">
-          القالب الافتراضي حالياً:{" "}
+          القالب الافتراضي لـ <span className="font-semibold">{DOC_KINDS.find((k) => k.id === activeKind)?.label}</span>:{" "}
           <span className="font-semibold">{all.find((t) => t.id === selectedId)?.name}</span>
         </div>
-        <OutlineBtn type="button" onClick={() => setSelectedId("classic")}>
+        <OutlineBtn type="button" onClick={() => setSelectedId(all[0]?.id ?? "classic")}>
           استعادة الافتراضي
         </OutlineBtn>
       </div>
@@ -398,5 +418,3 @@ function FullPreview({ tpl }: { tpl: InvoiceTemplate }) {
   );
 }
 
-// Reference so TS doesn't complain if unused elsewhere
-export { BUILTIN_TEMPLATES };

@@ -13,6 +13,7 @@ export const Route = createFileRoute("/purchases/purchase-orders/$id")({
         title="تعديل أمر شراء"
         backTo="/purchases/purchase-orders"
         docPrefix="PO"
+      kind="purchase-order"
         docId={id}
       />
     );

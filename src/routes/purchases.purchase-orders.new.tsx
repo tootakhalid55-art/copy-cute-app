@@ -11,6 +11,7 @@ export const Route = createFileRoute("/purchases/purchase-orders/new")({
       title="إنشاء أمر شراء"
       backTo="/purchases/purchase-orders"
       docPrefix="PO"
+      kind="purchase-order"
     />
   ),
 });

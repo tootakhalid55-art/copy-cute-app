@@ -11,6 +11,7 @@ export const Route = createFileRoute("/sales/quotations/new")({
       title="إنشاء عرض سعر"
       backTo="/sales/quotations"
       docPrefix="QT"
+      kind="quotation"
     />
   ),
 });

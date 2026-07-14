@@ -4,7 +4,7 @@ import { Plus, Trash2, Printer, Eye, X } from "lucide-react";
 import QRCode from "qrcode";
 import { Shell, PrimaryBtn, OutlineBtn } from "./Shell";
 import { useCollection, useKV } from "@/lib/haseem/store";
-import { useInvoiceTemplates } from "@/lib/haseem/templates";
+import { useInvoiceTemplates, type DocKind } from "@/lib/haseem/templates";
 
 // ZATCA phase-1 TLV encoder (base64)
 function zatcaTLV(seller: string, vat: string, iso: string, total: string, taxAmt: string) {
@@ -33,6 +33,7 @@ export function DocumentForm({
   backTo,
   docPrefix,
   docId,
+  kind,
 }: {
   storageKey: string;
   partyKey: string;
@@ -42,6 +43,7 @@ export function DocumentForm({
   backTo: string;
   docPrefix: string;
   docId?: string;
+  kind?: DocKind;
 }) {
   const navigate = useNavigate();
   const { items: parties, add: addParty } = useCollection<any>(partyKey);
@@ -131,7 +133,7 @@ export function DocumentForm({
   const partyName = party?.name ?? "—";
 
   // Selected invoice template — drives accent color & style variant in preview/print
-  const { selected: tpl } = useInvoiceTemplates();
+  const { selected: tpl } = useInvoiceTemplates(kind);
 
   // Round half-up to 2 decimals (matches ZATCA / Qoyod invoice math)
   const r2 = (n: number) => Math.round((n + Number.EPSILON) * 100) / 100;
