@@ -458,6 +458,7 @@ export function DocumentForm({
         <div ref={printRef}>
           <div className="head">
             <div className="brand">
+              {branding.logo && <img src={branding.logo} alt="logo" style={{maxHeight:60,marginBottom:8}} />}
               <h1>{org.name}</h1>
               <p>الرقم الضريبي: {org.taxNumber}</p>
               <p>المملكة العربية السعودية</p>
