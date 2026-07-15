@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as VerifyRouteImport } from './routes/verify'
 import { Route as SelectOrganizationRouteImport } from './routes/select-organization'
 import { Route as ProjectsRouteImport } from './routes/projects'
 import { Route as ProfileRouteImport } from './routes/profile'
@@ -85,6 +86,11 @@ import { Route as PurchasesDebitNotesIdRouteImport } from './routes/purchases.de
 import { Route as PurchasesBillsNewRouteImport } from './routes/purchases.bills.new'
 import { Route as PurchasesBillsIdRouteImport } from './routes/purchases.bills.$id'
 
+const VerifyRoute = VerifyRouteImport.update({
+  id: '/verify',
+  path: '/verify',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SelectOrganizationRoute = SelectOrganizationRouteImport.update({
   id: '/select-organization',
   path: '/select-organization',
@@ -477,6 +483,7 @@ export interface FileRoutesByFullPath {
   '/profile': typeof ProfileRoute
   '/projects': typeof ProjectsRoute
   '/select-organization': typeof SelectOrganizationRoute
+  '/verify': typeof VerifyRoute
   '/accounting/chart-of-accounts': typeof AccountingChartOfAccountsRoute
   '/accounting/general-ledger': typeof AccountingGeneralLedgerRoute
   '/accounting/journal-entries': typeof AccountingJournalEntriesRoute
@@ -554,6 +561,7 @@ export interface FileRoutesByTo {
   '/profile': typeof ProfileRoute
   '/projects': typeof ProjectsRoute
   '/select-organization': typeof SelectOrganizationRoute
+  '/verify': typeof VerifyRoute
   '/accounting/chart-of-accounts': typeof AccountingChartOfAccountsRoute
   '/accounting/general-ledger': typeof AccountingGeneralLedgerRoute
   '/accounting/journal-entries': typeof AccountingJournalEntriesRoute
@@ -626,6 +634,7 @@ export interface FileRoutesById {
   '/profile': typeof ProfileRoute
   '/projects': typeof ProjectsRoute
   '/select-organization': typeof SelectOrganizationRoute
+  '/verify': typeof VerifyRoute
   '/accounting/chart-of-accounts': typeof AccountingChartOfAccountsRoute
   '/accounting/general-ledger': typeof AccountingGeneralLedgerRoute
   '/accounting/journal-entries': typeof AccountingJournalEntriesRoute
@@ -705,6 +714,7 @@ export interface FileRouteTypes {
     | '/profile'
     | '/projects'
     | '/select-organization'
+    | '/verify'
     | '/accounting/chart-of-accounts'
     | '/accounting/general-ledger'
     | '/accounting/journal-entries'
@@ -782,6 +792,7 @@ export interface FileRouteTypes {
     | '/profile'
     | '/projects'
     | '/select-organization'
+    | '/verify'
     | '/accounting/chart-of-accounts'
     | '/accounting/general-ledger'
     | '/accounting/journal-entries'
@@ -853,6 +864,7 @@ export interface FileRouteTypes {
     | '/profile'
     | '/projects'
     | '/select-organization'
+    | '/verify'
     | '/accounting/chart-of-accounts'
     | '/accounting/general-ledger'
     | '/accounting/journal-entries'
@@ -931,6 +943,7 @@ export interface RootRouteChildren {
   ProfileRoute: typeof ProfileRoute
   ProjectsRoute: typeof ProjectsRoute
   SelectOrganizationRoute: typeof SelectOrganizationRoute
+  VerifyRoute: typeof VerifyRoute
   CashBanksRoute: typeof CashBanksRoute
   CashPaymentsRoute: typeof CashPaymentsRoute
   CashReceiptsRoute: typeof CashReceiptsRoute
@@ -979,6 +992,13 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/verify': {
+      id: '/verify'
+      path: '/verify'
+      fullPath: '/verify'
+      preLoaderRoute: typeof VerifyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/select-organization': {
       id: '/select-organization'
       path: '/select-organization'
@@ -1642,6 +1662,7 @@ const rootRouteChildren: RootRouteChildren = {
   ProfileRoute: ProfileRoute,
   ProjectsRoute: ProjectsRoute,
   SelectOrganizationRoute: SelectOrganizationRoute,
+  VerifyRoute: VerifyRoute,
   CashBanksRoute: CashBanksRoute,
   CashPaymentsRoute: CashPaymentsRoute,
   CashReceiptsRoute: CashReceiptsRoute,

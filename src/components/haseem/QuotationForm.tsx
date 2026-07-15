@@ -8,6 +8,8 @@ import { Shell, PrimaryBtn, OutlineBtn } from "./Shell";
 import { useCollection, useKV } from "@/lib/haseem/store";
 import { useInvoiceTemplates } from "@/lib/haseem/templates";
 import { printDoc } from "@/lib/haseem/printDoc";
+import { signDoc, buildVerifyUrl } from "@/lib/haseem/docSignature";
+import QRCode from "qrcode";
 
 function fileToDataURL(f: File): Promise<string> {
   return new Promise((res, rej) => {
