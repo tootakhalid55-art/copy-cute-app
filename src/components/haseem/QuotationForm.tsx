@@ -2,11 +2,20 @@ import { useState, useEffect, useRef, useMemo } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import {
   Plus, Trash2, Printer, Eye, EyeOff, X, Save, Send,
-  SlidersHorizontal, Download, Paperclip, Upload, Bookmark, Maximize2,
+  SlidersHorizontal, Paperclip, Upload, Bookmark, Maximize2, Pencil, Check,
 } from "lucide-react";
 import { Shell, PrimaryBtn, OutlineBtn } from "./Shell";
 import { useCollection, useKV } from "@/lib/haseem/store";
 import { useInvoiceTemplates } from "@/lib/haseem/templates";
+
+function fileToDataURL(f: File): Promise<string> {
+  return new Promise((res, rej) => {
+    const r = new FileReader();
+    r.onload = () => res(String(r.result || ""));
+    r.onerror = () => rej(r.error);
+    r.readAsDataURL(f);
+  });
+}
 
 type Line = {
   description: string;
