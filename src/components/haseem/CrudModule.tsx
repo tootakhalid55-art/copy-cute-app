@@ -34,6 +34,7 @@ export function CrudModule({
   emptyTitle,
   emptyDescription,
   headerExtra,
+  beforeList,
 }: {
   storageKey: string;
   title: string;
@@ -46,6 +47,7 @@ export function CrudModule({
   emptyTitle?: string;
   emptyDescription?: string;
   headerExtra?: ReactNode;
+  beforeList?: ReactNode;
 }) {
   const { items, add, update, remove } = useCollection<any>(storageKey);
   const navigate = useNavigate();
@@ -96,6 +98,9 @@ export function CrudModule({
           </div>
         }
       />
+
+      {beforeList}
+
 
       <div className="flex items-center gap-2 border border-[#eceae2] rounded-lg px-3 py-2 bg-white">
         <Search className="w-4 h-4 text-[#0f2a1d]/50" />
