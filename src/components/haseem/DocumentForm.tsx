@@ -259,11 +259,22 @@ export function DocumentForm({
 
       <div className="rounded-xl bg-white border border-[#eceae2] p-5 grid grid-cols-1 md:grid-cols-4 gap-4 text-sm">
         <FormField label="رقم المستند">
-          <input
-            readOnly
-            value={ref}
-            className="border border-[#eceae2] rounded-lg px-3 py-2 bg-[#f7f6f0]"
-          />
+          <div className="flex items-stretch gap-1">
+            <input
+              readOnly={!refEditing}
+              value={ref}
+              onChange={(e) => setRef(e.target.value)}
+              className={`border border-[#eceae2] rounded-lg px-3 py-2 flex-1 ${refEditing ? "bg-white" : "bg-[#f7f6f0]"}`}
+            />
+            <button
+              type="button"
+              onClick={() => setRefEditing((v) => !v)}
+              className="border border-[#eceae2] rounded-lg px-2 hover:bg-[#f7f6f0]"
+              title={refEditing ? "تأكيد" : "تعديل الرقم"}
+            >
+              {refEditing ? <Check className="w-4 h-4" /> : <Pencil className="w-4 h-4" />}
+            </button>
+          </div>
         </FormField>
         <FormField label="التاريخ">
           <input
