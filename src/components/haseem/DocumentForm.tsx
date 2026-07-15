@@ -945,3 +945,62 @@ function Row({
     </div>
   );
 }
+
+function ImagePicker({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+}) {
+  const inputRef = useRef<HTMLInputElement>(null);
+  return (
+    <div className="border border-[#eceae2] rounded-lg p-2 text-center">
+      <div className="text-[11px] text-[#0f2a1d]/60 mb-1">{label}</div>
+      {value ? (
+        <div className="relative">
+          <img src={value} alt={label} className="max-h-20 mx-auto object-contain" />
+          <div className="flex gap-1 justify-center mt-1">
+            <button
+              type="button"
+              onClick={() => inputRef.current?.click()}
+              className="text-[11px] px-2 py-0.5 rounded border border-[#eceae2] hover:bg-[#f7f6f0] inline-flex items-center gap-1"
+            >
+              <Pencil className="w-3 h-3" /> تغيير
+            </button>
+            <button
+              type="button"
+              onClick={() => onChange("")}
+              className="text-[11px] px-2 py-0.5 rounded border border-red-200 text-red-600 hover:bg-red-50 inline-flex items-center gap-1"
+            >
+              <Trash2 className="w-3 h-3" /> حذف
+            </button>
+          </div>
+        </div>
+      ) : (
+        <button
+          type="button"
+          onClick={() => inputRef.current?.click()}
+          className="w-full py-4 border-2 border-dashed border-[#eceae2] rounded text-xs text-[#0f2a1d]/60 hover:bg-[#faf9f4] inline-flex flex-col items-center gap-1"
+        >
+          <Upload className="w-4 h-4" /> رفع {label}
+        </button>
+      )}
+      <input
+        ref={inputRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={async (e) => {
+          const f = e.target.files?.[0];
+          if (!f) return;
+          const url = await fileToDataURL(f);
+          onChange(url);
+          e.target.value = "";
+        }}
+      />
+    </div>
+  );
+}
