@@ -34,6 +34,7 @@ export function CrudModule({
   emptyTitle,
   emptyDescription,
   headerExtra,
+  beforeList,
 }: {
   storageKey: string;
   title: string;
@@ -46,6 +47,7 @@ export function CrudModule({
   emptyTitle?: string;
   emptyDescription?: string;
   headerExtra?: ReactNode;
+  beforeList?: ReactNode;
 }) {
   const { items, add, update, remove } = useCollection<any>(storageKey);
   const navigate = useNavigate();
