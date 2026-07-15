@@ -8,6 +8,8 @@ import { Shell, PrimaryBtn, OutlineBtn } from "./Shell";
 import { useCollection, useKV } from "@/lib/haseem/store";
 import { useInvoiceTemplates } from "@/lib/haseem/templates";
 import { printDoc } from "@/lib/haseem/printDoc";
+import { signDoc, buildVerifyUrl } from "@/lib/haseem/docSignature";
+import QRCode from "qrcode";
 
 function fileToDataURL(f: File): Promise<string> {
   return new Promise((res, rej) => {
@@ -181,7 +183,10 @@ export function QuotationForm({ docId }: { docId?: string }) {
 
   // Printing
   const printRef = useRef<HTMLDivElement>(null);
-  const handlePrint = () => {
+  const handlePrint = async () => {
+    const token = await signDoc({ kind: "quotation", ref, total });
+    const verifyUrl = buildVerifyUrl("quotation", ref, token);
+    const verifyQr = await QRCode.toDataURL(verifyUrl, { margin: 1, width: 220 });
     printDoc({
       title: "عرض سعر",
       titleEn: "Quotation",
@@ -198,6 +203,7 @@ export function QuotationForm({ docId }: { docId?: string }) {
       reference: optCols.reference ? reference : undefined,
       project: optCols.project ? project : undefined,
       bilingual: true,
+      verify: { qrDataUrl: verifyQr, url: verifyUrl, label: "التوقيع الرقمي — Digital Signature" },
     });
   };
 
