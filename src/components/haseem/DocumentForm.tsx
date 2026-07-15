@@ -509,6 +509,7 @@ export function DocumentForm({
             <div className="qr">
               {qrDataUrl && <img src={qrDataUrl} alt="ZATCA QR" width={150} height={150} />}
               <div className="cap">رمز الفاتورة (ZATCA)</div>
+              {branding.stamp && <img src={branding.stamp} alt="stamp" style={{maxHeight:100,marginTop:8}} />}
             </div>
             <div className="notes">
               {notes ? <><strong>ملاحظات:</strong><br />{notes}</> : <span style={{color:"#999"}}>—</span>}
