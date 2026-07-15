@@ -33,6 +33,7 @@ export type PrintDocData = {
   reference?: string;
   project?: string;
   bilingual?: boolean;        // show English secondary labels
+  verify?: { qrDataUrl: string; url: string; label?: string };
 };
 
 const esc = (s: unknown) =>
