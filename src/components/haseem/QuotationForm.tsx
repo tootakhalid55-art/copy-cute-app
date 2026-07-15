@@ -240,8 +240,25 @@ export function QuotationForm({ docId }: { docId?: string }) {
         {/* FORM COLUMN */}
         <div className="space-y-5 order-2 lg:order-1">
           <div className="rounded-xl bg-white border border-[#eceae2] p-5">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-base font-bold">عرض سعر <span className="text-[#0f2a1d]/50 text-sm font-normal">#{ref}</span></h2>
+            <div className="flex items-center justify-between mb-4 gap-2 flex-wrap">
+              <h2 className="text-base font-bold">عرض سعر</h2>
+              <div className="flex items-center gap-1">
+                <span className="text-xs text-[#0f2a1d]/60">الرقم:</span>
+                <input
+                  readOnly={!refEditing}
+                  value={ref}
+                  onChange={(e) => setRef(e.target.value)}
+                  className={`border border-[#eceae2] rounded px-2 py-1 text-sm w-40 ${refEditing ? "bg-white" : "bg-[#f7f6f0]"}`}
+                />
+                <button
+                  type="button"
+                  onClick={() => setRefEditing((v) => !v)}
+                  className="border border-[#eceae2] rounded p-1.5 hover:bg-[#f7f6f0]"
+                  title={refEditing ? "تأكيد" : "تعديل الرقم"}
+                >
+                  {refEditing ? <Check className="w-3.5 h-3.5" /> : <Pencil className="w-3.5 h-3.5" />}
+                </button>
+              </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
@@ -250,14 +267,30 @@ export function QuotationForm({ docId }: { docId?: string }) {
                 <FieldMenuButton open={showFieldMenu} onToggle={() => setShowFieldMenu((v) => !v)}
                   optCols={optCols} setOptCols={setOptCols} />
               }>
-                <div className="border border-[#eceae2] rounded-lg px-3 py-2 bg-white flex items-center justify-between">
-                  <div>
-                    <div className="font-semibold">{org.name}</div>
-                    <div className="text-xs text-[#0f2a1d]/60">رقم التسجيل الضريبي: {org.taxNumber || "—"}</div>
+                <div className="border border-[#eceae2] rounded-lg px-3 py-2 bg-white flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2 min-w-0">
+                    {branding.logo && <img src={branding.logo} alt="logo" className="h-8 w-8 object-contain rounded border border-[#eceae2]" />}
+                    <div className="min-w-0">
+                      <div className="font-semibold truncate">{org.name}</div>
+                      <div className="text-xs text-[#0f2a1d]/60">رقم التسجيل الضريبي: {org.taxNumber || "—"}</div>
+                    </div>
                   </div>
-                  <button type="button" className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded border border-[#eceae2] hover:bg-[#f7f6f0]">
-                    <Upload className="w-3.5 h-3.5" /> الشعار
-                  </button>
+                  <label className="cursor-pointer inline-flex items-center gap-1 text-xs px-2 py-1 rounded border border-[#eceae2] hover:bg-[#f7f6f0]">
+                    <Upload className="w-3.5 h-3.5" /> {branding.logo ? "تغيير" : "الشعار"}
+                    <input type="file" accept="image/*" className="hidden"
+                      onChange={async (e) => {
+                        const f = e.target.files?.[0];
+                        if (!f) return;
+                        setBranding({ ...branding, logo: await fileToDataURL(f) });
+                        e.target.value = "";
+                      }} />
+                  </label>
+                  {branding.logo && (
+                    <button type="button" onClick={() => setBranding({ ...branding, logo: "" })}
+                      className="p-1 text-red-500 hover:bg-red-50 rounded" title="حذف الشعار">
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  )}
                 </div>
               </FormField>
 
