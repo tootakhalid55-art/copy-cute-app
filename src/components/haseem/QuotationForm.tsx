@@ -7,6 +7,7 @@ import {
 import { Shell, PrimaryBtn, OutlineBtn } from "./Shell";
 import { useCollection, useKV } from "@/lib/haseem/store";
 import { useInvoiceTemplates } from "@/lib/haseem/templates";
+import { printDoc } from "@/lib/haseem/printDoc";
 
 function fileToDataURL(f: File): Promise<string> {
   return new Promise((res, rej) => {
