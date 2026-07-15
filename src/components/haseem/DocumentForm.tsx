@@ -422,14 +422,28 @@ export function DocumentForm({
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t border-[#eceae2]">
-          <div>
-            <label className="text-xs text-[#0f2a1d]/70">ملاحظات</label>
-            <textarea
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              className="border border-[#eceae2] rounded-lg px-3 py-2 w-full min-h-[80px] text-sm mt-1"
-              placeholder="ملاحظات إضافية..."
-            />
+          <div className="space-y-3">
+            <div>
+              <label className="text-xs text-[#0f2a1d]/70">ملاحظات</label>
+              <textarea
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                className="border border-[#eceae2] rounded-lg px-3 py-2 w-full min-h-[80px] text-sm mt-1"
+                placeholder="ملاحظات إضافية..."
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <ImagePicker
+                label="الشعار"
+                value={branding.logo}
+                onChange={(v) => setBranding({ ...branding, logo: v })}
+              />
+              <ImagePicker
+                label="الختم"
+                value={branding.stamp}
+                onChange={(v) => setBranding({ ...branding, stamp: v })}
+              />
+            </div>
           </div>
           <div className="space-y-2 text-sm">
             <Row label="المجموع الفرعي" value={`${fmt(subtotal)} ${CUR}`} />
