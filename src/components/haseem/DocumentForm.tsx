@@ -63,6 +63,11 @@ export function DocumentForm({
     name: "شركة كنار الحديثة للمقاولات",
     taxNumber: "312756062700003",
   });
+  const [branding, setBranding] = useKV<{ logo: string; stamp: string }>(
+    "branding",
+    { logo: "", stamp: "" }
+  );
+  const [refEditing, setRefEditing] = useState(false);
 
   const [ref, setRef] = useState(
     existing?.ref ?? `${docPrefix}-${Math.floor(100000 + Math.random() * 900000)}`
