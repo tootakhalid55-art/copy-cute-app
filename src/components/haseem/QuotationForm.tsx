@@ -457,9 +457,36 @@ export function QuotationForm({ docId }: { docId?: string }) {
                 <textarea value={notes} onChange={(e) => setNotes(e.target.value)}
                   className="border border-[#eceae2] rounded-lg px-3 py-2 w-full min-h-[100px] text-sm mt-1"
                   placeholder="اكتب أي ملاحظات ستظهر على العرض..." />
-                <div className="mt-3 border-2 border-dashed border-[#eceae2] rounded-lg p-4 text-center text-sm text-[#0f2a1d]/60 cursor-pointer hover:bg-[#faf9f4]">
-                  <Upload className="w-5 h-5 mx-auto mb-1" /> ختم
-                </div>
+                {branding.stamp ? (
+                  <div className="mt-3 border-2 border-dashed border-[#eceae2] rounded-lg p-3 text-center relative">
+                    <img src={branding.stamp} alt="stamp" className="max-h-32 mx-auto object-contain" />
+                    <button type="button" onClick={() => setBranding({ ...branding, stamp: "" })}
+                      className="absolute top-1 left-1 p-1 text-red-500 hover:bg-red-50 rounded" title="حذف الختم">
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                    <label className="cursor-pointer inline-flex items-center gap-1 text-xs mt-2 px-2 py-1 rounded border border-[#eceae2] hover:bg-[#f7f6f0]">
+                      <Upload className="w-3.5 h-3.5" /> تغيير الختم
+                      <input type="file" accept="image/*" className="hidden"
+                        onChange={async (e) => {
+                          const f = e.target.files?.[0];
+                          if (!f) return;
+                          setBranding({ ...branding, stamp: await fileToDataURL(f) });
+                          e.target.value = "";
+                        }} />
+                    </label>
+                  </div>
+                ) : (
+                  <label className="mt-3 border-2 border-dashed border-[#eceae2] rounded-lg p-4 text-center text-sm text-[#0f2a1d]/60 cursor-pointer hover:bg-[#faf9f4] block">
+                    <Upload className="w-5 h-5 mx-auto mb-1" /> رفع الختم
+                    <input type="file" accept="image/*" className="hidden"
+                      onChange={async (e) => {
+                        const f = e.target.files?.[0];
+                        if (!f) return;
+                        setBranding({ ...branding, stamp: await fileToDataURL(f) });
+                        e.target.value = "";
+                      }} />
+                  </label>
+                )}
               </div>
               <div className="space-y-2 text-sm">
                 <div className="flex justify-end">
