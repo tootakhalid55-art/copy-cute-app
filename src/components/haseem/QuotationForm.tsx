@@ -117,7 +117,7 @@ export function QuotationForm({ docId }: { docId?: string }) {
   }, [docId, existing?.id]);
 
   const party = parties.find((p) => p.id === partyId);
-  const { selected: tpl } = useInvoiceTemplates("quotation");
+  const { all: allTemplates, selected: tpl, selectedId, setSelectedId } = useInvoiceTemplates("quotation");
 
   // Math
   const r2 = (n: number) => Math.round((n + Number.EPSILON) * 100) / 100;
@@ -218,6 +218,20 @@ export function QuotationForm({ docId }: { docId?: string }) {
           <h1 className="text-lg font-bold">{existing ? "تعديل عرض سعر" : "إنشاء عرض سعر"}</h1>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
+          <div className="flex items-center gap-1.5 border border-[#eceae2] rounded px-2 py-1">
+            <span className="text-xs text-[#0f2a1d]/60">القالب:</span>
+            <select
+              value={selectedId}
+              onChange={(e) => setSelectedId(e.target.value)}
+              className="bg-transparent text-sm outline-none max-w-[180px]"
+              title="تغيير قالب عرض السعر"
+            >
+              {allTemplates.map((t) => (
+                <option key={t.id} value={t.id}>{t.name}</option>
+              ))}
+            </select>
+            <span className="inline-block w-4 h-4 rounded border border-[#eceae2]" style={{ background: tpl.accent }} aria-hidden />
+          </div>
           <button type="button" onClick={() => setPreviewHidden((v) => !v)}
             className="inline-flex items-center gap-1 text-sm px-2 py-1.5 rounded hover:bg-[#f7f6f0]">
             {previewHidden ? <><Eye className="w-4 h-4" /> إظهار المعاينة</> : <><EyeOff className="w-4 h-4" /> إخفاء المعاينة</>}

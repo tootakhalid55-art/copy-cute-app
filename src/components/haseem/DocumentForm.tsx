@@ -149,7 +149,7 @@ export function DocumentForm({
   const partyName = party?.name ?? "—";
 
   // Selected invoice template — drives accent color & style variant in preview/print
-  const { selected: tpl } = useInvoiceTemplates(kind);
+  const { all: allTemplates, selected: tpl, selectedId, setSelectedId } = useInvoiceTemplates(kind);
 
   // Round half-up to 2 decimals (matches ZATCA / Qoyod invoice math)
   const r2 = (n: number) => Math.round((n + Number.EPSILON) * 100) / 100;
@@ -215,7 +215,25 @@ export function DocumentForm({
             <p className="text-xs text-[#0f2a1d]/60 mt-1">{subtitle}</p>
           )}
         </div>
-        <div className="flex gap-2 flex-wrap">
+        <div className="flex gap-2 flex-wrap items-center">
+          <div className="flex items-center gap-1.5 border border-[#eceae2] rounded-lg px-2 py-1 bg-white">
+            <span className="text-xs text-[#0f2a1d]/60">القالب:</span>
+            <select
+              value={selectedId}
+              onChange={(e) => setSelectedId(e.target.value)}
+              className="bg-transparent text-sm outline-none max-w-[200px]"
+              title="تغيير قالب المستند"
+            >
+              {allTemplates.map((t) => (
+                <option key={t.id} value={t.id}>{t.name}</option>
+              ))}
+            </select>
+            <span
+              className="inline-block w-4 h-4 rounded border border-[#eceae2]"
+              style={{ background: tpl.accent }}
+              aria-hidden
+            />
+          </div>
           <OutlineBtn type="button" onClick={() => navigate({ to: backTo })}>
             رجوع
           </OutlineBtn>
