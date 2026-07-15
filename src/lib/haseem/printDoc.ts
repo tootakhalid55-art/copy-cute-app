@@ -174,7 +174,23 @@ export function buildDocHtml(d: PrintDocData): string {
       </table>
     </div>
 
-    <div style="text-align:center;font-size:11px;color:#888;margin-top:24px;padding-top:12px;border-top:1px solid #eceae2">
+    ${d.verify ? `
+    <div style="margin-top:22px;padding:12px 14px;border:1px dashed ${tpl.accent};border-radius:8px;background:${tpl.soft};display:flex;align-items:center;gap:14px;justify-content:space-between">
+      <div style="display:flex;align-items:center;gap:12px">
+        <img src="${esc(d.verify.qrDataUrl)}" alt="verify" width="90" height="90" style="background:#fff;padding:4px;border-radius:6px;border:1px solid #eceae2" />
+        <div style="font-size:11px;color:#333;line-height:1.6">
+          <div style="font-weight:700;color:${tpl.accent};margin-bottom:2px">${esc(d.verify.label || "التوقيع الرقمي")}</div>
+          <div>يمكن التحقق من صحة هذا المستند بمسح الرمز</div>
+          <div style="direction:ltr;text-align:left;font-size:10px;color:#666;margin-top:2px;word-break:break-all">${esc(d.verify.url)}</div>
+        </div>
+      </div>
+      <div style="text-align:center;font-size:10px;color:#666;min-width:110px">
+        <div style="font-weight:600;color:${tpl.accent}">مُوثَّق إلكترونياً</div>
+        <div style="opacity:.7">Digitally Signed</div>
+      </div>
+    </div>` : ""}
+
+    <div style="text-align:center;font-size:11px;color:#888;margin-top:16px;padding-top:12px;border-top:1px solid #eceae2">
       شكراً لتعاملكم معنا · ${esc(org.name)} · ${esc(d.ref)}
     </div>
   </div>`;
