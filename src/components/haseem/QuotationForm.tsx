@@ -2,11 +2,20 @@ import { useState, useEffect, useRef, useMemo } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import {
   Plus, Trash2, Printer, Eye, EyeOff, X, Save, Send,
-  SlidersHorizontal, Download, Paperclip, Upload, Bookmark, Maximize2,
+  SlidersHorizontal, Paperclip, Upload, Bookmark, Maximize2, Pencil, Check,
 } from "lucide-react";
 import { Shell, PrimaryBtn, OutlineBtn } from "./Shell";
 import { useCollection, useKV } from "@/lib/haseem/store";
 import { useInvoiceTemplates } from "@/lib/haseem/templates";
+
+function fileToDataURL(f: File): Promise<string> {
+  return new Promise((res, rej) => {
+    const r = new FileReader();
+    r.onload = () => res(String(r.result || ""));
+    r.onerror = () => rej(r.error);
+    r.readAsDataURL(f);
+  });
+}
 
 type Line = {
   description: string;
@@ -41,6 +50,11 @@ export function QuotationForm({ docId }: { docId?: string }) {
     name: "شركة كنار الحديثة للمقاولات",
     taxNumber: "312756062700003",
   });
+  const [branding, setBranding] = useKV<{ logo: string; stamp: string }>(
+    "branding",
+    { logo: "", stamp: "" }
+  );
+  const [refEditing, setRefEditing] = useState(false);
 
   // Numbering
   const nextNumber = useMemo(() => {
@@ -226,8 +240,25 @@ export function QuotationForm({ docId }: { docId?: string }) {
         {/* FORM COLUMN */}
         <div className="space-y-5 order-2 lg:order-1">
           <div className="rounded-xl bg-white border border-[#eceae2] p-5">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-base font-bold">عرض سعر <span className="text-[#0f2a1d]/50 text-sm font-normal">#{ref}</span></h2>
+            <div className="flex items-center justify-between mb-4 gap-2 flex-wrap">
+              <h2 className="text-base font-bold">عرض سعر</h2>
+              <div className="flex items-center gap-1">
+                <span className="text-xs text-[#0f2a1d]/60">الرقم:</span>
+                <input
+                  readOnly={!refEditing}
+                  value={ref}
+                  onChange={(e) => setRef(e.target.value)}
+                  className={`border border-[#eceae2] rounded px-2 py-1 text-sm w-40 ${refEditing ? "bg-white" : "bg-[#f7f6f0]"}`}
+                />
+                <button
+                  type="button"
+                  onClick={() => setRefEditing((v) => !v)}
+                  className="border border-[#eceae2] rounded p-1.5 hover:bg-[#f7f6f0]"
+                  title={refEditing ? "تأكيد" : "تعديل الرقم"}
+                >
+                  {refEditing ? <Check className="w-3.5 h-3.5" /> : <Pencil className="w-3.5 h-3.5" />}
+                </button>
+              </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
@@ -236,14 +267,30 @@ export function QuotationForm({ docId }: { docId?: string }) {
                 <FieldMenuButton open={showFieldMenu} onToggle={() => setShowFieldMenu((v) => !v)}
                   optCols={optCols} setOptCols={setOptCols} />
               }>
-                <div className="border border-[#eceae2] rounded-lg px-3 py-2 bg-white flex items-center justify-between">
-                  <div>
-                    <div className="font-semibold">{org.name}</div>
-                    <div className="text-xs text-[#0f2a1d]/60">رقم التسجيل الضريبي: {org.taxNumber || "—"}</div>
+                <div className="border border-[#eceae2] rounded-lg px-3 py-2 bg-white flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2 min-w-0">
+                    {branding.logo && <img src={branding.logo} alt="logo" className="h-8 w-8 object-contain rounded border border-[#eceae2]" />}
+                    <div className="min-w-0">
+                      <div className="font-semibold truncate">{org.name}</div>
+                      <div className="text-xs text-[#0f2a1d]/60">رقم التسجيل الضريبي: {org.taxNumber || "—"}</div>
+                    </div>
                   </div>
-                  <button type="button" className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded border border-[#eceae2] hover:bg-[#f7f6f0]">
-                    <Upload className="w-3.5 h-3.5" /> الشعار
-                  </button>
+                  <label className="cursor-pointer inline-flex items-center gap-1 text-xs px-2 py-1 rounded border border-[#eceae2] hover:bg-[#f7f6f0]">
+                    <Upload className="w-3.5 h-3.5" /> {branding.logo ? "تغيير" : "الشعار"}
+                    <input type="file" accept="image/*" className="hidden"
+                      onChange={async (e) => {
+                        const f = e.target.files?.[0];
+                        if (!f) return;
+                        setBranding({ ...branding, logo: await fileToDataURL(f) });
+                        e.target.value = "";
+                      }} />
+                  </label>
+                  {branding.logo && (
+                    <button type="button" onClick={() => setBranding({ ...branding, logo: "" })}
+                      className="p-1 text-red-500 hover:bg-red-50 rounded" title="حذف الشعار">
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  )}
                 </div>
               </FormField>
 
@@ -410,9 +457,36 @@ export function QuotationForm({ docId }: { docId?: string }) {
                 <textarea value={notes} onChange={(e) => setNotes(e.target.value)}
                   className="border border-[#eceae2] rounded-lg px-3 py-2 w-full min-h-[100px] text-sm mt-1"
                   placeholder="اكتب أي ملاحظات ستظهر على العرض..." />
-                <div className="mt-3 border-2 border-dashed border-[#eceae2] rounded-lg p-4 text-center text-sm text-[#0f2a1d]/60 cursor-pointer hover:bg-[#faf9f4]">
-                  <Upload className="w-5 h-5 mx-auto mb-1" /> ختم
-                </div>
+                {branding.stamp ? (
+                  <div className="mt-3 border-2 border-dashed border-[#eceae2] rounded-lg p-3 text-center relative">
+                    <img src={branding.stamp} alt="stamp" className="max-h-32 mx-auto object-contain" />
+                    <button type="button" onClick={() => setBranding({ ...branding, stamp: "" })}
+                      className="absolute top-1 left-1 p-1 text-red-500 hover:bg-red-50 rounded" title="حذف الختم">
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                    <label className="cursor-pointer inline-flex items-center gap-1 text-xs mt-2 px-2 py-1 rounded border border-[#eceae2] hover:bg-[#f7f6f0]">
+                      <Upload className="w-3.5 h-3.5" /> تغيير الختم
+                      <input type="file" accept="image/*" className="hidden"
+                        onChange={async (e) => {
+                          const f = e.target.files?.[0];
+                          if (!f) return;
+                          setBranding({ ...branding, stamp: await fileToDataURL(f) });
+                          e.target.value = "";
+                        }} />
+                    </label>
+                  </div>
+                ) : (
+                  <label className="mt-3 border-2 border-dashed border-[#eceae2] rounded-lg p-4 text-center text-sm text-[#0f2a1d]/60 cursor-pointer hover:bg-[#faf9f4] block">
+                    <Upload className="w-5 h-5 mx-auto mb-1" /> رفع الختم
+                    <input type="file" accept="image/*" className="hidden"
+                      onChange={async (e) => {
+                        const f = e.target.files?.[0];
+                        if (!f) return;
+                        setBranding({ ...branding, stamp: await fileToDataURL(f) });
+                        e.target.value = "";
+                      }} />
+                  </label>
+                )}
               </div>
               <div className="space-y-2 text-sm">
                 <div className="flex justify-end">

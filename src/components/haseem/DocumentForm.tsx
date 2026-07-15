@@ -1,10 +1,20 @@
 import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "@tanstack/react-router";
-import { Plus, Trash2, Printer, Eye, X } from "lucide-react";
+import { Plus, Trash2, Printer, Eye, X, Pencil, Upload, Check } from "lucide-react";
 import QRCode from "qrcode";
 import { Shell, PrimaryBtn, OutlineBtn } from "./Shell";
 import { useCollection, useKV } from "@/lib/haseem/store";
 import { useInvoiceTemplates, type DocKind } from "@/lib/haseem/templates";
+
+// Read a File as base64 data URL
+function fileToDataURL(f: File): Promise<string> {
+  return new Promise((res, rej) => {
+    const r = new FileReader();
+    r.onload = () => res(String(r.result || ""));
+    r.onerror = () => rej(r.error);
+    r.readAsDataURL(f);
+  });
+}
 
 // ZATCA phase-1 TLV encoder (base64)
 function zatcaTLV(seller: string, vat: string, iso: string, total: string, taxAmt: string) {
@@ -53,6 +63,11 @@ export function DocumentForm({
     name: "شركة كنار الحديثة للمقاولات",
     taxNumber: "312756062700003",
   });
+  const [branding, setBranding] = useKV<{ logo: string; stamp: string }>(
+    "branding",
+    { logo: "", stamp: "" }
+  );
+  const [refEditing, setRefEditing] = useState(false);
 
   const [ref, setRef] = useState(
     existing?.ref ?? `${docPrefix}-${Math.floor(100000 + Math.random() * 900000)}`
@@ -244,11 +259,22 @@ export function DocumentForm({
 
       <div className="rounded-xl bg-white border border-[#eceae2] p-5 grid grid-cols-1 md:grid-cols-4 gap-4 text-sm">
         <FormField label="رقم المستند">
-          <input
-            readOnly
-            value={ref}
-            className="border border-[#eceae2] rounded-lg px-3 py-2 bg-[#f7f6f0]"
-          />
+          <div className="flex items-stretch gap-1">
+            <input
+              readOnly={!refEditing}
+              value={ref}
+              onChange={(e) => setRef(e.target.value)}
+              className={`border border-[#eceae2] rounded-lg px-3 py-2 flex-1 ${refEditing ? "bg-white" : "bg-[#f7f6f0]"}`}
+            />
+            <button
+              type="button"
+              onClick={() => setRefEditing((v) => !v)}
+              className="border border-[#eceae2] rounded-lg px-2 hover:bg-[#f7f6f0]"
+              title={refEditing ? "تأكيد" : "تعديل الرقم"}
+            >
+              {refEditing ? <Check className="w-4 h-4" /> : <Pencil className="w-4 h-4" />}
+            </button>
+          </div>
         </FormField>
         <FormField label="التاريخ">
           <input
@@ -396,14 +422,28 @@ export function DocumentForm({
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t border-[#eceae2]">
-          <div>
-            <label className="text-xs text-[#0f2a1d]/70">ملاحظات</label>
-            <textarea
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              className="border border-[#eceae2] rounded-lg px-3 py-2 w-full min-h-[80px] text-sm mt-1"
-              placeholder="ملاحظات إضافية..."
-            />
+          <div className="space-y-3">
+            <div>
+              <label className="text-xs text-[#0f2a1d]/70">ملاحظات</label>
+              <textarea
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                className="border border-[#eceae2] rounded-lg px-3 py-2 w-full min-h-[80px] text-sm mt-1"
+                placeholder="ملاحظات إضافية..."
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <ImagePicker
+                label="الشعار"
+                value={branding.logo}
+                onChange={(v) => setBranding({ ...branding, logo: v })}
+              />
+              <ImagePicker
+                label="الختم"
+                value={branding.stamp}
+                onChange={(v) => setBranding({ ...branding, stamp: v })}
+              />
+            </div>
           </div>
           <div className="space-y-2 text-sm">
             <Row label="المجموع الفرعي" value={`${fmt(subtotal)} ${CUR}`} />
@@ -418,6 +458,7 @@ export function DocumentForm({
         <div ref={printRef}>
           <div className="head">
             <div className="brand">
+              {branding.logo && <img src={branding.logo} alt="logo" style={{maxHeight:60,marginBottom:8}} />}
               <h1>{org.name}</h1>
               <p>الرقم الضريبي: {org.taxNumber}</p>
               <p>المملكة العربية السعودية</p>
@@ -468,6 +509,7 @@ export function DocumentForm({
             <div className="qr">
               {qrDataUrl && <img src={qrDataUrl} alt="ZATCA QR" width={150} height={150} />}
               <div className="cap">رمز الفاتورة (ZATCA)</div>
+              {branding.stamp && <img src={branding.stamp} alt="stamp" style={{maxHeight:100,marginTop:8}} />}
             </div>
             <div className="notes">
               {notes ? <><strong>ملاحظات:</strong><br />{notes}</> : <span style={{color:"#999"}}>—</span>}
@@ -510,6 +552,7 @@ export function DocumentForm({
                 style={{ borderBottom: `3px solid ${tpl.accent}` }}
               >
                 <div>
+                  {branding.logo && <img src={branding.logo} alt="logo" className="max-h-16 mb-2 object-contain" />}
                   <h1 className="text-xl font-bold m-0" style={{ color: tpl.accent }}>{org.name}</h1>
                   <p className="text-xs text-[#0f2a1d]/70 mt-1">الرقم الضريبي: {org.taxNumber}</p>
                   <p className="text-xs text-[#0f2a1d]/70">المملكة العربية السعودية</p>
@@ -566,6 +609,7 @@ export function DocumentForm({
                 <div className="text-center">
                   {qrDataUrl && <img src={qrDataUrl} alt="ZATCA QR" className="border border-[#eceae2] p-1.5 rounded bg-white mx-auto" width={140} height={140} />}
                   <div className="text-[10px] text-[#0f2a1d]/60 mt-1">رمز الفاتورة (ZATCA)</div>
+                  {branding.stamp && <img src={branding.stamp} alt="stamp" className="max-h-24 mx-auto mt-2 object-contain" />}
                 </div>
                 <div
                   className="text-xs rounded p-3"
@@ -902,6 +946,65 @@ function Row({
     <div className="flex items-center justify-between">
       <span className="text-[#0f2a1d]/70">{label}</span>
       <span className={bold ? "font-bold text-lg" : "tabular-nums"}>{value}</span>
+    </div>
+  );
+}
+
+function ImagePicker({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+}) {
+  const inputRef = useRef<HTMLInputElement>(null);
+  return (
+    <div className="border border-[#eceae2] rounded-lg p-2 text-center">
+      <div className="text-[11px] text-[#0f2a1d]/60 mb-1">{label}</div>
+      {value ? (
+        <div className="relative">
+          <img src={value} alt={label} className="max-h-20 mx-auto object-contain" />
+          <div className="flex gap-1 justify-center mt-1">
+            <button
+              type="button"
+              onClick={() => inputRef.current?.click()}
+              className="text-[11px] px-2 py-0.5 rounded border border-[#eceae2] hover:bg-[#f7f6f0] inline-flex items-center gap-1"
+            >
+              <Pencil className="w-3 h-3" /> تغيير
+            </button>
+            <button
+              type="button"
+              onClick={() => onChange("")}
+              className="text-[11px] px-2 py-0.5 rounded border border-red-200 text-red-600 hover:bg-red-50 inline-flex items-center gap-1"
+            >
+              <Trash2 className="w-3 h-3" /> حذف
+            </button>
+          </div>
+        </div>
+      ) : (
+        <button
+          type="button"
+          onClick={() => inputRef.current?.click()}
+          className="w-full py-4 border-2 border-dashed border-[#eceae2] rounded text-xs text-[#0f2a1d]/60 hover:bg-[#faf9f4] inline-flex flex-col items-center gap-1"
+        >
+          <Upload className="w-4 h-4" /> رفع {label}
+        </button>
+      )}
+      <input
+        ref={inputRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={async (e) => {
+          const f = e.target.files?.[0];
+          if (!f) return;
+          const url = await fileToDataURL(f);
+          onChange(url);
+          e.target.value = "";
+        }}
+      />
     </div>
   );
 }
