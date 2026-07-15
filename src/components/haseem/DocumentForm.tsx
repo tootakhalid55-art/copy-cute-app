@@ -5,6 +5,7 @@ import QRCode from "qrcode";
 import { Shell, PrimaryBtn, OutlineBtn } from "./Shell";
 import { useCollection, useKV } from "@/lib/haseem/store";
 import { useInvoiceTemplates, type DocKind } from "@/lib/haseem/templates";
+import { printDoc } from "@/lib/haseem/printDoc";
 
 // Read a File as base64 data URL
 function fileToDataURL(f: File): Promise<string> {
