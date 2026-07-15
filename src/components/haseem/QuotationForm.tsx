@@ -7,6 +7,7 @@ import {
 import { Shell, PrimaryBtn, OutlineBtn } from "./Shell";
 import { useCollection, useKV } from "@/lib/haseem/store";
 import { useInvoiceTemplates } from "@/lib/haseem/templates";
+import { printDoc } from "@/lib/haseem/printDoc";
 
 function fileToDataURL(f: File): Promise<string> {
   return new Promise((res, rej) => {
@@ -181,22 +182,25 @@ export function QuotationForm({ docId }: { docId?: string }) {
   // Printing
   const printRef = useRef<HTMLDivElement>(null);
   const handlePrint = () => {
-    const html = printRef.current?.innerHTML;
-    if (!html) return;
-    const w = window.open("", "_blank", "width=900,height=1000");
-    if (!w) return;
-    w.document.write(`<!doctype html><html dir="rtl" lang="ar"><head><meta charset="utf-8"><title>${ref}</title>
-      <style>
-        *{box-sizing:border-box}
-        body{font-family:Cairo,"Segoe UI",system-ui,sans-serif;padding:24px;color:#111;margin:0;background:#fff}
-        .wf{max-width:820px;margin:0 auto;font-size:12px}
-        ${QUOTE_PRINT_CSS(tpl.accent)}
-        @media print { body{padding:8px} }
-      </style></head><body><div class="wf">${html}</div></body></html>`);
-    w.document.close();
-    w.focus();
-    setTimeout(() => w.print(), 400);
+    printDoc({
+      title: "عرض سعر",
+      titleEn: "Quotation",
+      ref, date, expiry,
+      org, party, partyLabel: "العميل",
+      lines, lineCalcs,
+      subtotal, tax, total,
+      discAmt, shipAmt,
+      notes,
+      currency: CUR,
+      branding,
+      tpl,
+      poNumber: optCols.poNumber ? poNumber : undefined,
+      reference: optCols.reference ? reference : undefined,
+      project: optCols.project ? project : undefined,
+      bilingual: true,
+    });
   };
+
 
   return (
     <Shell>
