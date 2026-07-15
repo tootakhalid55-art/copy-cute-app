@@ -552,6 +552,7 @@ export function DocumentForm({
                 style={{ borderBottom: `3px solid ${tpl.accent}` }}
               >
                 <div>
+                  {branding.logo && <img src={branding.logo} alt="logo" className="max-h-16 mb-2 object-contain" />}
                   <h1 className="text-xl font-bold m-0" style={{ color: tpl.accent }}>{org.name}</h1>
                   <p className="text-xs text-[#0f2a1d]/70 mt-1">الرقم الضريبي: {org.taxNumber}</p>
                   <p className="text-xs text-[#0f2a1d]/70">المملكة العربية السعودية</p>
