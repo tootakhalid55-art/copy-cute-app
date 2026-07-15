@@ -1,10 +1,20 @@
 import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "@tanstack/react-router";
-import { Plus, Trash2, Printer, Eye, X } from "lucide-react";
+import { Plus, Trash2, Printer, Eye, X, Pencil, Upload, Check } from "lucide-react";
 import QRCode from "qrcode";
 import { Shell, PrimaryBtn, OutlineBtn } from "./Shell";
 import { useCollection, useKV } from "@/lib/haseem/store";
 import { useInvoiceTemplates, type DocKind } from "@/lib/haseem/templates";
+
+// Read a File as base64 data URL
+function fileToDataURL(f: File): Promise<string> {
+  return new Promise((res, rej) => {
+    const r = new FileReader();
+    r.onload = () => res(String(r.result || ""));
+    r.onerror = () => rej(r.error);
+    r.readAsDataURL(f);
+  });
+}
 
 // ZATCA phase-1 TLV encoder (base64)
 function zatcaTLV(seller: string, vat: string, iso: string, total: string, taxAmt: string) {
