@@ -117,7 +117,7 @@ export function QuotationForm({ docId }: { docId?: string }) {
   }, [docId, existing?.id]);
 
   const party = parties.find((p) => p.id === partyId);
-  const { selected: tpl } = useInvoiceTemplates("quotation");
+  const { all: allTemplates, selected: tpl, selectedId, setSelectedId } = useInvoiceTemplates("quotation");
 
   // Math
   const r2 = (n: number) => Math.round((n + Number.EPSILON) * 100) / 100;
