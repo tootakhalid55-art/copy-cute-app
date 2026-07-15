@@ -609,6 +609,7 @@ export function DocumentForm({
                 <div className="text-center">
                   {qrDataUrl && <img src={qrDataUrl} alt="ZATCA QR" className="border border-[#eceae2] p-1.5 rounded bg-white mx-auto" width={140} height={140} />}
                   <div className="text-[10px] text-[#0f2a1d]/60 mt-1">رمز الفاتورة (ZATCA)</div>
+                  {branding.stamp && <img src={branding.stamp} alt="stamp" className="max-h-24 mx-auto mt-2 object-contain" />}
                 </div>
                 <div
                   className="text-xs rounded p-3"
