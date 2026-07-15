@@ -99,6 +99,9 @@ export function CrudModule({
         }
       />
 
+      {beforeList}
+
+
       <div className="flex items-center gap-2 border border-[#eceae2] rounded-lg px-3 py-2 bg-white">
         <Search className="w-4 h-4 text-[#0f2a1d]/50" />
         <input
