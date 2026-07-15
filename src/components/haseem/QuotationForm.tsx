@@ -50,6 +50,11 @@ export function QuotationForm({ docId }: { docId?: string }) {
     name: "شركة كنار الحديثة للمقاولات",
     taxNumber: "312756062700003",
   });
+  const [branding, setBranding] = useKV<{ logo: string; stamp: string }>(
+    "branding",
+    { logo: "", stamp: "" }
+  );
+  const [refEditing, setRefEditing] = useState(false);
 
   // Numbering
   const nextNumber = useMemo(() => {
