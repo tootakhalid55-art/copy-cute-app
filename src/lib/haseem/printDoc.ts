@@ -51,147 +51,162 @@ const fmt = (n: number) =>
 
 export function buildDocHtml(d: PrintDocData): string {
   const { tpl, org, party, lines, lineCalcs, currency, branding, bilingual } = d;
-  const B = bilingual !== false; // default show bilingual mini-labels
-  const en = (t: string) => (B ? `<div style="font-size:9px;opacity:.7;font-weight:400">${esc(t)}</div>` : "");
+  const B = bilingual !== false;
+  const en = (t: string) => (B ? `<span style="font-size:9px;opacity:.55;font-weight:400;margin-inline-start:6px">${esc(t)}</span>` : "");
+
+  const accent = tpl.accent;
+  const soft = tpl.soft;
+  const ink = "#0f1a14";
+  const muted = "#6b7469";
+  const line = "#ececec";
 
   const partyBlock = party
-    ? `<strong style="font-size:13px;display:block;margin-bottom:2px">${esc(party.name || "—")}</strong>
-       ${party.taxNumber ? `<div>الرقم الضريبي: ${esc(party.taxNumber)}</div>` : ""}
-       ${party.phone ? `<div>الجوال: ${esc(party.phone)}</div>` : ""}
-       ${party.email ? `<div>البريد: ${esc(party.email)}</div>` : ""}`
-    : `<span style="color:#888">—</span>`;
+    ? `<div style="font-size:14px;font-weight:700;color:${ink};margin-bottom:6px;letter-spacing:.01em">${esc(party.name || "—")}</div>
+       <div style="display:grid;gap:3px;font-size:11px;color:${muted}">
+         ${party.taxNumber ? `<div><span style="color:${accent};font-weight:600">الرقم الضريبي · </span>${esc(party.taxNumber)}</div>` : ""}
+         ${party.phone ? `<div><span style="color:${accent};font-weight:600">الجوال · </span>${esc(party.phone)}</div>` : ""}
+         ${party.email ? `<div><span style="color:${accent};font-weight:600">البريد · </span>${esc(party.email)}</div>` : ""}
+       </div>`
+    : `<span style="color:#b7bdb2">—</span>`;
 
   const rows = lines
     .map((l, i) => {
       const c = lineCalcs[i] || { net: 0, taxAmt: 0, gross: 0 };
-      const zebra = i % 2 ? `background:${tpl.soft}` : "";
-      return `<tr style="${zebra}">
-        <td style="border:1px solid #d4d0c4;padding:6px 8px;text-align:center">${i + 1}</td>
-        <td style="border:1px solid #d4d0c4;padding:6px 8px;text-align:right">${esc(l.description || "—")}</td>
-        <td style="border:1px solid #d4d0c4;padding:6px 8px;text-align:center">${esc(l.qty)}</td>
-        <td style="border:1px solid #d4d0c4;padding:6px 8px;text-align:center">${fmt(l.price)}</td>
-        <td style="border:1px solid #d4d0c4;padding:6px 8px;text-align:center">${fmt(c.net)}</td>
-        <td style="border:1px solid #d4d0c4;padding:6px 8px;text-align:center">${fmt(c.taxAmt)} <span style="opacity:.6">(${esc(l.tax)}%)</span></td>
-        <td style="border:1px solid #d4d0c4;padding:6px 8px;text-align:center;font-weight:600">${fmt(c.gross)}</td>
+      const bd = `border-bottom:1px solid ${line}`;
+      return `<tr>
+        <td style="${bd};padding:12px 8px;text-align:center;color:${muted};font-size:10.5px;font-variant-numeric:tabular-nums">${String(i + 1).padStart(2, "0")}</td>
+        <td style="${bd};padding:12px 10px;text-align:right;color:${ink}">
+          <div style="font-weight:600;font-size:12px;line-height:1.5">${esc(l.description || "—")}</div>
+        </td>
+        <td style="${bd};padding:12px 8px;text-align:center;font-variant-numeric:tabular-nums;color:${ink}">${esc(l.qty)}</td>
+        <td style="${bd};padding:12px 8px;text-align:center;font-variant-numeric:tabular-nums;color:${ink}">${fmt(l.price)}</td>
+        <td style="${bd};padding:12px 8px;text-align:center;font-variant-numeric:tabular-nums;color:${muted}">${fmt(c.net)}</td>
+        <td style="${bd};padding:12px 8px;text-align:center;font-variant-numeric:tabular-nums;color:${muted}">${fmt(c.taxAmt)} <span style="opacity:.55;font-size:9px">(${esc(l.tax)}%)</span></td>
+        <td style="${bd};padding:12px 10px;text-align:center;font-variant-numeric:tabular-nums;color:${ink};font-weight:700">${fmt(c.gross)}</td>
       </tr>`;
     })
     .join("");
 
-  const extraMeta = [
-    d.poNumber ? `<tr><td style="border:1px solid #eceae2;padding:6px 8px;background:${tpl.soft};font-weight:600">أمر الشراء ${en("PO Number")}</td><td colspan="3" style="border:1px solid #eceae2;padding:6px 8px">${esc(d.poNumber)}</td></tr>` : "",
-    d.reference ? `<tr><td style="border:1px solid #eceae2;padding:6px 8px;background:${tpl.soft};font-weight:600">المرجع ${en("Reference")}</td><td colspan="3" style="border:1px solid #eceae2;padding:6px 8px">${esc(d.reference)}</td></tr>` : "",
-    d.project ? `<tr><td style="border:1px solid #eceae2;padding:6px 8px;background:${tpl.soft};font-weight:600">المشروع ${en("Project")}</td><td colspan="3" style="border:1px solid #eceae2;padding:6px 8px">${esc(d.project)}</td></tr>` : "",
-  ].join("");
+  const metaCell = (label: string, enLabel: string, value: string) => `
+    <div style="display:flex;flex-direction:column;gap:4px;padding:10px 14px;background:${soft};border-radius:8px;min-width:0">
+      <div style="font-size:9.5px;color:${muted};font-weight:600;letter-spacing:.04em;text-transform:uppercase">${esc(label)}${B ? ` <span style="opacity:.6;font-weight:400;text-transform:none">· ${esc(enLabel)}</span>` : ""}</div>
+      <div style="font-size:12px;color:${ink};font-weight:600;font-variant-numeric:tabular-nums;word-break:break-word">${value || "—"}</div>
+    </div>`;
 
-  const totalsRows = [
-    `<tr><td style="border:1px solid #eceae2;padding:6px 10px;background:${tpl.soft}">المجموع الفرعي ${en("Subtotal")}</td>
-     <td style="border:1px solid #eceae2;padding:6px 10px;text-align:left;font-variant-numeric:tabular-nums">${fmt(d.subtotal)} <span style="font-size:10px">${esc(currency)}</span></td></tr>`,
-    `<tr><td style="border:1px solid #eceae2;padding:6px 10px;background:${tpl.soft}">ضريبة القيمة المضافة ${en("VAT")}</td>
-     <td style="border:1px solid #eceae2;padding:6px 10px;text-align:left;font-variant-numeric:tabular-nums">${fmt(d.tax)} <span style="font-size:10px">${esc(currency)}</span></td></tr>`,
-    d.discAmt && d.discAmt > 0
-      ? `<tr><td style="border:1px solid #eceae2;padding:6px 10px;background:${tpl.soft}">خصم ${en("Discount")}</td>
-         <td style="border:1px solid #eceae2;padding:6px 10px;text-align:left;font-variant-numeric:tabular-nums">- ${fmt(d.discAmt)} <span style="font-size:10px">${esc(currency)}</span></td></tr>`
-      : "",
-    d.shipAmt && d.shipAmt > 0
-      ? `<tr><td style="border:1px solid #eceae2;padding:6px 10px;background:${tpl.soft}">شحن ${en("Shipping")}</td>
-         <td style="border:1px solid #eceae2;padding:6px 10px;text-align:left;font-variant-numeric:tabular-nums">${fmt(d.shipAmt)} <span style="font-size:10px">${esc(currency)}</span></td></tr>`
-      : "",
-    `<tr style="background:${tpl.accent};color:${tpl.onAccent}"><td style="border:1px solid ${tpl.accent};padding:8px 10px;font-weight:700">الإجمالي شامل الضريبة ${en("Grand Total")}</td>
-     <td style="border:1px solid ${tpl.accent};padding:8px 10px;text-align:left;font-weight:700;font-variant-numeric:tabular-nums">${fmt(d.total)} <span style="font-size:10px">${esc(currency)}</span></td></tr>`,
-  ].join("");
+  const metaGrid = [
+    metaCell("التاريخ", "Date", esc(d.date)),
+    metaCell(d.expiry ? "الصلاحية" : "الاستحقاق", d.expiry ? "Expiry" : "Due", esc(d.expiry || d.dueDate || "—")),
+    d.poNumber ? metaCell("أمر الشراء", "PO No.", esc(d.poNumber)) : "",
+    d.reference ? metaCell("المرجع", "Reference", esc(d.reference)) : "",
+    d.project ? metaCell("المشروع", "Project", esc(d.project)) : "",
+  ].filter(Boolean).join("");
+
+  const totalsRow = (label: string, enLabel: string, value: string, opts?: { strong?: boolean; dashed?: boolean }) => `
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0;${opts?.dashed === false || opts?.strong ? "" : `border-bottom:1px dashed ${line};`}">
+      <span style="font-size:11px;color:${opts?.strong ? "#fff" : muted};font-weight:${opts?.strong ? 700 : 500}">${esc(label)}${B ? ` <span style="opacity:.7;font-weight:400;font-size:9.5px">· ${esc(enLabel)}</span>` : ""}</span>
+      <span style="font-variant-numeric:tabular-nums;font-weight:${opts?.strong ? 800 : 600};font-size:${opts?.strong ? "15px" : "12px"};color:${opts?.strong ? "#fff" : ink}">${value} <span style="font-size:10px;opacity:.7">${esc(currency)}</span></span>
+    </div>`;
+
+  const totalsBlock = `
+    <div style="background:#fff;border:1px solid ${line};border-radius:12px;overflow:hidden">
+      <div style="padding:14px 18px 6px">
+        ${totalsRow("المجموع الفرعي", "Subtotal", fmt(d.subtotal))}
+        ${totalsRow("ضريبة القيمة المضافة", "VAT", fmt(d.tax))}
+        ${d.discAmt && d.discAmt > 0 ? totalsRow("خصم", "Discount", `- ${fmt(d.discAmt)}`) : ""}
+        ${d.shipAmt && d.shipAmt > 0 ? totalsRow("شحن", "Shipping", fmt(d.shipAmt)) : ""}
+      </div>
+      <div style="background:${accent};padding:14px 18px;color:${tpl.onAccent}">
+        ${totalsRow("الإجمالي شامل الضريبة", "Grand Total", fmt(d.total), { strong: true })}
+      </div>
+    </div>`;
 
   const stampBlock = branding?.stamp
-    ? `<div style="margin-top:8px"><img src="${esc(branding.stamp)}" alt="stamp" style="max-height:90px;object-fit:contain" /></div>`
+    ? `<img src="${esc(branding.stamp)}" alt="stamp" style="max-height:90px;object-fit:contain;opacity:.9" />`
     : "";
   const qrBlock = d.qrDataUrl
-    ? `<div style="text-align:center">
-         <img src="${esc(d.qrDataUrl)}" alt="ZATCA QR" width="140" height="140" style="border:1px solid #eceae2;padding:6px;background:#fff;border-radius:6px" />
-         <div style="font-size:10px;color:#666;margin-top:4px">رمز الفاتورة (ZATCA)</div>
-         ${stampBlock}
+    ? `<div style="text-align:center;background:#fff;padding:10px;border:1px solid ${line};border-radius:12px;display:inline-block">
+         <img src="${esc(d.qrDataUrl)}" alt="ZATCA QR" width="118" height="118" />
+         <div style="font-size:9.5px;color:${muted};margin-top:4px;font-weight:600;letter-spacing:.04em">ZATCA · هيئة الزكاة</div>
        </div>`
-    : stampBlock
-    ? `<div style="text-align:center">${stampBlock}</div>`
-    : `<div></div>`;
-
-  const logoBlock = branding?.logo
-    ? `<img src="${esc(branding.logo)}" alt="logo" style="max-height:60px;object-fit:contain;margin-bottom:8px" />`
     : "";
 
+  const logoBlock = branding?.logo
+    ? `<img src="${esc(branding.logo)}" alt="logo" style="max-height:56px;object-fit:contain;margin-bottom:10px" />`
+    : `<div style="width:44px;height:44px;border-radius:10px;background:${accent};color:${tpl.onAccent};display:flex;align-items:center;justify-content:center;font-weight:800;font-size:18px;margin-bottom:10px">${esc((org.name || "H").trim().charAt(0))}</div>`;
+
   return `
-  <div class="doc" style="max-width:820px;margin:0 auto;color:#0f2a1d">
-    <div style="display:flex;justify-content:space-between;align-items:flex-start;border-bottom:3px solid ${tpl.accent};padding-bottom:14px;margin-bottom:18px">
+  <div class="doc" style="max-width:820px;margin:0 auto;color:${ink};background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 1px 0 rgba(0,0,0,.02)">
+    <div style="height:6px;background:linear-gradient(90deg, ${accent} 0%, ${accent} 60%, ${soft} 100%)"></div>
+
+    <div style="padding:28px 32px 22px;display:flex;justify-content:space-between;align-items:flex-start;gap:24px">
       <div style="max-width:60%">
         ${logoBlock}
-        <div style="font-size:20px;font-weight:700;color:${tpl.accent};margin:0 0 4px">${esc(org.name)}</div>
-        <div style="font-size:11px;color:#555;margin:2px 0">الرقم الضريبي: ${esc(org.taxNumber)}</div>
-        <div style="font-size:11px;color:#555;margin:2px 0">المملكة العربية السعودية</div>
+        <div style="font-size:19px;font-weight:800;color:${ink};letter-spacing:-.01em">${esc(org.name)}</div>
+        <div style="font-size:11px;color:${muted};margin-top:4px">الرقم الضريبي · ${esc(org.taxNumber)}</div>
+        <div style="font-size:11px;color:${muted}">المملكة العربية السعودية</div>
       </div>
-      <div style="text-align:left">
-        <div style="font-size:18px;font-weight:700;color:${tpl.accent};margin:0 0 6px">${esc(d.title)}</div>
-        ${d.titleEn ? `<div style="font-size:11px;color:#666;margin-bottom:6px">${esc(d.titleEn)}</div>` : ""}
-        <span style="background:${tpl.accent};color:${tpl.onAccent};padding:5px 12px;border-radius:6px;font-size:13px;display:inline-block;font-weight:600">${esc(d.ref)}</span>
+      <div style="text-align:left;min-width:220px">
+        <div style="display:inline-block;padding:5px 12px;background:${soft};color:${accent};font-size:10.5px;font-weight:700;border-radius:999px;letter-spacing:.06em;text-transform:uppercase;margin-bottom:10px">${esc(d.titleEn || "Document")}</div>
+        <div style="font-size:22px;font-weight:800;color:${ink};margin-bottom:6px;letter-spacing:-.01em">${esc(d.title)}</div>
+        <div style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:13px;color:${accent};font-weight:700;letter-spacing:.02em">${esc(d.ref)}</div>
       </div>
     </div>
 
-    <table style="width:100%;border-collapse:collapse;margin-bottom:16px;font-size:11px">
-      <tbody>
-        <tr>
-          <td style="border:1px solid #eceae2;padding:6px 8px;background:${tpl.soft};font-weight:600;width:110px">${esc(d.partyLabel)} ${en("Bill To")}</td>
-          <td style="border:1px solid #eceae2;padding:6px 8px" colspan="3">${partyBlock}</td>
-        </tr>
-        <tr>
-          <td style="border:1px solid #eceae2;padding:6px 8px;background:${tpl.soft};font-weight:600">التاريخ ${en("Date")}</td>
-          <td style="border:1px solid #eceae2;padding:6px 8px">${esc(d.date)}</td>
-          <td style="border:1px solid #eceae2;padding:6px 8px;background:${tpl.soft};font-weight:600">${d.expiry ? "الصلاحية" : "الاستحقاق"} ${en(d.expiry ? "Expiry" : "Due")}</td>
-          <td style="border:1px solid #eceae2;padding:6px 8px">${esc(d.expiry || d.dueDate || "—")}</td>
-        </tr>
-        ${extraMeta}
-      </tbody>
-    </table>
-
-    <table style="width:100%;border-collapse:collapse;margin-bottom:16px;font-size:11px">
-      <thead>
-        <tr style="background:${tpl.accent};color:${tpl.onAccent}">
-          <th style="border:1px solid ${tpl.accent};padding:8px;text-align:center;width:32px">#</th>
-          <th style="border:1px solid ${tpl.accent};padding:8px;text-align:right">الوصف${en("Description")}</th>
-          <th style="border:1px solid ${tpl.accent};padding:8px;text-align:center;width:60px">الكمية${en("Qty")}</th>
-          <th style="border:1px solid ${tpl.accent};padding:8px;text-align:center;width:80px">السعر${en("Price")}</th>
-          <th style="border:1px solid ${tpl.accent};padding:8px;text-align:center;width:90px">المبلغ${en("Amount")}</th>
-          <th style="border:1px solid ${tpl.accent};padding:8px;text-align:center;width:90px">الضريبة${en("VAT")}</th>
-          <th style="border:1px solid ${tpl.accent};padding:8px;text-align:center;width:95px">الإجمالي${en("Total")}</th>
-        </tr>
-      </thead>
-      <tbody>${rows || `<tr><td colspan="7" style="border:1px solid #d4d0c4;padding:14px;text-align:center;color:#999">لا توجد بنود</td></tr>`}</tbody>
-    </table>
-
-    <div style="display:grid;grid-template-columns:180px 1fr 300px;gap:16px;align-items:start;margin-top:8px">
-      ${qrBlock}
-      <div style="font-size:11px;color:#555;padding:10px;background:${tpl.soft};border-radius:6px;border-right:3px solid ${tpl.accent};min-height:60px">
-        ${d.notes ? `<strong>ملاحظات:</strong><br/>${esc(d.notes).replace(/\n/g, "<br/>")}` : `<span style="color:#999">لا توجد ملاحظات</span>`}
+    <div style="padding:0 32px 20px">
+      <div style="border:1px solid ${line};border-radius:12px;padding:16px 18px;background:#fff">
+        <div style="font-size:9.5px;color:${muted};font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-bottom:8px">${esc(d.partyLabel)}${B ? " · Bill To" : ""}</div>
+        ${partyBlock}
       </div>
-      <table style="width:100%;border-collapse:collapse;font-size:12px">
-        <tbody>${totalsRows}</tbody>
+    </div>
+
+    <div style="padding:0 32px 22px;display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px">
+      ${metaGrid}
+    </div>
+
+    <div style="padding:0 32px 22px">
+      <table style="width:100%;border-collapse:collapse;font-size:11px;background:#fff;border:1px solid ${line};border-radius:12px;overflow:hidden">
+        <thead>
+          <tr style="background:${soft}">
+            <th style="padding:11px 8px;text-align:center;width:36px;font-size:9.5px;color:${muted};font-weight:700;letter-spacing:.06em;text-transform:uppercase">#</th>
+            <th style="padding:11px 10px;text-align:right;font-size:9.5px;color:${muted};font-weight:700;letter-spacing:.06em;text-transform:uppercase">الوصف${en("Description")}</th>
+            <th style="padding:11px 8px;text-align:center;width:60px;font-size:9.5px;color:${muted};font-weight:700;letter-spacing:.06em;text-transform:uppercase">الكمية${en("Qty")}</th>
+            <th style="padding:11px 8px;text-align:center;width:80px;font-size:9.5px;color:${muted};font-weight:700;letter-spacing:.06em;text-transform:uppercase">السعر${en("Price")}</th>
+            <th style="padding:11px 8px;text-align:center;width:90px;font-size:9.5px;color:${muted};font-weight:700;letter-spacing:.06em;text-transform:uppercase">المبلغ${en("Amount")}</th>
+            <th style="padding:11px 8px;text-align:center;width:95px;font-size:9.5px;color:${muted};font-weight:700;letter-spacing:.06em;text-transform:uppercase">الضريبة${en("VAT")}</th>
+            <th style="padding:11px 10px;text-align:center;width:100px;font-size:9.5px;color:${muted};font-weight:700;letter-spacing:.06em;text-transform:uppercase">الإجمالي${en("Total")}</th>
+          </tr>
+        </thead>
+        <tbody>${rows || `<tr><td colspan="7" style="padding:24px;text-align:center;color:#b7bdb2;font-size:11px">لا توجد بنود</td></tr>`}</tbody>
       </table>
     </div>
 
+    <div style="padding:0 32px 22px;display:grid;grid-template-columns:170px 1fr 320px;gap:18px;align-items:start">
+      <div>${qrBlock}${stampBlock ? `<div style="margin-top:10px;text-align:center">${stampBlock}</div>` : ""}</div>
+      <div style="font-size:11px;color:${muted};padding:14px 16px;background:${soft};border-radius:12px;border-inline-start:3px solid ${accent};line-height:1.7;min-height:90px">
+        ${d.notes ? `<div style="font-weight:700;color:${accent};font-size:10px;letter-spacing:.06em;text-transform:uppercase;margin-bottom:6px">ملاحظات · Notes</div>${esc(d.notes).replace(/\n/g, "<br/>")}` : `<span style="color:#b7bdb2">لا توجد ملاحظات</span>`}
+      </div>
+      ${totalsBlock}
+    </div>
+
     ${d.verify ? `
-    <div style="margin-top:22px;padding:12px 14px;border:1px dashed ${tpl.accent};border-radius:8px;background:${tpl.soft};display:flex;align-items:center;gap:14px;justify-content:space-between">
-      <div style="display:flex;align-items:center;gap:12px">
-        <img src="${esc(d.verify.qrDataUrl)}" alt="verify" width="90" height="90" style="background:#fff;padding:4px;border-radius:6px;border:1px solid #eceae2" />
-        <div style="font-size:11px;color:#333;line-height:1.6">
-          <div style="font-weight:700;color:${tpl.accent};margin-bottom:2px">${esc(d.verify.label || "التوقيع الرقمي")}</div>
-          <div>يمكن التحقق من صحة هذا المستند بمسح الرمز</div>
-          <div style="direction:ltr;text-align:left;font-size:10px;color:#666;margin-top:2px;word-break:break-all">${esc(d.verify.url)}</div>
+    <div style="margin:0 32px 22px;padding:16px 18px;border:1px solid ${line};border-radius:12px;background:linear-gradient(135deg, ${soft} 0%, #fff 100%);display:flex;align-items:center;gap:16px;justify-content:space-between">
+      <div style="display:flex;align-items:center;gap:14px">
+        <img src="${esc(d.verify.qrDataUrl)}" alt="verify" width="86" height="86" style="background:#fff;padding:5px;border-radius:8px;border:1px solid ${line}" />
+        <div style="font-size:11px;color:${ink};line-height:1.7">
+          <div style="font-weight:800;color:${accent};margin-bottom:2px;font-size:12px">${esc(d.verify.label || "التوقيع الرقمي · Digital Signature")}</div>
+          <div style="color:${muted}">يمكن التحقق من صحة هذا المستند بمسح الرمز</div>
+          <div style="direction:ltr;text-align:left;font-size:9.5px;color:${muted};margin-top:3px;word-break:break-all;font-family:ui-monospace,monospace">${esc(d.verify.url)}</div>
         </div>
       </div>
-      <div style="text-align:center;font-size:10px;color:#666;min-width:110px">
-        <div style="font-weight:600;color:${tpl.accent}">مُوثَّق إلكترونياً</div>
-        <div style="opacity:.7">Digitally Signed</div>
+      <div style="text-align:center;font-size:9.5px;color:${muted};min-width:110px;padding:8px 12px;background:#fff;border-radius:10px;border:1px solid ${line}">
+        <div style="font-weight:800;color:${accent};font-size:11px">✓ مُوثَّق</div>
+        <div style="opacity:.7;margin-top:2px">Verified · HMAC-SHA256</div>
       </div>
     </div>` : ""}
 
-    <div style="text-align:center;font-size:11px;color:#888;margin-top:16px;padding-top:12px;border-top:1px solid #eceae2">
-      شكراً لتعاملكم معنا · ${esc(org.name)} · ${esc(d.ref)}
+    <div style="padding:16px 32px 22px;border-top:1px solid ${line};display:flex;justify-content:space-between;align-items:center;font-size:10.5px;color:${muted}">
+      <span>شكراً لتعاملكم معنا · Thank you for your business</span>
+      <span style="font-family:ui-monospace,monospace;color:${accent};font-weight:700">${esc(org.name)} · ${esc(d.ref)}</span>
     </div>
   </div>`;
 }
