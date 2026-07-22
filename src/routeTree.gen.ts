@@ -49,6 +49,7 @@ import { Route as ReportsBalanceSheetRouteImport } from './routes/reports.balanc
 import { Route as ReportsAgedReceivablesRouteImport } from './routes/reports.aged-receivables'
 import { Route as ReportsAgedPayablesRouteImport } from './routes/reports.aged-payables'
 import { Route as PurchasesSuppliersRouteImport } from './routes/purchases.suppliers'
+import { Route as PurchasesScanRouteImport } from './routes/purchases.scan'
 import { Route as PurchasesPurchaseOrdersRouteImport } from './routes/purchases.purchase-orders'
 import { Route as PurchasesDebitNotesRouteImport } from './routes/purchases.debit-notes'
 import { Route as PurchasesBillsRouteImport } from './routes/purchases.bills'
@@ -287,6 +288,11 @@ const PurchasesSuppliersRoute = PurchasesSuppliersRouteImport.update({
   path: '/purchases/suppliers',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PurchasesScanRoute = PurchasesScanRouteImport.update({
+  id: '/purchases/scan',
+  path: '/purchases/scan',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const PurchasesPurchaseOrdersRoute = PurchasesPurchaseOrdersRouteImport.update({
   id: '/purchases/purchase-orders',
   path: '/purchases/purchase-orders',
@@ -502,6 +508,7 @@ export interface FileRoutesByFullPath {
   '/purchases/bills': typeof PurchasesBillsRouteWithChildren
   '/purchases/debit-notes': typeof PurchasesDebitNotesRouteWithChildren
   '/purchases/purchase-orders': typeof PurchasesPurchaseOrdersRouteWithChildren
+  '/purchases/scan': typeof PurchasesScanRoute
   '/purchases/suppliers': typeof PurchasesSuppliersRoute
   '/reports/aged-payables': typeof ReportsAgedPayablesRoute
   '/reports/aged-receivables': typeof ReportsAgedReceivablesRoute
@@ -577,6 +584,7 @@ export interface FileRoutesByTo {
   '/inventory/items': typeof InventoryItemsRoute
   '/inventory/reports': typeof InventoryReportsRoute
   '/inventory/warehouses': typeof InventoryWarehousesRoute
+  '/purchases/scan': typeof PurchasesScanRoute
   '/purchases/suppliers': typeof PurchasesSuppliersRoute
   '/reports/aged-payables': typeof ReportsAgedPayablesRoute
   '/reports/aged-receivables': typeof ReportsAgedReceivablesRoute
@@ -653,6 +661,7 @@ export interface FileRoutesById {
   '/purchases/bills': typeof PurchasesBillsRouteWithChildren
   '/purchases/debit-notes': typeof PurchasesDebitNotesRouteWithChildren
   '/purchases/purchase-orders': typeof PurchasesPurchaseOrdersRouteWithChildren
+  '/purchases/scan': typeof PurchasesScanRoute
   '/purchases/suppliers': typeof PurchasesSuppliersRoute
   '/reports/aged-payables': typeof ReportsAgedPayablesRoute
   '/reports/aged-receivables': typeof ReportsAgedReceivablesRoute
@@ -733,6 +742,7 @@ export interface FileRouteTypes {
     | '/purchases/bills'
     | '/purchases/debit-notes'
     | '/purchases/purchase-orders'
+    | '/purchases/scan'
     | '/purchases/suppliers'
     | '/reports/aged-payables'
     | '/reports/aged-receivables'
@@ -808,6 +818,7 @@ export interface FileRouteTypes {
     | '/inventory/items'
     | '/inventory/reports'
     | '/inventory/warehouses'
+    | '/purchases/scan'
     | '/purchases/suppliers'
     | '/reports/aged-payables'
     | '/reports/aged-receivables'
@@ -883,6 +894,7 @@ export interface FileRouteTypes {
     | '/purchases/bills'
     | '/purchases/debit-notes'
     | '/purchases/purchase-orders'
+    | '/purchases/scan'
     | '/purchases/suppliers'
     | '/reports/aged-payables'
     | '/reports/aged-receivables'
@@ -957,6 +969,7 @@ export interface RootRouteChildren {
   PurchasesBillsRoute: typeof PurchasesBillsRouteWithChildren
   PurchasesDebitNotesRoute: typeof PurchasesDebitNotesRouteWithChildren
   PurchasesPurchaseOrdersRoute: typeof PurchasesPurchaseOrdersRouteWithChildren
+  PurchasesScanRoute: typeof PurchasesScanRoute
   PurchasesSuppliersRoute: typeof PurchasesSuppliersRoute
   ReportsAgedPayablesRoute: typeof ReportsAgedPayablesRoute
   ReportsAgedReceivablesRoute: typeof ReportsAgedReceivablesRoute
@@ -1270,6 +1283,13 @@ declare module '@tanstack/react-router' {
       path: '/purchases/suppliers'
       fullPath: '/purchases/suppliers'
       preLoaderRoute: typeof PurchasesSuppliersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/purchases/scan': {
+      id: '/purchases/scan'
+      path: '/purchases/scan'
+      fullPath: '/purchases/scan'
+      preLoaderRoute: typeof PurchasesScanRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/purchases/purchase-orders': {
@@ -1676,6 +1696,7 @@ const rootRouteChildren: RootRouteChildren = {
   PurchasesBillsRoute: PurchasesBillsRouteWithChildren,
   PurchasesDebitNotesRoute: PurchasesDebitNotesRouteWithChildren,
   PurchasesPurchaseOrdersRoute: PurchasesPurchaseOrdersRouteWithChildren,
+  PurchasesScanRoute: PurchasesScanRoute,
   PurchasesSuppliersRoute: PurchasesSuppliersRoute,
   ReportsAgedPayablesRoute: ReportsAgedPayablesRoute,
   ReportsAgedReceivablesRoute: ReportsAgedReceivablesRoute,

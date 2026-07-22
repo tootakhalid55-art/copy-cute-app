@@ -5,7 +5,7 @@ import {
   Globe, MessageCircle, PanelRight, LogOut, User as UserIcon,
   Building, Users, ShieldCheck, UserCog, Receipt, FileText, Plug, CreditCard,
   Repeat, FileMinus, BookOpen, BookText, ScrollText, PieChart, BarChart3,
-  ClipboardList, ArrowLeftRight, Coins, Hash, History, Download,
+  ClipboardList, ArrowLeftRight, Coins, Hash, History, Download, ScanLine,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
