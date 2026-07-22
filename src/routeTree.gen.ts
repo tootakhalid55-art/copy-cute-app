@@ -51,12 +51,14 @@ import { Route as ReportsAgedPayablesRouteImport } from './routes/reports.aged-p
 import { Route as PurchasesSuppliersRouteImport } from './routes/purchases.suppliers'
 import { Route as PurchasesScanRouteImport } from './routes/purchases.scan'
 import { Route as PurchasesPurchaseOrdersRouteImport } from './routes/purchases.purchase-orders'
+import { Route as PurchasesInboxRouteImport } from './routes/purchases.inbox'
 import { Route as PurchasesDebitNotesRouteImport } from './routes/purchases.debit-notes'
 import { Route as PurchasesBillsRouteImport } from './routes/purchases.bills'
 import { Route as InventoryWarehousesRouteImport } from './routes/inventory.warehouses'
 import { Route as InventoryReportsRouteImport } from './routes/inventory.reports'
 import { Route as InventoryItemsRouteImport } from './routes/inventory.items'
 import { Route as InventoryAdjustmentsRouteImport } from './routes/inventory.adjustments'
+import { Route as InboxUploadTokenRouteImport } from './routes/inbox-upload.$token'
 import { Route as DashboardProfitAndLossRouteImport } from './routes/dashboard.profit-and-loss'
 import { Route as DashboardCashFlowRouteImport } from './routes/dashboard.cash-flow'
 import { Route as CashTransfersRouteImport } from './routes/cash.transfers'
@@ -298,6 +300,11 @@ const PurchasesPurchaseOrdersRoute = PurchasesPurchaseOrdersRouteImport.update({
   path: '/purchases/purchase-orders',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PurchasesInboxRoute = PurchasesInboxRouteImport.update({
+  id: '/purchases/inbox',
+  path: '/purchases/inbox',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const PurchasesDebitNotesRoute = PurchasesDebitNotesRouteImport.update({
   id: '/purchases/debit-notes',
   path: '/purchases/debit-notes',
@@ -326,6 +333,11 @@ const InventoryItemsRoute = InventoryItemsRouteImport.update({
 const InventoryAdjustmentsRoute = InventoryAdjustmentsRouteImport.update({
   id: '/inventory/adjustments',
   path: '/inventory/adjustments',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const InboxUploadTokenRoute = InboxUploadTokenRouteImport.update({
+  id: '/inbox-upload/$token',
+  path: '/inbox-upload/$token',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DashboardProfitAndLossRoute = DashboardProfitAndLossRouteImport.update({
@@ -501,12 +513,14 @@ export interface FileRoutesByFullPath {
   '/cash/transfers': typeof CashTransfersRoute
   '/dashboard/cash-flow': typeof DashboardCashFlowRoute
   '/dashboard/profit-and-loss': typeof DashboardProfitAndLossRoute
+  '/inbox-upload/$token': typeof InboxUploadTokenRoute
   '/inventory/adjustments': typeof InventoryAdjustmentsRoute
   '/inventory/items': typeof InventoryItemsRoute
   '/inventory/reports': typeof InventoryReportsRoute
   '/inventory/warehouses': typeof InventoryWarehousesRoute
   '/purchases/bills': typeof PurchasesBillsRouteWithChildren
   '/purchases/debit-notes': typeof PurchasesDebitNotesRouteWithChildren
+  '/purchases/inbox': typeof PurchasesInboxRoute
   '/purchases/purchase-orders': typeof PurchasesPurchaseOrdersRouteWithChildren
   '/purchases/scan': typeof PurchasesScanRoute
   '/purchases/suppliers': typeof PurchasesSuppliersRoute
@@ -580,10 +594,12 @@ export interface FileRoutesByTo {
   '/cash/transfers': typeof CashTransfersRoute
   '/dashboard/cash-flow': typeof DashboardCashFlowRoute
   '/dashboard/profit-and-loss': typeof DashboardProfitAndLossRoute
+  '/inbox-upload/$token': typeof InboxUploadTokenRoute
   '/inventory/adjustments': typeof InventoryAdjustmentsRoute
   '/inventory/items': typeof InventoryItemsRoute
   '/inventory/reports': typeof InventoryReportsRoute
   '/inventory/warehouses': typeof InventoryWarehousesRoute
+  '/purchases/inbox': typeof PurchasesInboxRoute
   '/purchases/scan': typeof PurchasesScanRoute
   '/purchases/suppliers': typeof PurchasesSuppliersRoute
   '/reports/aged-payables': typeof ReportsAgedPayablesRoute
@@ -654,12 +670,14 @@ export interface FileRoutesById {
   '/cash/transfers': typeof CashTransfersRoute
   '/dashboard/cash-flow': typeof DashboardCashFlowRoute
   '/dashboard/profit-and-loss': typeof DashboardProfitAndLossRoute
+  '/inbox-upload/$token': typeof InboxUploadTokenRoute
   '/inventory/adjustments': typeof InventoryAdjustmentsRoute
   '/inventory/items': typeof InventoryItemsRoute
   '/inventory/reports': typeof InventoryReportsRoute
   '/inventory/warehouses': typeof InventoryWarehousesRoute
   '/purchases/bills': typeof PurchasesBillsRouteWithChildren
   '/purchases/debit-notes': typeof PurchasesDebitNotesRouteWithChildren
+  '/purchases/inbox': typeof PurchasesInboxRoute
   '/purchases/purchase-orders': typeof PurchasesPurchaseOrdersRouteWithChildren
   '/purchases/scan': typeof PurchasesScanRoute
   '/purchases/suppliers': typeof PurchasesSuppliersRoute
@@ -735,12 +753,14 @@ export interface FileRouteTypes {
     | '/cash/transfers'
     | '/dashboard/cash-flow'
     | '/dashboard/profit-and-loss'
+    | '/inbox-upload/$token'
     | '/inventory/adjustments'
     | '/inventory/items'
     | '/inventory/reports'
     | '/inventory/warehouses'
     | '/purchases/bills'
     | '/purchases/debit-notes'
+    | '/purchases/inbox'
     | '/purchases/purchase-orders'
     | '/purchases/scan'
     | '/purchases/suppliers'
@@ -814,10 +834,12 @@ export interface FileRouteTypes {
     | '/cash/transfers'
     | '/dashboard/cash-flow'
     | '/dashboard/profit-and-loss'
+    | '/inbox-upload/$token'
     | '/inventory/adjustments'
     | '/inventory/items'
     | '/inventory/reports'
     | '/inventory/warehouses'
+    | '/purchases/inbox'
     | '/purchases/scan'
     | '/purchases/suppliers'
     | '/reports/aged-payables'
@@ -887,12 +909,14 @@ export interface FileRouteTypes {
     | '/cash/transfers'
     | '/dashboard/cash-flow'
     | '/dashboard/profit-and-loss'
+    | '/inbox-upload/$token'
     | '/inventory/adjustments'
     | '/inventory/items'
     | '/inventory/reports'
     | '/inventory/warehouses'
     | '/purchases/bills'
     | '/purchases/debit-notes'
+    | '/purchases/inbox'
     | '/purchases/purchase-orders'
     | '/purchases/scan'
     | '/purchases/suppliers'
@@ -962,12 +986,14 @@ export interface RootRouteChildren {
   CashReconciliationRoute: typeof CashReconciliationRoute
   CashTransactionsRoute: typeof CashTransactionsRoute
   CashTransfersRoute: typeof CashTransfersRoute
+  InboxUploadTokenRoute: typeof InboxUploadTokenRoute
   InventoryAdjustmentsRoute: typeof InventoryAdjustmentsRoute
   InventoryItemsRoute: typeof InventoryItemsRoute
   InventoryReportsRoute: typeof InventoryReportsRoute
   InventoryWarehousesRoute: typeof InventoryWarehousesRoute
   PurchasesBillsRoute: typeof PurchasesBillsRouteWithChildren
   PurchasesDebitNotesRoute: typeof PurchasesDebitNotesRouteWithChildren
+  PurchasesInboxRoute: typeof PurchasesInboxRoute
   PurchasesPurchaseOrdersRoute: typeof PurchasesPurchaseOrdersRouteWithChildren
   PurchasesScanRoute: typeof PurchasesScanRoute
   PurchasesSuppliersRoute: typeof PurchasesSuppliersRoute
@@ -1299,6 +1325,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PurchasesPurchaseOrdersRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/purchases/inbox': {
+      id: '/purchases/inbox'
+      path: '/purchases/inbox'
+      fullPath: '/purchases/inbox'
+      preLoaderRoute: typeof PurchasesInboxRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/purchases/debit-notes': {
       id: '/purchases/debit-notes'
       path: '/purchases/debit-notes'
@@ -1339,6 +1372,13 @@ declare module '@tanstack/react-router' {
       path: '/inventory/adjustments'
       fullPath: '/inventory/adjustments'
       preLoaderRoute: typeof InventoryAdjustmentsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/inbox-upload/$token': {
+      id: '/inbox-upload/$token'
+      path: '/inbox-upload/$token'
+      fullPath: '/inbox-upload/$token'
+      preLoaderRoute: typeof InboxUploadTokenRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/dashboard/profit-and-loss': {
@@ -1689,12 +1729,14 @@ const rootRouteChildren: RootRouteChildren = {
   CashReconciliationRoute: CashReconciliationRoute,
   CashTransactionsRoute: CashTransactionsRoute,
   CashTransfersRoute: CashTransfersRoute,
+  InboxUploadTokenRoute: InboxUploadTokenRoute,
   InventoryAdjustmentsRoute: InventoryAdjustmentsRoute,
   InventoryItemsRoute: InventoryItemsRoute,
   InventoryReportsRoute: InventoryReportsRoute,
   InventoryWarehousesRoute: InventoryWarehousesRoute,
   PurchasesBillsRoute: PurchasesBillsRouteWithChildren,
   PurchasesDebitNotesRoute: PurchasesDebitNotesRouteWithChildren,
+  PurchasesInboxRoute: PurchasesInboxRoute,
   PurchasesPurchaseOrdersRoute: PurchasesPurchaseOrdersRouteWithChildren,
   PurchasesScanRoute: PurchasesScanRoute,
   PurchasesSuppliersRoute: PurchasesSuppliersRoute,
