@@ -168,7 +168,7 @@ function InboxPage() {
     // Match supplier
     let supplier = suppliers.find((s: any) => s.name?.trim() === r.supplierName?.trim());
     if (!supplier && r.supplierName) {
-      supplier = { id: newId(), name: r.supplierName, taxNumber: r.supplierVat || "", type: "supplier" };
+      supplier = { id: newId(), name: r.supplierName, taxNumber: r.supplierVatNumber || "", type: "supplier" };
       addSupplier(supplier);
     }
     const bill = {
@@ -184,7 +184,7 @@ function InboxPage() {
         tax: l.taxRate ?? 15, total: l.total,
       })),
       subtotal: r.subtotal || 0,
-      tax: r.taxAmount || 0,
+      tax: r.vat || 0,
       total: r.grandTotal || 0,
       notes: `مستورد من ${SOURCE_META[doc.source].label}`,
       attachment: { dataUrl: doc.dataUrl, filename: doc.filename },
@@ -487,11 +487,11 @@ function ReviewModal({
             ) : (
               <>
                 <Row label="المورد" value={r.supplierName} />
-                <Row label="الرقم الضريبي" value={r.supplierVat} />
+                <Row label="الرقم الضريبي" value={r.supplierVatNumber} />
                 <Row label="رقم الفاتورة" value={r.invoiceNumber} />
                 <Row label="التاريخ" value={r.invoiceDate} />
                 <Row label="الإجمالي قبل الضريبة" value={r.subtotal?.toLocaleString()} />
-                <Row label="الضريبة" value={r.taxAmount?.toLocaleString()} />
+                <Row label="الضريبة" value={r.vat?.toLocaleString()} />
                 <Row label="الإجمالي" value={`${r.grandTotal?.toLocaleString()} ر.س`} />
                 {r.lines && r.lines.length > 0 && (
                   <div className="border border-[#eceae2] rounded-lg overflow-hidden">
