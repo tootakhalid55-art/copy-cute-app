@@ -53,6 +53,7 @@ const NAV: NavItem[] = [
     icon: ShoppingCart, label: "المشتريات والمصروفات",
     children: [
       { label: "فواتير المشتريات", to: "/purchases/bills" },
+      { label: "مسح الفواتير بالذكاء الاصطناعي", to: "/purchases/scan", icon: ScanLine },
       { label: "أوامر الشراء", to: "/purchases/purchase-orders" },
       { label: "الإشعارات المدينة", to: "/purchases/debit-notes", icon: FileMinus },
       { label: "الموردون", to: "/purchases/suppliers" },
