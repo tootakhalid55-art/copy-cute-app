@@ -153,7 +153,7 @@ async function updateOne(key: string, orgId: string, id: string, patch: any) {
       const v = (payload as any)[k];
       if (v !== undefined) filtered[k] = v;
     }
-    const { error } = await supabase.from("parties").update(filtered).eq("id", id).eq("org_id", orgId);
+    const { error } = await (supabase.from("parties") as any).update(filtered).eq("id", id).eq("org_id", orgId);
     if (error) throw error;
     return;
   }
@@ -165,7 +165,7 @@ async function updateOne(key: string, orgId: string, id: string, patch: any) {
       const v = (payload as any)[k];
       if (v !== undefined) filtered[k] = v;
     }
-    const { error } = await supabase.from("items").update(filtered).eq("id", id).eq("org_id", orgId);
+    const { error } = await (supabase.from("items") as any).update(filtered).eq("id", id).eq("org_id", orgId);
     if (error) throw error;
     return;
   }
