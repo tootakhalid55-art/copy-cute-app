@@ -14,6 +14,10 @@ import { reportLovableError } from "../lib/lovable-error-reporting";
 import { AuthProvider } from "../lib/haseem/auth";
 import { OrgProvider } from "../lib/db/org";
 import { MigrationGate } from "../lib/db/migrate";
+import { startAccountingSubscriber } from "../lib/accounting/subscribe";
+
+// Register the posting engine subscriber once, on module load (browser + SSR safe).
+startAccountingSubscriber();
 
 function NotFoundComponent() {
   return (
