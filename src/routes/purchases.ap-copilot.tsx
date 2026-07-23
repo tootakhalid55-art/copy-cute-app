@@ -27,7 +27,7 @@ const KIND_LABEL: Record<string, string> = {
 };
 
 function Page() {
-  const { org } = useOrg();
+  const { currentOrgId: orgId } = useOrg();
   const list = useServerFn(listCopilotDecisions);
   const [rows, setRows] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
