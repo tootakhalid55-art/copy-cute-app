@@ -88,6 +88,21 @@ export function DocumentSidePanel({
     reload();
   }, [reload]);
 
+  // Realtime: refetch on changes to this document's notifications, attachments,
+  // approval actions/requests, and the doc row itself (multi-device sync).
+  useEffect(() => {
+    if (!orgId || !dbDocId) return;
+    const ch = supabase
+      .channel(`doc-side-${dbDocId}`)
+      .on("postgres_changes", { event: "*", schema: "public", table: "notifications", filter: `document_id=eq.${dbDocId}` }, () => reload())
+      .on("postgres_changes", { event: "*", schema: "public", table: "attachments", filter: `entity_id=eq.${dbDocId}` }, () => reload())
+      .on("postgres_changes", { event: "*", schema: "public", table: "approval_requests", filter: `document_id=eq.${dbDocId}` }, () => reload())
+      .on("postgres_changes", { event: "*", schema: "public", table: "documents", filter: `id=eq.${dbDocId}` }, () => reload())
+      .subscribe();
+    return () => { supabase.removeChannel(ch); };
+  }, [orgId, dbDocId, reload]);
+
+
   if (!orgId) {
     return (
       <div className="rounded-xl bg-white border border-[#eceae2] p-4 text-sm text-[#0f2a1d]/70">
