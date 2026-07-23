@@ -20,6 +20,7 @@ import { Route as AccountingRouteImport } from './routes/accounting'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as SettingsWorkflowsRouteImport } from './routes/settings.workflows'
 import { Route as SettingsUsersRouteImport } from './routes/settings.users'
+import { Route as SettingsTestDataRouteImport } from './routes/settings.test-data'
 import { Route as SettingsTemplatesRouteImport } from './routes/settings.templates'
 import { Route as SettingsTaxesRouteImport } from './routes/settings.taxes'
 import { Route as SettingsSalesRepsRouteImport } from './routes/settings.sales-reps'
@@ -143,6 +144,11 @@ const SettingsWorkflowsRoute = SettingsWorkflowsRouteImport.update({
 const SettingsUsersRoute = SettingsUsersRouteImport.update({
   id: '/settings/users',
   path: '/settings/users',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SettingsTestDataRoute = SettingsTestDataRouteImport.update({
+  id: '/settings/test-data',
+  path: '/settings/test-data',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SettingsTemplatesRoute = SettingsTemplatesRouteImport.update({
@@ -559,6 +565,7 @@ export interface FileRoutesByFullPath {
   '/settings/sales-reps': typeof SettingsSalesRepsRoute
   '/settings/taxes': typeof SettingsTaxesRoute
   '/settings/templates': typeof SettingsTemplatesRoute
+  '/settings/test-data': typeof SettingsTestDataRoute
   '/settings/users': typeof SettingsUsersRoute
   '/settings/workflows': typeof SettingsWorkflowsRoute
   '/purchases/bills/$id': typeof PurchasesBillsIdRoute
@@ -635,6 +642,7 @@ export interface FileRoutesByTo {
   '/settings/sales-reps': typeof SettingsSalesRepsRoute
   '/settings/taxes': typeof SettingsTaxesRoute
   '/settings/templates': typeof SettingsTemplatesRoute
+  '/settings/test-data': typeof SettingsTestDataRoute
   '/settings/users': typeof SettingsUsersRoute
   '/settings/workflows': typeof SettingsWorkflowsRoute
   '/purchases/bills/$id': typeof PurchasesBillsIdRoute
@@ -718,6 +726,7 @@ export interface FileRoutesById {
   '/settings/sales-reps': typeof SettingsSalesRepsRoute
   '/settings/taxes': typeof SettingsTaxesRoute
   '/settings/templates': typeof SettingsTemplatesRoute
+  '/settings/test-data': typeof SettingsTestDataRoute
   '/settings/users': typeof SettingsUsersRoute
   '/settings/workflows': typeof SettingsWorkflowsRoute
   '/purchases/bills/$id': typeof PurchasesBillsIdRoute
@@ -802,6 +811,7 @@ export interface FileRouteTypes {
     | '/settings/sales-reps'
     | '/settings/taxes'
     | '/settings/templates'
+    | '/settings/test-data'
     | '/settings/users'
     | '/settings/workflows'
     | '/purchases/bills/$id'
@@ -878,6 +888,7 @@ export interface FileRouteTypes {
     | '/settings/sales-reps'
     | '/settings/taxes'
     | '/settings/templates'
+    | '/settings/test-data'
     | '/settings/users'
     | '/settings/workflows'
     | '/purchases/bills/$id'
@@ -960,6 +971,7 @@ export interface FileRouteTypes {
     | '/settings/sales-reps'
     | '/settings/taxes'
     | '/settings/templates'
+    | '/settings/test-data'
     | '/settings/users'
     | '/settings/workflows'
     | '/purchases/bills/$id'
@@ -1038,6 +1050,7 @@ export interface RootRouteChildren {
   SettingsSalesRepsRoute: typeof SettingsSalesRepsRoute
   SettingsTaxesRoute: typeof SettingsTaxesRoute
   SettingsTemplatesRoute: typeof SettingsTemplatesRoute
+  SettingsTestDataRoute: typeof SettingsTestDataRoute
   SettingsUsersRoute: typeof SettingsUsersRoute
   SettingsWorkflowsRoute: typeof SettingsWorkflowsRoute
 }
@@ -1119,6 +1132,13 @@ declare module '@tanstack/react-router' {
       path: '/settings/users'
       fullPath: '/settings/users'
       preLoaderRoute: typeof SettingsUsersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/settings/test-data': {
+      id: '/settings/test-data'
+      path: '/settings/test-data'
+      fullPath: '/settings/test-data'
+      preLoaderRoute: typeof SettingsTestDataRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/settings/templates': {
@@ -1789,6 +1809,7 @@ const rootRouteChildren: RootRouteChildren = {
   SettingsSalesRepsRoute: SettingsSalesRepsRoute,
   SettingsTaxesRoute: SettingsTaxesRoute,
   SettingsTemplatesRoute: SettingsTemplatesRoute,
+  SettingsTestDataRoute: SettingsTestDataRoute,
   SettingsUsersRoute: SettingsUsersRoute,
   SettingsWorkflowsRoute: SettingsWorkflowsRoute,
 }

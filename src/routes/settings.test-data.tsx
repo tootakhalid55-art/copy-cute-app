@@ -276,47 +276,16 @@ function TestDataPage() {
   async function runPerfTests() {
     if (!currentOrgId) return;
     setPerf([]);
+    const sb: any = supabase;
     const tests: Array<{ name: string; fn: () => Promise<any> }> = [
-      {
-        name: "COUNT documents",
-        fn: () => supabase.from("documents").select("*", { count: "exact", head: true }).eq("org_id", currentOrgId!),
-      },
-      {
-        name: "list latest 50 invoices",
-        fn: () => supabase.from("documents").select("id,doc_number,grand_total,issue_date")
-          .eq("org_id", currentOrgId!).eq("kind", "sales_invoice")
-          .order("issue_date", { ascending: false }).limit(50),
-      },
-      {
-        name: "sum grand_total sales",
-        fn: () => supabase.from("documents").select("grand_total")
-          .eq("org_id", currentOrgId!).eq("kind", "sales_invoice"),
-      },
-      {
-        name: "full-text search 'تجريبي'",
-        fn: () => supabase.from("documents").select("id,doc_number")
-          .eq("org_id", currentOrgId!).ilike("search_text", "%تجريبي%").limit(50),
-      },
-      {
-        name: "join party+docs (customer with docs)",
-        fn: () => supabase.from("documents").select("id,doc_number,party:parties(name)")
-          .eq("org_id", currentOrgId!).eq("kind", "sales_invoice").limit(100),
-      },
-      {
-        name: "count parties",
-        fn: () => supabase.from("parties").select("*", { count: "exact", head: true }).eq("org_id", currentOrgId!),
-      },
-      {
-        name: "count items",
-        fn: () => supabase.from("items").select("*", { count: "exact", head: true }).eq("org_id", currentOrgId!),
-      },
-      {
-        name: "count document_lines (via docs)",
-        fn: async () => {
-          // just measure a page
-          return supabase.from("document_lines").select("id", { count: "exact", head: true });
-        },
-      },
+      { name: "COUNT documents", fn: () => sb.from("documents").select("*", { count: "exact", head: true }).eq("org_id", currentOrgId) },
+      { name: "list latest 50 invoices", fn: () => sb.from("documents").select("id,doc_number,grand_total,issue_date").eq("org_id", currentOrgId).eq("kind", "sales_invoice").order("issue_date", { ascending: false }).limit(50) },
+      { name: "sum grand_total sales", fn: () => sb.from("documents").select("grand_total").eq("org_id", currentOrgId).eq("kind", "sales_invoice") },
+      { name: "full-text search 'تجريبي'", fn: () => sb.from("documents").select("id,doc_number").eq("org_id", currentOrgId).ilike("search_text", "%تجريبي%").limit(50) },
+      { name: "join party+docs", fn: () => sb.from("documents").select("id,doc_number,party:parties(name)").eq("org_id", currentOrgId).eq("kind", "sales_invoice").limit(100) },
+      { name: "count parties", fn: () => sb.from("parties").select("*", { count: "exact", head: true }).eq("org_id", currentOrgId) },
+      { name: "count items", fn: () => sb.from("items").select("*", { count: "exact", head: true }).eq("org_id", currentOrgId) },
+      { name: "count document_lines", fn: () => sb.from("document_lines").select("id", { count: "exact", head: true }) },
     ];
     for (const t of tests) {
       const t0 = performance.now();
