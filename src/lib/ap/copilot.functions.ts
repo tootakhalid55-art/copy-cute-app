@@ -165,7 +165,7 @@ export const explainDuplicate = createServerFn({ method: "POST" })
     const { data: siblings } = await context.supabase
       .from("documents")
       .select("id, doc_number, ref, issue_date, grand_total, party_id")
-      .eq("org_id", data.orgId).eq("kind", "bill")
+      .eq("org_id", data.orgId).eq("kind", "purchase_invoice")
       .or(`ref.eq.${ex.invoiceNumber || "__none__"},doc_number.eq.${ex.invoiceNumber || "__none__"}`)
       .limit(5);
 
