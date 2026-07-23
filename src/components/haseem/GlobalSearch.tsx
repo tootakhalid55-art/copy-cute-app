@@ -83,7 +83,27 @@ export function GlobalSearch() {
               <button
                 onClick={() => {
                   setOpen(false);
-                  if (h.type === "document") navigate({ to: "/sales/invoices" });
+                  const kind = (h.title.split("·")[1] || "").trim();
+                  const docRoute: Record<string, string> = {
+                    sales_invoice: "/sales/invoices",
+                    simplified_tax_invoice: "/sales/invoices",
+                    standard_tax_invoice: "/sales/invoices",
+                    sales_quotation: "/sales/quotations",
+                    sales_order: "/sales/quotations",
+                    delivery_note: "/sales/delivery-notes",
+                    credit_note: "/sales/credit-notes",
+                    purchase_invoice: "/purchases/bills",
+                    purchase_order: "/purchases/purchase-orders",
+                    debit_note: "/purchases/debit-notes",
+                    goods_receipt: "/purchases/purchase-orders",
+                    grn: "/purchases/purchase-orders",
+                  };
+                  if (h.type === "document") navigate({ to: (docRoute[kind] ?? "/sales/invoices") as any });
+                  else if (h.type === "party") navigate({ to: "/sales/customers" as any });
+                  else if (h.type === "attachment") {
+                    const eid = (h.meta as any)?.entity_id;
+                    if (eid) navigate({ to: "/sales/invoices" as any, search: { doc: eid } as any });
+                  } else if (h.type === "tag") navigate({ to: "/settings/tags" as any });
                 }}
                 className="w-full flex items-center gap-3 p-3 text-right hover:bg-[#f7f5ec] border-b border-[#eceae2]/50"
               >
