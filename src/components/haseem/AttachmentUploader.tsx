@@ -32,6 +32,11 @@ export function AttachmentUploader({ orgId, entityType, entityId, className, onU
     refresh();
   }, [refresh]);
 
+  useEffect(() => {
+    const active = handles.some((h) => h.status === "uploading" || h.status === "processing" || h.status === "queued");
+    onUploadingChange?.(active);
+  }, [handles, onUploadingChange]);
+
   const push = useCallback((h: UploadHandle) => {
     setHandles((prev) => {
       const i = prev.findIndex((p) => p.id === h.id);
