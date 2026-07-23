@@ -13,7 +13,7 @@ type Props = {
   onUploadingChange?: (uploading: boolean) => void;
 };
 
-export function AttachmentUploader({ orgId, entityType, entityId, className }: Props) {
+export function AttachmentUploader({ orgId, entityType, entityId, className, onUploadingChange }: Props) {
   const [handles, setHandles] = useState<UploadHandle[]>([]);
   const [existing, setExisting] = useState<any[]>([]);
   const [dragging, setDragging] = useState(false);
