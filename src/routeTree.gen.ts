@@ -63,6 +63,7 @@ import { Route as PurchasesDebitNotesRouteImport } from './routes/purchases.debi
 import { Route as PurchasesBillsRouteImport } from './routes/purchases.bills'
 import { Route as PurchasesApReviewRouteImport } from './routes/purchases.ap-review'
 import { Route as PurchasesApDashboardRouteImport } from './routes/purchases.ap-dashboard'
+import { Route as PurchasesApCopilotRouteImport } from './routes/purchases.ap-copilot'
 import { Route as InventoryWarehousesRouteImport } from './routes/inventory.warehouses'
 import { Route as InventoryReportsRouteImport } from './routes/inventory.reports'
 import { Route as InventoryItemsRouteImport } from './routes/inventory.items'
@@ -374,6 +375,11 @@ const PurchasesApDashboardRoute = PurchasesApDashboardRouteImport.update({
   path: '/purchases/ap-dashboard',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PurchasesApCopilotRoute = PurchasesApCopilotRouteImport.update({
+  id: '/purchases/ap-copilot',
+  path: '/purchases/ap-copilot',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const InventoryWarehousesRoute = InventoryWarehousesRouteImport.update({
   id: '/inventory/warehouses',
   path: '/inventory/warehouses',
@@ -601,6 +607,7 @@ export interface FileRoutesByFullPath {
   '/inventory/items': typeof InventoryItemsRoute
   '/inventory/reports': typeof InventoryReportsRoute
   '/inventory/warehouses': typeof InventoryWarehousesRoute
+  '/purchases/ap-copilot': typeof PurchasesApCopilotRoute
   '/purchases/ap-dashboard': typeof PurchasesApDashboardRoute
   '/purchases/ap-review': typeof PurchasesApReviewRoute
   '/purchases/bills': typeof PurchasesBillsRouteWithChildren
@@ -695,6 +702,7 @@ export interface FileRoutesByTo {
   '/inventory/items': typeof InventoryItemsRoute
   '/inventory/reports': typeof InventoryReportsRoute
   '/inventory/warehouses': typeof InventoryWarehousesRoute
+  '/purchases/ap-copilot': typeof PurchasesApCopilotRoute
   '/purchases/ap-dashboard': typeof PurchasesApDashboardRoute
   '/purchases/ap-review': typeof PurchasesApReviewRoute
   '/purchases/inbox': typeof PurchasesInboxRoute
@@ -784,6 +792,7 @@ export interface FileRoutesById {
   '/inventory/items': typeof InventoryItemsRoute
   '/inventory/reports': typeof InventoryReportsRoute
   '/inventory/warehouses': typeof InventoryWarehousesRoute
+  '/purchases/ap-copilot': typeof PurchasesApCopilotRoute
   '/purchases/ap-dashboard': typeof PurchasesApDashboardRoute
   '/purchases/ap-review': typeof PurchasesApReviewRoute
   '/purchases/bills': typeof PurchasesBillsRouteWithChildren
@@ -880,6 +889,7 @@ export interface FileRouteTypes {
     | '/inventory/items'
     | '/inventory/reports'
     | '/inventory/warehouses'
+    | '/purchases/ap-copilot'
     | '/purchases/ap-dashboard'
     | '/purchases/ap-review'
     | '/purchases/bills'
@@ -974,6 +984,7 @@ export interface FileRouteTypes {
     | '/inventory/items'
     | '/inventory/reports'
     | '/inventory/warehouses'
+    | '/purchases/ap-copilot'
     | '/purchases/ap-dashboard'
     | '/purchases/ap-review'
     | '/purchases/inbox'
@@ -1062,6 +1073,7 @@ export interface FileRouteTypes {
     | '/inventory/items'
     | '/inventory/reports'
     | '/inventory/warehouses'
+    | '/purchases/ap-copilot'
     | '/purchases/ap-dashboard'
     | '/purchases/ap-review'
     | '/purchases/bills'
@@ -1152,6 +1164,7 @@ export interface RootRouteChildren {
   InventoryItemsRoute: typeof InventoryItemsRoute
   InventoryReportsRoute: typeof InventoryReportsRoute
   InventoryWarehousesRoute: typeof InventoryWarehousesRoute
+  PurchasesApCopilotRoute: typeof PurchasesApCopilotRoute
   PurchasesApDashboardRoute: typeof PurchasesApDashboardRoute
   PurchasesApReviewRoute: typeof PurchasesApReviewRoute
   PurchasesBillsRoute: typeof PurchasesBillsRouteWithChildren
@@ -1583,6 +1596,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PurchasesApDashboardRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/purchases/ap-copilot': {
+      id: '/purchases/ap-copilot'
+      path: '/purchases/ap-copilot'
+      fullPath: '/purchases/ap-copilot'
+      preLoaderRoute: typeof PurchasesApCopilotRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/inventory/warehouses': {
       id: '/inventory/warehouses'
       path: '/inventory/warehouses'
@@ -1999,6 +2019,7 @@ const rootRouteChildren: RootRouteChildren = {
   InventoryItemsRoute: InventoryItemsRoute,
   InventoryReportsRoute: InventoryReportsRoute,
   InventoryWarehousesRoute: InventoryWarehousesRoute,
+  PurchasesApCopilotRoute: PurchasesApCopilotRoute,
   PurchasesApDashboardRoute: PurchasesApDashboardRoute,
   PurchasesApReviewRoute: PurchasesApReviewRoute,
   PurchasesBillsRoute: PurchasesBillsRouteWithChildren,
