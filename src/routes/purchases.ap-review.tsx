@@ -70,7 +70,9 @@ function ApReviewPage() {
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState<string | null>(null);
   const [selected, setSelected] = useState<Intake | null>(null);
+  const [dragOver, setDragOver] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
+  const cameraRef = useRef<HTMLInputElement>(null);
 
   const load = useCallback(async () => {
     if (!org?.id) return;
