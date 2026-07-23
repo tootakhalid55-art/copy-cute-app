@@ -34,7 +34,7 @@ function Page() {
   const [filter, setFilter] = useState<string>("");
 
   async function load() {
-    if (!org?.id) return;
+    if (!orgId) return;
     setLoading(true);
     try {
       const r = await list({ data: { orgId: org.id, limit: 200 } }) as any[];
@@ -42,7 +42,7 @@ function Page() {
     } finally { setLoading(false); }
   }
 
-  useEffect(() => { load(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [org?.id]);
+  useEffect(() => { load(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [orgId]);
 
   const shown = filter ? rows.filter((r) => r.kind === filter) : rows;
 
@@ -50,10 +50,10 @@ function Page() {
     <Shell>
       <div className="p-6 space-y-4">
         <PageHeader
-          icon={<Bot className="w-5 h-5" />}
+          
           title="سجل قرارات مساعد الذكاء المالي"
           subtitle="كل توصية وشرح موقّع بالوقت — للتدقيق."
-          actions={<OutlineBtn onClick={load}><RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} /> تحديث</OutlineBtn>}
+          action={<OutlineBtn onClick={load}><RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} /> تحديث</OutlineBtn>}
         />
 
         <div className="flex flex-wrap gap-2">
@@ -66,7 +66,7 @@ function Page() {
         </div>
 
         {shown.length === 0 ? (
-          <EmptyState title="لا توجد قرارات بعد" subtitle="ابدأ باستخدام المساعد من صفحة مراجعة الفواتير." />
+          <EmptyState title="لا توجد قرارات بعد" description="ابدأ باستخدام المساعد من صفحة مراجعة الفواتير." />
         ) : (
           <div className="space-y-2">
             {shown.map((r) => (
