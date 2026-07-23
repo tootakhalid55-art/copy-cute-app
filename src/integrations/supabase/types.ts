@@ -14,48 +14,385 @@ export type Database = {
   }
   public: {
     Tables: {
-      attachments: {
+      approval_actions: {
         Row: {
-          bucket: string
+          action: string
+          actor_id: string | null
+          comment: string | null
           created_at: string
-          entity_id: string
-          entity_type: string
-          filename: string
           id: string
           meta: Json
+          org_id: string
+          request_id: string
+          step_id: string | null
+          step_order: number
+        }
+        Insert: {
+          action: string
+          actor_id?: string | null
+          comment?: string | null
+          created_at?: string
+          id?: string
+          meta?: Json
+          org_id: string
+          request_id: string
+          step_id?: string | null
+          step_order: number
+        }
+        Update: {
+          action?: string
+          actor_id?: string | null
+          comment?: string | null
+          created_at?: string
+          id?: string
+          meta?: Json
+          org_id?: string
+          request_id?: string
+          step_id?: string | null
+          step_order?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "approval_actions_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "approval_actions_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "approval_requests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "approval_actions_step_id_fkey"
+            columns: ["step_id"]
+            isOneToOne: false
+            referencedRelation: "approval_steps"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      approval_requests: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          current_step: number
+          document_id: string | null
+          entity_id: string
+          entity_type: string
+          id: string
+          meta: Json
+          org_id: string
+          requested_by: string | null
+          status: string
+          updated_at: string
+          workflow_id: string | null
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          current_step?: number
+          document_id?: string | null
+          entity_id: string
+          entity_type?: string
+          id?: string
+          meta?: Json
+          org_id: string
+          requested_by?: string | null
+          status?: string
+          updated_at?: string
+          workflow_id?: string | null
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          current_step?: number
+          document_id?: string | null
+          entity_id?: string
+          entity_type?: string
+          id?: string
+          meta?: Json
+          org_id?: string
+          requested_by?: string | null
+          status?: string
+          updated_at?: string
+          workflow_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "approval_requests_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "approval_requests_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "approval_requests_workflow_id_fkey"
+            columns: ["workflow_id"]
+            isOneToOne: false
+            referencedRelation: "approval_workflows"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      approval_steps: {
+        Row: {
+          approver_role: Database["public"]["Enums"]["app_role"] | null
+          approver_user_id: string | null
+          created_at: string
+          id: string
+          meta: Json
+          name: string
+          org_id: string
+          required: boolean
+          step_order: number
+          workflow_id: string
+        }
+        Insert: {
+          approver_role?: Database["public"]["Enums"]["app_role"] | null
+          approver_user_id?: string | null
+          created_at?: string
+          id?: string
+          meta?: Json
+          name: string
+          org_id: string
+          required?: boolean
+          step_order: number
+          workflow_id: string
+        }
+        Update: {
+          approver_role?: Database["public"]["Enums"]["app_role"] | null
+          approver_user_id?: string | null
+          created_at?: string
+          id?: string
+          meta?: Json
+          name?: string
+          org_id?: string
+          required?: boolean
+          step_order?: number
+          workflow_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "approval_steps_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "approval_steps_workflow_id_fkey"
+            columns: ["workflow_id"]
+            isOneToOne: false
+            referencedRelation: "approval_workflows"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      approval_workflows: {
+        Row: {
+          auto_post_on_final: boolean
+          created_at: string
+          doc_kind: Database["public"]["Enums"]["doc_kind"] | null
+          entity_type: string
+          id: string
+          is_active: boolean
+          max_amount: number | null
+          meta: Json
+          min_amount: number | null
+          name: string
+          org_id: string
+          updated_at: string
+        }
+        Insert: {
+          auto_post_on_final?: boolean
+          created_at?: string
+          doc_kind?: Database["public"]["Enums"]["doc_kind"] | null
+          entity_type?: string
+          id?: string
+          is_active?: boolean
+          max_amount?: number | null
+          meta?: Json
+          min_amount?: number | null
+          name: string
+          org_id: string
+          updated_at?: string
+        }
+        Update: {
+          auto_post_on_final?: boolean
+          created_at?: string
+          doc_kind?: Database["public"]["Enums"]["doc_kind"] | null
+          entity_type?: string
+          id?: string
+          is_active?: boolean
+          max_amount?: number | null
+          meta?: Json
+          min_amount?: number | null
+          name?: string
+          org_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "approval_workflows_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      attachment_versions: {
+        Row: {
+          attachment_id: string
+          bucket: string
+          checksum: string | null
+          created_at: string
+          filename: string
+          id: string
           mime_type: string | null
           org_id: string
           size_bytes: number | null
           storage_path: string
-          uploaded_by: string
+          uploaded_by: string | null
+          version: number
         }
         Insert: {
+          attachment_id: string
           bucket: string
+          checksum?: string | null
           created_at?: string
-          entity_id: string
-          entity_type: string
           filename: string
           id?: string
-          meta?: Json
           mime_type?: string | null
           org_id: string
           size_bytes?: number | null
           storage_path: string
-          uploaded_by: string
+          uploaded_by?: string | null
+          version: number
         }
         Update: {
+          attachment_id?: string
           bucket?: string
+          checksum?: string | null
           created_at?: string
-          entity_id?: string
-          entity_type?: string
           filename?: string
           id?: string
-          meta?: Json
           mime_type?: string | null
           org_id?: string
           size_bytes?: number | null
           storage_path?: string
+          uploaded_by?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "attachment_versions_attachment_id_fkey"
+            columns: ["attachment_id"]
+            isOneToOne: false
+            referencedRelation: "attachments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "attachment_versions_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      attachments: {
+        Row: {
+          bucket: string
+          checksum: string | null
+          confidence: number | null
+          created_at: string
+          entity_id: string
+          entity_type: string
+          extracted_json: Json | null
+          filename: string
+          height: number | null
+          id: string
+          is_current: boolean
+          medium_path: string | null
+          meta: Json
+          mime_type: string | null
+          ocr_provider: string | null
+          ocr_status: string | null
+          org_id: string
+          page_count: number | null
+          searchable_text: string | null
+          size_bytes: number | null
+          storage_path: string
+          thumb_path: string | null
+          uploaded_by: string
+          version: number
+          width: number | null
+        }
+        Insert: {
+          bucket: string
+          checksum?: string | null
+          confidence?: number | null
+          created_at?: string
+          entity_id: string
+          entity_type: string
+          extracted_json?: Json | null
+          filename: string
+          height?: number | null
+          id?: string
+          is_current?: boolean
+          medium_path?: string | null
+          meta?: Json
+          mime_type?: string | null
+          ocr_provider?: string | null
+          ocr_status?: string | null
+          org_id: string
+          page_count?: number | null
+          searchable_text?: string | null
+          size_bytes?: number | null
+          storage_path: string
+          thumb_path?: string | null
+          uploaded_by: string
+          version?: number
+          width?: number | null
+        }
+        Update: {
+          bucket?: string
+          checksum?: string | null
+          confidence?: number | null
+          created_at?: string
+          entity_id?: string
+          entity_type?: string
+          extracted_json?: Json | null
+          filename?: string
+          height?: number | null
+          id?: string
+          is_current?: boolean
+          medium_path?: string | null
+          meta?: Json
+          mime_type?: string | null
+          ocr_provider?: string | null
+          ocr_status?: string | null
+          org_id?: string
+          page_count?: number | null
+          searchable_text?: string | null
+          size_bytes?: number | null
+          storage_path?: string
+          thumb_path?: string | null
           uploaded_by?: string
+          version?: number
+          width?: number | null
         }
         Relationships: [
           {
@@ -110,6 +447,56 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "audit_log_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      branches: {
+        Row: {
+          address: Json
+          code: string | null
+          created_at: string
+          id: string
+          is_active: boolean
+          is_default: boolean
+          meta: Json
+          name: string
+          name_en: string | null
+          org_id: string
+          updated_at: string
+        }
+        Insert: {
+          address?: Json
+          code?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          is_default?: boolean
+          meta?: Json
+          name: string
+          name_en?: string | null
+          org_id: string
+          updated_at?: string
+        }
+        Update: {
+          address?: Json
+          code?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          is_default?: boolean
+          meta?: Json
+          name?: string
+          name_en?: string | null
+          org_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "branches_org_id_fkey"
             columns: ["org_id"]
             isOneToOne: false
             referencedRelation: "organizations"
@@ -180,14 +567,167 @@ export type Database = {
           },
         ]
       }
+      document_relations: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          from_document_id: string
+          id: string
+          meta: Json
+          org_id: string
+          relation_type: string
+          to_document_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          from_document_id: string
+          id?: string
+          meta?: Json
+          org_id: string
+          relation_type: string
+          to_document_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          from_document_id?: string
+          id?: string
+          meta?: Json
+          org_id?: string
+          relation_type?: string
+          to_document_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "document_relations_from_document_id_fkey"
+            columns: ["from_document_id"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "document_relations_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "document_relations_to_document_id_fkey"
+            columns: ["to_document_id"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      document_tags: {
+        Row: {
+          created_at: string
+          document_id: string
+          org_id: string
+          tag_id: string
+        }
+        Insert: {
+          created_at?: string
+          document_id: string
+          org_id: string
+          tag_id: string
+        }
+        Update: {
+          created_at?: string
+          document_id?: string
+          org_id?: string
+          tag_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "document_tags_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "document_tags_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "document_tags_tag_id_fkey"
+            columns: ["tag_id"]
+            isOneToOne: false
+            referencedRelation: "tags"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      document_versions: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          document_id: string
+          id: string
+          org_id: string
+          reason: string | null
+          snapshot: Json
+          version: number
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          document_id: string
+          id?: string
+          org_id: string
+          reason?: string | null
+          snapshot: Json
+          version: number
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          document_id?: string
+          id?: string
+          org_id?: string
+          reason?: string | null
+          snapshot?: Json
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "document_versions_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "document_versions_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       documents: {
         Row: {
+          approved_at: string | null
+          approved_by: string | null
+          branch_id: string | null
+          cancelled_at: string | null
+          cancelled_by: string | null
           created_at: string
           created_by: string
           currency: string
           discount_total: number
           doc_number: string
           due_date: string | null
+          exchange_rate: number
+          fiscal_year_id: string | null
           grand_total: number
           id: string
           issue_date: string
@@ -199,8 +739,10 @@ export type Database = {
           party_id: string | null
           party_snapshot: Json
           po_number: string | null
+          posted_at: string | null
           project: string | null
           qr_payload: string | null
+          search_text: string | null
           shipping: number
           status: Database["public"]["Enums"]["doc_status"]
           subtotal: number
@@ -208,16 +750,24 @@ export type Database = {
           template_id: string | null
           terms: string | null
           updated_at: string
+          updated_by: string | null
           uuid_v4: string
           vat_total: number
         }
         Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          branch_id?: string | null
+          cancelled_at?: string | null
+          cancelled_by?: string | null
           created_at?: string
           created_by: string
           currency?: string
           discount_total?: number
           doc_number: string
           due_date?: string | null
+          exchange_rate?: number
+          fiscal_year_id?: string | null
           grand_total?: number
           id?: string
           issue_date?: string
@@ -229,8 +779,10 @@ export type Database = {
           party_id?: string | null
           party_snapshot?: Json
           po_number?: string | null
+          posted_at?: string | null
           project?: string | null
           qr_payload?: string | null
+          search_text?: string | null
           shipping?: number
           status?: Database["public"]["Enums"]["doc_status"]
           subtotal?: number
@@ -238,16 +790,24 @@ export type Database = {
           template_id?: string | null
           terms?: string | null
           updated_at?: string
+          updated_by?: string | null
           uuid_v4?: string
           vat_total?: number
         }
         Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          branch_id?: string | null
+          cancelled_at?: string | null
+          cancelled_by?: string | null
           created_at?: string
           created_by?: string
           currency?: string
           discount_total?: number
           doc_number?: string
           due_date?: string | null
+          exchange_rate?: number
+          fiscal_year_id?: string | null
           grand_total?: number
           id?: string
           issue_date?: string
@@ -259,8 +819,10 @@ export type Database = {
           party_id?: string | null
           party_snapshot?: Json
           po_number?: string | null
+          posted_at?: string | null
           project?: string | null
           qr_payload?: string | null
+          search_text?: string | null
           shipping?: number
           status?: Database["public"]["Enums"]["doc_status"]
           subtotal?: number
@@ -268,10 +830,25 @@ export type Database = {
           template_id?: string | null
           terms?: string | null
           updated_at?: string
+          updated_by?: string | null
           uuid_v4?: string
           vat_total?: number
         }
         Relationships: [
+          {
+            foreignKeyName: "documents_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "documents_fiscal_year_id_fkey"
+            columns: ["fiscal_year_id"]
+            isOneToOne: false
+            referencedRelation: "fiscal_years"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "documents_org_id_fkey"
             columns: ["org_id"]
@@ -284,6 +861,50 @@ export type Database = {
             columns: ["party_id"]
             isOneToOne: false
             referencedRelation: "parties"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fiscal_years: {
+        Row: {
+          created_at: string
+          end_date: string
+          id: string
+          is_closed: boolean
+          is_current: boolean
+          name: string
+          org_id: string
+          start_date: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          end_date: string
+          id?: string
+          is_closed?: boolean
+          is_current?: boolean
+          name: string
+          org_id: string
+          start_date: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          end_date?: string
+          id?: string
+          is_closed?: boolean
+          is_current?: boolean
+          name?: string
+          org_id?: string
+          start_date?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fiscal_years_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
         ]
@@ -588,6 +1209,38 @@ export type Database = {
         }
         Relationships: []
       }
+      tags: {
+        Row: {
+          color: string | null
+          created_at: string
+          id: string
+          name: string
+          org_id: string
+        }
+        Insert: {
+          color?: string | null
+          created_at?: string
+          id?: string
+          name: string
+          org_id: string
+        }
+        Update: {
+          color?: string | null
+          created_at?: string
+          id?: string
+          name?: string
+          org_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tags_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -621,6 +1274,8 @@ export type Database = {
         | "receipt_voucher"
         | "journal_voucher"
         | "expense_voucher"
+        | "sales_order"
+        | "goods_receipt"
       doc_status:
         | "draft"
         | "issued"
@@ -628,6 +1283,9 @@ export type Database = {
         | "partially_paid"
         | "cancelled"
         | "archived"
+        | "pending_approval"
+        | "approved"
+        | "posted"
       party_type: "customer" | "supplier" | "both"
     }
     CompositeTypes: {
@@ -773,6 +1431,8 @@ export const Constants = {
         "receipt_voucher",
         "journal_voucher",
         "expense_voucher",
+        "sales_order",
+        "goods_receipt",
       ],
       doc_status: [
         "draft",
@@ -781,6 +1441,9 @@ export const Constants = {
         "partially_paid",
         "cancelled",
         "archived",
+        "pending_approval",
+        "approved",
+        "posted",
       ],
       party_type: ["customer", "supplier", "both"],
     },
