@@ -10,6 +10,9 @@ import { useInvoiceTemplates } from "@/lib/haseem/templates";
 import { printDoc } from "@/lib/haseem/printDoc";
 import { signDoc, buildVerifyUrl } from "@/lib/haseem/docSignature";
 import QRCode from "qrcode";
+import { DocumentSidePanel } from "./DocumentSidePanel";
+import { useOrg } from "@/lib/db/org";
+import { syncDocumentToCloud, toDocKind } from "@/lib/db/document-bridge";
 
 function fileToDataURL(f: File): Promise<string> {
   return new Promise((res, rej) => {
