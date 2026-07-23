@@ -12,6 +12,8 @@ import { useEffect, type ReactNode } from "react";
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { AuthProvider } from "../lib/haseem/auth";
+import { OrgProvider } from "../lib/db/org";
+import { MigrationGate } from "../lib/db/migrate";
 
 function NotFoundComponent() {
   return (
@@ -123,8 +125,11 @@ function RootComponent() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
-        <Outlet />
+        <OrgProvider>
+          <MigrationGate />
+          {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
+          <Outlet />
+        </OrgProvider>
       </AuthProvider>
     </QueryClientProvider>
   );
