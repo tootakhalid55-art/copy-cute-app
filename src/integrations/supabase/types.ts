@@ -2737,6 +2737,7 @@ export type Database = {
           branch_id: string | null
           consumed_amount: number | null
           currency: string | null
+          doc_number: string | null
           document_id: string | null
           due_date: string | null
           issue_date: string | null
@@ -2756,30 +2757,6 @@ export type Database = {
             referencedRelation: "branches"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "documents_org_id_fkey"
-            columns: ["org_id"]
-            isOneToOne: false
-            referencedRelation: "organizations"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "documents_party_id_fkey"
-            columns: ["party_id"]
-            isOneToOne: false
-            referencedRelation: "parties"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      party_balances: {
-        Row: {
-          balance: number | null
-          org_id: string | null
-          party_id: string | null
-          party_type: string | null
-        }
-        Relationships: [
           {
             foreignKeyName: "documents_org_id_fkey"
             columns: ["org_id"]
