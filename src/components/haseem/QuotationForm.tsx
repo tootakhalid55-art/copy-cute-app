@@ -318,7 +318,11 @@ export function QuotationForm({ docId }: { docId?: string }) {
             className="inline-flex items-center gap-1 text-sm px-3 py-1.5 rounded border border-[#eceae2] hover:bg-[#f7f6f0]">
             <Bookmark className="w-4 h-4" /> حفظ
           </button>
-          <PrimaryBtn onClick={() => save("مرسل")}>
+          <PrimaryBtn
+            onClick={() => save("مرسل")}
+            disabled={!isValid || uploading}
+            title={!isValid ? validation.join(" · ") : uploading ? "يوجد مرفقات قيد الرفع" : undefined}
+          >
             <Send className="w-4 h-4" /> احفظ ثم أرسل
           </PrimaryBtn>
         </div>
