@@ -46,17 +46,20 @@ export const Route = createFileRoute("/api/public/hooks/ap-intake-whatsapp")({
         const entries = payload.entry || [];
         const created: string[] = [];
 
+        // Org resolution: URL ?org_id=... (single-tenant setup). Multi-tenant routing by
+        // phone_number_id can be added via a dedicated mapping table in a follow-up.
+        const orgIdParam = new URL(request.url).searchParams.get("org_id");
+        if (!orgIdParam) return new Response("org_id required", { status: 400 });
+        const { data: org } = await admin
+          .from("organizations")
+          .select("id")
+          .eq("id", orgIdParam)
+          .maybeSingle();
+        if (!org) return new Response("org not found", { status: 404 });
+
         for (const e of entries) {
           for (const change of e.changes || []) {
             const value = change.value || {};
-            const phoneId = value.metadata?.phone_number_id;
-            const { data: org } = await admin
-              .from("organizations")
-              .select("id, meta")
-              .filter("meta->>whatsapp_phone_number_id", "eq", phoneId)
-              .maybeSingle();
-            if (!org) continue;
-
             for (const msg of value.messages || []) {
               if (!["image", "document"].includes(msg.type)) continue;
               const mediaId = msg[msg.type]?.id;
