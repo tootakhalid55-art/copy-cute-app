@@ -24,9 +24,9 @@ export async function linkDocuments(
   const { data, error } = await (supabase.from("document_relations") as any)
     .insert({
       org_id: orgId,
-      source_id: sourceId,
-      target_id: targetId,
-      relation: kind,
+      from_document_id: sourceId,
+      to_document_id: targetId,
+      relation_type: kind,
       meta,
       created_by: uid.user?.id ?? null,
     })
@@ -41,7 +41,8 @@ export async function listRelated(orgId: string, docId: string) {
     .from("document_relations")
     .select("*")
     .eq("org_id", orgId)
-    .or(`source_id.eq.${docId},target_id.eq.${docId}`);
+    .or(`from_document_id.eq.${docId},to_document_id.eq.${docId}`);
   if (error) throw error;
   return data ?? [];
 }
+
