@@ -368,13 +368,34 @@ function Page() {
                   {label}
                 </button>
               ))}
+              <button disabled={!!busy} onClick={proposeQuickCollection}
+                className="inline-flex items-center gap-1.5 text-xs px-2 py-1 rounded-full border border-amber-300 bg-amber-50 text-amber-800 hover:bg-amber-100 disabled:opacity-50">
+                {busy === "propose-collect" ? <Loader2 className="w-3 h-3 animate-spin" /> : <Zap className="w-3 h-3" />}
+                {lang === "ar" ? "اقتراح خطة تحصيل" : "Propose collection plan"}
+              </button>
+              <button disabled={!!busy} onClick={proposeQuickBulkPay}
+                className="inline-flex items-center gap-1.5 text-xs px-2 py-1 rounded-full border border-amber-300 bg-amber-50 text-amber-800 hover:bg-amber-100 disabled:opacity-50">
+                {busy === "propose-bulk" ? <Loader2 className="w-3 h-3 animate-spin" /> : <Zap className="w-3 h-3" />}
+                {lang === "ar" ? "اقتراح دفعات جماعية" : "Propose bulk payments"}
+              </button>
             </div>
           </div>
 
           {/* Transcript */}
           <div ref={scroller} className="flex-1 overflow-y-auto px-4 py-4">
             <div ref={transcriptRef} className="max-w-3xl mx-auto space-y-3">
-              {messages.length === 0 && (
+              {pendingProposals.length > 0 && (
+                <div className="space-y-2 pb-2 border-b border-dashed border-[#eceae2]">
+                  <div className="text-[10px] uppercase text-amber-700 font-semibold flex items-center gap-1">
+                    <Zap className="w-3 h-3" /> {lang === "ar" ? `اقتراحات بانتظار الموافقة (${pendingProposals.length})` : `Pending proposals (${pendingProposals.length})`}
+                  </div>
+                  {pendingProposals.map((p) => (
+                    <ActionProposalCard key={p.id} proposal={{ ...p, language: lang }}
+                      onConfirm={onConfirmProposal} onReject={onRejectProposal} />
+                  ))}
+                </div>
+              )}
+              {messages.length === 0 && pendingProposals.length === 0 && (
                 <div className="text-center text-sm text-[#0f2a1d]/50 py-10">{t.empty}</div>
               )}
               {messages.map((m, i) => (
