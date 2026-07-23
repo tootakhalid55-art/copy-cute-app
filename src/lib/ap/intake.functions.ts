@@ -341,15 +341,15 @@ export const createBillFromIntake = createServerFn({ method: "POST" })
     if (lines.length) {
       const rows = lines.map((l: any, idx: number) => ({
         document_id: bill.id,
-        line_no: idx + 1,
+        position: idx + 1,
         description: l.description || "",
         qty: Number(l.qty) || 1,
-        unit_price: Number(l.price ?? l.unit_price) || 0,
+        price: Number(l.price ?? l.unit_price) || 0,
         tax_rate: Number(l.tax) || 15,
         discount: Number(l.discount) || 0,
         line_total: Number(l.lineTotal ?? l.line_total) || (Number(l.qty || 1) * Number(l.price || 0)),
       }));
-      const { error: lErr } = await supabase.from("document_lines").insert(rows);
+      const { error: lErr } = await supabase.from("document_lines").insert(rows as any);
       if (lErr) throw new Error(`Failed to add bill lines: ${lErr.message}`);
     }
 
