@@ -10,6 +10,7 @@ type Props = {
   entityType: string; // "document" | "inbox"
   entityId: string;
   className?: string;
+  onUploadingChange?: (uploading: boolean) => void;
 };
 
 export function AttachmentUploader({ orgId, entityType, entityId, className }: Props) {
