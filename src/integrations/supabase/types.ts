@@ -14,6 +14,72 @@ export type Database = {
   }
   public: {
     Tables: {
+      accounting_periods: {
+        Row: {
+          closed_at: string | null
+          closed_by: string | null
+          created_at: string
+          end_date: string
+          fiscal_year_id: string
+          id: string
+          name: string
+          org_id: string
+          period_number: number
+          reopened_at: string | null
+          reopened_by: string | null
+          start_date: string
+          status: Database["public"]["Enums"]["period_status"]
+          updated_at: string
+        }
+        Insert: {
+          closed_at?: string | null
+          closed_by?: string | null
+          created_at?: string
+          end_date: string
+          fiscal_year_id: string
+          id?: string
+          name: string
+          org_id: string
+          period_number: number
+          reopened_at?: string | null
+          reopened_by?: string | null
+          start_date: string
+          status?: Database["public"]["Enums"]["period_status"]
+          updated_at?: string
+        }
+        Update: {
+          closed_at?: string | null
+          closed_by?: string | null
+          created_at?: string
+          end_date?: string
+          fiscal_year_id?: string
+          id?: string
+          name?: string
+          org_id?: string
+          period_number?: number
+          reopened_at?: string | null
+          reopened_by?: string | null
+          start_date?: string
+          status?: Database["public"]["Enums"]["period_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "accounting_periods_fiscal_year_id_fkey"
+            columns: ["fiscal_year_id"]
+            isOneToOne: false
+            referencedRelation: "fiscal_years"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "accounting_periods_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       approval_actions: {
         Row: {
           action: string
@@ -504,6 +570,141 @@ export type Database = {
           },
         ]
       }
+      chart_of_accounts: {
+        Row: {
+          allow_branch: boolean
+          allow_cost_center: boolean
+          category: string | null
+          code: string
+          created_at: string
+          currency: string
+          description: string | null
+          id: string
+          is_active: boolean
+          is_header: boolean
+          meta: Json
+          name: string
+          name_en: string | null
+          number: string | null
+          opening_balance: number
+          org_id: string
+          parent_id: string | null
+          type: Database["public"]["Enums"]["account_type"]
+          updated_at: string
+        }
+        Insert: {
+          allow_branch?: boolean
+          allow_cost_center?: boolean
+          category?: string | null
+          code: string
+          created_at?: string
+          currency?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          is_header?: boolean
+          meta?: Json
+          name: string
+          name_en?: string | null
+          number?: string | null
+          opening_balance?: number
+          org_id: string
+          parent_id?: string | null
+          type: Database["public"]["Enums"]["account_type"]
+          updated_at?: string
+        }
+        Update: {
+          allow_branch?: boolean
+          allow_cost_center?: boolean
+          category?: string | null
+          code?: string
+          created_at?: string
+          currency?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          is_header?: boolean
+          meta?: Json
+          name?: string
+          name_en?: string | null
+          number?: string | null
+          opening_balance?: number
+          org_id?: string
+          parent_id?: string | null
+          type?: Database["public"]["Enums"]["account_type"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chart_of_accounts_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "chart_of_accounts_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "chart_of_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cost_centers: {
+        Row: {
+          code: string
+          created_at: string
+          id: string
+          is_active: boolean
+          meta: Json
+          name: string
+          name_en: string | null
+          org_id: string
+          parent_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          meta?: Json
+          name: string
+          name_en?: string | null
+          org_id: string
+          parent_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          meta?: Json
+          name?: string
+          name_en?: string | null
+          org_id?: string
+          parent_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cost_centers_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cost_centers_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "cost_centers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       document_lines: {
         Row: {
           description: string
@@ -867,35 +1068,50 @@ export type Database = {
       }
       fiscal_years: {
         Row: {
+          closed_at: string | null
+          closed_by: string | null
           created_at: string
           end_date: string
           id: string
           is_closed: boolean
           is_current: boolean
+          is_locked: boolean
           name: string
           org_id: string
+          reopened_at: string | null
+          reopened_by: string | null
           start_date: string
           updated_at: string
         }
         Insert: {
+          closed_at?: string | null
+          closed_by?: string | null
           created_at?: string
           end_date: string
           id?: string
           is_closed?: boolean
           is_current?: boolean
+          is_locked?: boolean
           name: string
           org_id: string
+          reopened_at?: string | null
+          reopened_by?: string | null
           start_date: string
           updated_at?: string
         }
         Update: {
+          closed_at?: string | null
+          closed_by?: string | null
           created_at?: string
           end_date?: string
           id?: string
           is_closed?: boolean
           is_current?: boolean
+          is_locked?: boolean
           name?: string
           org_id?: string
+          reopened_at?: string | null
+          reopened_by?: string | null
           start_date?: string
           updated_at?: string
         }
@@ -1021,6 +1237,245 @@ export type Database = {
             columns: ["org_id"]
             isOneToOne: false
             referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      journal_entries: {
+        Row: {
+          branch_id: string | null
+          created_at: string
+          created_by: string
+          currency: string
+          entry_date: string
+          entry_number: string
+          event_id: string | null
+          event_type: Database["public"]["Enums"]["posting_event_type"] | null
+          exchange_rate: number
+          fiscal_year_id: string | null
+          id: string
+          memo: string | null
+          meta: Json
+          org_id: string
+          period_id: string | null
+          posted_at: string | null
+          posted_by: string | null
+          reversed_at: string | null
+          reversed_by: string | null
+          reversed_by_entry_id: string | null
+          reverses_entry_id: string | null
+          source_document_id: string | null
+          source_document_type: string | null
+          source_module: string | null
+          status: Database["public"]["Enums"]["journal_status"]
+          total_credit: number
+          total_debit: number
+          updated_at: string
+        }
+        Insert: {
+          branch_id?: string | null
+          created_at?: string
+          created_by: string
+          currency?: string
+          entry_date?: string
+          entry_number: string
+          event_id?: string | null
+          event_type?: Database["public"]["Enums"]["posting_event_type"] | null
+          exchange_rate?: number
+          fiscal_year_id?: string | null
+          id?: string
+          memo?: string | null
+          meta?: Json
+          org_id: string
+          period_id?: string | null
+          posted_at?: string | null
+          posted_by?: string | null
+          reversed_at?: string | null
+          reversed_by?: string | null
+          reversed_by_entry_id?: string | null
+          reverses_entry_id?: string | null
+          source_document_id?: string | null
+          source_document_type?: string | null
+          source_module?: string | null
+          status?: Database["public"]["Enums"]["journal_status"]
+          total_credit?: number
+          total_debit?: number
+          updated_at?: string
+        }
+        Update: {
+          branch_id?: string | null
+          created_at?: string
+          created_by?: string
+          currency?: string
+          entry_date?: string
+          entry_number?: string
+          event_id?: string | null
+          event_type?: Database["public"]["Enums"]["posting_event_type"] | null
+          exchange_rate?: number
+          fiscal_year_id?: string | null
+          id?: string
+          memo?: string | null
+          meta?: Json
+          org_id?: string
+          period_id?: string | null
+          posted_at?: string | null
+          posted_by?: string | null
+          reversed_at?: string | null
+          reversed_by?: string | null
+          reversed_by_entry_id?: string | null
+          reverses_entry_id?: string | null
+          source_document_id?: string | null
+          source_document_type?: string | null
+          source_module?: string | null
+          status?: Database["public"]["Enums"]["journal_status"]
+          total_credit?: number
+          total_debit?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "journal_entries_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "journal_entries_fiscal_year_id_fkey"
+            columns: ["fiscal_year_id"]
+            isOneToOne: false
+            referencedRelation: "fiscal_years"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "journal_entries_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "journal_entries_period_id_fkey"
+            columns: ["period_id"]
+            isOneToOne: false
+            referencedRelation: "accounting_periods"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "journal_entries_reversed_by_entry_id_fkey"
+            columns: ["reversed_by_entry_id"]
+            isOneToOne: false
+            referencedRelation: "journal_entries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "journal_entries_reverses_entry_id_fkey"
+            columns: ["reverses_entry_id"]
+            isOneToOne: false
+            referencedRelation: "journal_entries"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      journal_lines: {
+        Row: {
+          account_id: string
+          branch_id: string | null
+          cost_center_id: string | null
+          created_at: string
+          credit: number
+          credit_fc: number
+          currency: string
+          debit: number
+          debit_fc: number
+          description: string | null
+          entry_id: string
+          exchange_rate: number
+          id: string
+          line_no: number
+          meta: Json
+          org_id: string
+          party_id: string | null
+        }
+        Insert: {
+          account_id: string
+          branch_id?: string | null
+          cost_center_id?: string | null
+          created_at?: string
+          credit?: number
+          credit_fc?: number
+          currency?: string
+          debit?: number
+          debit_fc?: number
+          description?: string | null
+          entry_id: string
+          exchange_rate?: number
+          id?: string
+          line_no: number
+          meta?: Json
+          org_id: string
+          party_id?: string | null
+        }
+        Update: {
+          account_id?: string
+          branch_id?: string | null
+          cost_center_id?: string | null
+          created_at?: string
+          credit?: number
+          credit_fc?: number
+          currency?: string
+          debit?: number
+          debit_fc?: number
+          description?: string | null
+          entry_id?: string
+          exchange_rate?: number
+          id?: string
+          line_no?: number
+          meta?: Json
+          org_id?: string
+          party_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "journal_lines_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "chart_of_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "journal_lines_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "journal_lines_cost_center_id_fkey"
+            columns: ["cost_center_id"]
+            isOneToOne: false
+            referencedRelation: "cost_centers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "journal_lines_entry_id_fkey"
+            columns: ["entry_id"]
+            isOneToOne: false
+            referencedRelation: "journal_entries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "journal_lines_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "journal_lines_party_id_fkey"
+            columns: ["party_id"]
+            isOneToOne: false
+            referencedRelation: "parties"
             referencedColumns: ["id"]
           },
         ]
@@ -1352,6 +1807,116 @@ export type Database = {
           },
         ]
       }
+      posting_events: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          error: string | null
+          event_key: string
+          event_type: Database["public"]["Enums"]["posting_event_type"]
+          id: string
+          journal_entry_id: string | null
+          org_id: string
+          payload: Json
+          processed_at: string | null
+          source_document_id: string | null
+          source_module: string | null
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          error?: string | null
+          event_key: string
+          event_type: Database["public"]["Enums"]["posting_event_type"]
+          id?: string
+          journal_entry_id?: string | null
+          org_id: string
+          payload?: Json
+          processed_at?: string | null
+          source_document_id?: string | null
+          source_module?: string | null
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          error?: string | null
+          event_key?: string
+          event_type?: Database["public"]["Enums"]["posting_event_type"]
+          id?: string
+          journal_entry_id?: string | null
+          org_id?: string
+          payload?: Json
+          processed_at?: string | null
+          source_document_id?: string | null
+          source_module?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "posting_events_journal_entry_id_fkey"
+            columns: ["journal_entry_id"]
+            isOneToOne: false
+            referencedRelation: "journal_entries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "posting_events_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      posting_rules: {
+        Row: {
+          config: Json
+          created_at: string
+          description: string | null
+          event_type: Database["public"]["Enums"]["posting_event_type"]
+          id: string
+          is_active: boolean
+          name: string
+          org_id: string
+          priority: number
+          updated_at: string
+        }
+        Insert: {
+          config?: Json
+          created_at?: string
+          description?: string | null
+          event_type: Database["public"]["Enums"]["posting_event_type"]
+          id?: string
+          is_active?: boolean
+          name: string
+          org_id: string
+          priority?: number
+          updated_at?: string
+        }
+        Update: {
+          config?: Json
+          created_at?: string
+          description?: string | null
+          event_type?: Database["public"]["Enums"]["posting_event_type"]
+          id?: string
+          is_active?: boolean
+          name?: string
+          org_id?: string
+          priority?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "posting_rules_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -1416,6 +1981,18 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      close_accounting_period: {
+        Args: { _org: string; _period_id: string }
+        Returns: undefined
+      }
+      find_open_period: {
+        Args: { _date: string; _org: string }
+        Returns: {
+          fiscal_year_id: string
+          period_id: string
+          status: Database["public"]["Enums"]["period_status"]
+        }[]
+      }
       has_org_role: {
         Args: {
           _org: string
@@ -1425,8 +2002,31 @@ export type Database = {
         Returns: boolean
       }
       is_org_member: { Args: { _org: string; _user: string }; Returns: boolean }
+      post_journal: { Args: { _org: string; _payload: Json }; Returns: string }
+      reopen_accounting_period: {
+        Args: { _org: string; _period_id: string }
+        Returns: undefined
+      }
+      reverse_journal: {
+        Args: {
+          _date?: string
+          _entry_id: string
+          _memo?: string
+          _org: string
+        }
+        Returns: string
+      }
     }
     Enums: {
+      account_type:
+        | "asset"
+        | "liability"
+        | "equity"
+        | "revenue"
+        | "cost_of_sales"
+        | "expense"
+        | "other_income"
+        | "other_expense"
       app_role: "owner" | "admin" | "accountant" | "user" | "viewer"
       doc_kind:
         | "sales_invoice"
@@ -1456,7 +2056,18 @@ export type Database = {
         | "pending_approval"
         | "approved"
         | "posted"
+      journal_status: "draft" | "posted" | "reversed"
       party_type: "customer" | "supplier" | "both"
+      period_status: "open" | "closed" | "locked"
+      posting_event_type:
+        | "invoice_posted"
+        | "payment_created"
+        | "payment_applied"
+        | "credit_note_posted"
+        | "debit_note_posted"
+        | "inventory_posted"
+        | "expense_posted"
+        | "manual_journal"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1584,6 +2195,16 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      account_type: [
+        "asset",
+        "liability",
+        "equity",
+        "revenue",
+        "cost_of_sales",
+        "expense",
+        "other_income",
+        "other_expense",
+      ],
       app_role: ["owner", "admin", "accountant", "user", "viewer"],
       doc_kind: [
         "sales_invoice",
@@ -1615,7 +2236,19 @@ export const Constants = {
         "approved",
         "posted",
       ],
+      journal_status: ["draft", "posted", "reversed"],
       party_type: ["customer", "supplier", "both"],
+      period_status: ["open", "closed", "locked"],
+      posting_event_type: [
+        "invoice_posted",
+        "payment_created",
+        "payment_applied",
+        "credit_note_posted",
+        "debit_note_posted",
+        "inventory_posted",
+        "expense_posted",
+        "manual_journal",
+      ],
     },
   },
 } as const
