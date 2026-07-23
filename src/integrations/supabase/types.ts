@@ -351,6 +351,7 @@ export type Database = {
           created_at: string
           id: string
           kind: string
+          meta: Json
           name: string
           name_en: string | null
           org_id: string
@@ -366,6 +367,7 @@ export type Database = {
           created_at?: string
           id?: string
           kind?: string
+          meta?: Json
           name: string
           name_en?: string | null
           org_id: string
@@ -381,6 +383,7 @@ export type Database = {
           created_at?: string
           id?: string
           kind?: string
+          meta?: Json
           name?: string
           name_en?: string | null
           org_id?: string
@@ -490,11 +493,13 @@ export type Database = {
       parties: {
         Row: {
           address: Json
+          code: string | null
           cr_number: string | null
           created_at: string
           currency: string
           email: string | null
           id: string
+          meta: Json
           name: string
           name_en: string | null
           notes: string | null
@@ -508,11 +513,13 @@ export type Database = {
         }
         Insert: {
           address?: Json
+          code?: string | null
           cr_number?: string | null
           created_at?: string
           currency?: string
           email?: string | null
           id?: string
+          meta?: Json
           name: string
           name_en?: string | null
           notes?: string | null
@@ -526,11 +533,13 @@ export type Database = {
         }
         Update: {
           address?: Json
+          code?: string | null
           cr_number?: string | null
           created_at?: string
           currency?: string
           email?: string | null
           id?: string
+          meta?: Json
           name?: string
           name_en?: string | null
           notes?: string | null

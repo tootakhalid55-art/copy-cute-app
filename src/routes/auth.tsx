@@ -8,21 +8,38 @@ export const Route = createFileRoute("/auth")({
 });
 
 function AuthPage() {
-  const { user, ready, login } = useAuth();
+  const { user, ready, signIn, signUp } = useAuth();
   const navigate = useNavigate();
   const [mode, setMode] = useState<"login" | "signup">("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [name, setName] = useState("");
   const [error, setError] = useState("");
+  const [info, setInfo] = useState("");
+  const [busy, setBusy] = useState(false);
 
   useEffect(() => {
     if (ready && user) navigate({ to: "/dashboard" });
   }, [ready, user, navigate]);
 
-  const submit = (e: React.FormEvent) => {
+  const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (login(email, password)) navigate({ to: "/dashboard" });
-    else setError("تأكد من صحة البريد وأن كلمة المرور لا تقل عن 4 أحرف");
+    setError("");
+    setInfo("");
+    setBusy(true);
+    try {
+      if (mode === "login") {
+        const { error } = await signIn(email, password);
+        if (error) setError(error);
+        else navigate({ to: "/dashboard" });
+      } else {
+        const { error } = await signUp(email, password, name);
+        if (error) setError(error);
+        else setInfo("تم إنشاء الحساب. تحقق من بريدك لتفعيل الحساب ثم سجّل الدخول.");
+      }
+    } finally {
+      setBusy(false);
+    }
   };
 
   return (
@@ -39,9 +56,7 @@ function AuthPage() {
             {mode === "login" ? "مرحبا بعودتك" : "إنشاء حساب جديد"}
           </h1>
           <p className="text-xs text-[#0f2a1d]/60 mt-1">
-            {mode === "login"
-              ? "سجّل دخولك للوصول إلى لوحة التحكم"
-              : "ابدأ إدارة أعمالك المالية اليوم"}
+            {mode === "login" ? "سجّل دخولك للوصول إلى لوحة التحكم" : "ابدأ إدارة أعمالك المالية اليوم"}
           </p>
         </div>
 
@@ -61,6 +76,17 @@ function AuthPage() {
         </div>
 
         <form className="space-y-4" onSubmit={submit}>
+          {mode === "signup" && (
+            <div>
+              <label className="text-xs text-[#0f2a1d]/70">الاسم</label>
+              <input
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                className="mt-1 w-full border border-[#eceae2] rounded-lg px-3 py-2.5 text-sm"
+                placeholder="اسمك الكامل"
+              />
+            </div>
+          )}
           <div>
             <label className="text-xs text-[#0f2a1d]/70">البريد الإلكتروني</label>
             <input
@@ -78,6 +104,7 @@ function AuthPage() {
             <input
               type="password"
               required
+              minLength={6}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               className="mt-1 w-full border border-[#eceae2] rounded-lg px-3 py-2.5 text-sm"
@@ -85,19 +112,17 @@ function AuthPage() {
               dir="ltr"
             />
           </div>
-          {error && (
-            <div className="text-xs text-red-600 bg-red-50 rounded-lg px-3 py-2">
-              {error}
-            </div>
-          )}
+          {error && <div className="text-xs text-red-600 bg-red-50 rounded-lg px-3 py-2">{error}</div>}
+          {info && <div className="text-xs text-[#0f6b3a] bg-[#eaf6ef] rounded-lg px-3 py-2">{info}</div>}
           <button
             type="submit"
-            className="w-full bg-[#d4f24a] text-[#0f2a1d] rounded-lg py-2.5 font-semibold text-sm hover:bg-[#c5e63a]"
+            disabled={busy}
+            className="w-full bg-[#d4f24a] text-[#0f2a1d] rounded-lg py-2.5 font-semibold text-sm hover:bg-[#c5e63a] disabled:opacity-60"
           >
-            {mode === "login" ? "تسجيل الدخول" : "إنشاء الحساب"}
+            {busy ? "..." : mode === "login" ? "تسجيل الدخول" : "إنشاء الحساب"}
           </button>
           <p className="text-[11px] text-[#0f2a1d]/50 text-center">
-            نسخة توضيحية — البيانات محفوظة محلياً في متصفحك فقط
+            بياناتك محفوظة في السحابة بأمان
           </p>
         </form>
       </div>
