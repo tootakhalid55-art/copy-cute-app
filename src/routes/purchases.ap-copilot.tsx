@@ -37,7 +37,7 @@ function Page() {
     if (!orgId) return;
     setLoading(true);
     try {
-      const r = await list({ data: { orgId: org.id, limit: 200 } }) as any[];
+      const r = await list({ data: { orgId, limit: 200 } }) as any[];
       setRows(r);
     } finally { setLoading(false); }
   }
