@@ -252,6 +252,7 @@ function ApReviewPage() {
           orgId={org?.id || ""}
         />
       )}
+      </div>
     </Shell>
   );
 }
