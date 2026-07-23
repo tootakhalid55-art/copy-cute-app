@@ -275,9 +275,9 @@ export const createBillFromIntake = createServerFn({ method: "POST" })
         .from("parties")
         .insert({
           org_id: intake.org_id,
-          party_type: "supplier",
+          type: "supplier" as any,
           name: data.newParty.name,
-          name_ar: data.newParty.name_ar || data.newParty.name,
+          name_en: data.newParty.name_ar || data.newParty.name,
           vat_number: data.newParty.vat_number || ex.supplierVatNumber || null,
           email: data.newParty.email || null,
           phone: data.newParty.phone || null,
@@ -302,7 +302,7 @@ export const createBillFromIntake = createServerFn({ method: "POST" })
       push("vat", (data.newParty.vat_number || "").replace(/\D+/g, ""));
       push("email", data.newParty.email);
       push("phone", (data.newParty.phone || "").replace(/\D+/g, ""));
-      if (aliases.length) await supabase.from("supplier_aliases").upsert(aliases, { onConflict: "org_id,alias_type,normalized" });
+      if (aliases.length) await supabase.from("supplier_aliases").upsert(aliases as any, { onConflict: "org_id,alias_type,normalized" });
     }
     if (!partyId) throw new Error("Supplier is required to create a bill");
 
