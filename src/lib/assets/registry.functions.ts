@@ -181,7 +181,7 @@ export const listAssets = createServerFn({ method: "GET" })
       .eq("org_id", data.orgId)
       .order("created_at", { ascending: false })
       .limit(500);
-    if (data.status) q = q.eq("status", data.status);
+    if (data.status) q = q.eq("status", data.status as any);
     if (data.cip === true) q = q.eq("is_cip", true);
     if (data.cip === false) q = q.eq("is_cip", false);
     if (data.search) q = q.or(`name.ilike.%${data.search}%,code.ilike.%${data.search}%,serial_number.ilike.%${data.search}%`);
