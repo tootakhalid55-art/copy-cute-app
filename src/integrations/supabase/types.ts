@@ -2414,6 +2414,541 @@ export type Database = {
           },
         ]
       }
+      fixed_asset_categories: {
+        Row: {
+          code: string
+          created_at: string
+          default_method:
+            | Database["public"]["Enums"]["fa_depreciation_method"]
+            | null
+          default_salvage_pct: number | null
+          default_useful_life_months: number | null
+          id: string
+          is_active: boolean
+          meta: Json
+          name: string
+          name_en: string | null
+          org_id: string
+          parent_id: string | null
+          revaluation_model: Database["public"]["Enums"]["fa_revaluation_model"]
+          updated_at: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          default_method?:
+            | Database["public"]["Enums"]["fa_depreciation_method"]
+            | null
+          default_salvage_pct?: number | null
+          default_useful_life_months?: number | null
+          id?: string
+          is_active?: boolean
+          meta?: Json
+          name: string
+          name_en?: string | null
+          org_id: string
+          parent_id?: string | null
+          revaluation_model?: Database["public"]["Enums"]["fa_revaluation_model"]
+          updated_at?: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          default_method?:
+            | Database["public"]["Enums"]["fa_depreciation_method"]
+            | null
+          default_salvage_pct?: number | null
+          default_useful_life_months?: number | null
+          id?: string
+          is_active?: boolean
+          meta?: Json
+          name?: string
+          name_en?: string | null
+          org_id?: string
+          parent_id?: string | null
+          revaluation_model?: Database["public"]["Enums"]["fa_revaluation_model"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fixed_asset_categories_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fixed_asset_categories_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "fixed_asset_categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fixed_asset_components: {
+        Row: {
+          component_asset_id: string
+          cost_share_amount: number | null
+          cost_share_pct: number | null
+          created_at: string
+          id: string
+          notes: string | null
+          org_id: string
+          parent_asset_id: string
+          updated_at: string
+        }
+        Insert: {
+          component_asset_id: string
+          cost_share_amount?: number | null
+          cost_share_pct?: number | null
+          created_at?: string
+          id?: string
+          notes?: string | null
+          org_id: string
+          parent_asset_id: string
+          updated_at?: string
+        }
+        Update: {
+          component_asset_id?: string
+          cost_share_amount?: number | null
+          cost_share_pct?: number | null
+          created_at?: string
+          id?: string
+          notes?: string | null
+          org_id?: string
+          parent_asset_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fixed_asset_components_component_asset_id_fkey"
+            columns: ["component_asset_id"]
+            isOneToOne: false
+            referencedRelation: "fixed_assets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fixed_asset_components_component_asset_id_fkey"
+            columns: ["component_asset_id"]
+            isOneToOne: false
+            referencedRelation: "fixed_assets_overview"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fixed_asset_components_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fixed_asset_components_parent_asset_id_fkey"
+            columns: ["parent_asset_id"]
+            isOneToOne: false
+            referencedRelation: "fixed_assets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fixed_asset_components_parent_asset_id_fkey"
+            columns: ["parent_asset_id"]
+            isOneToOne: false
+            referencedRelation: "fixed_assets_overview"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fixed_asset_groups: {
+        Row: {
+          code: string
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean
+          name: string
+          name_en: string | null
+          org_id: string
+          updated_at: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          name_en?: string | null
+          org_id: string
+          updated_at?: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          name_en?: string | null
+          org_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fixed_asset_groups_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fixed_asset_settings: {
+        Row: {
+          capitalization_threshold: number
+          created_at: string
+          default_convention: string
+          default_currency: string
+          default_method: Database["public"]["Enums"]["fa_depreciation_method"]
+          default_useful_life_months: number
+          meta: Json
+          org_id: string
+          updated_at: string
+        }
+        Insert: {
+          capitalization_threshold?: number
+          created_at?: string
+          default_convention?: string
+          default_currency?: string
+          default_method?: Database["public"]["Enums"]["fa_depreciation_method"]
+          default_useful_life_months?: number
+          meta?: Json
+          org_id: string
+          updated_at?: string
+        }
+        Update: {
+          capitalization_threshold?: number
+          created_at?: string
+          default_convention?: string
+          default_currency?: string
+          default_method?: Database["public"]["Enums"]["fa_depreciation_method"]
+          default_useful_life_months?: number
+          meta?: Json
+          org_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fixed_asset_settings_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: true
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fixed_asset_templates: {
+        Row: {
+          category_id: string | null
+          created_at: string
+          defaults: Json
+          id: string
+          is_active: boolean
+          name: string
+          name_en: string | null
+          org_id: string
+          updated_at: string
+        }
+        Insert: {
+          category_id?: string | null
+          created_at?: string
+          defaults?: Json
+          id?: string
+          is_active?: boolean
+          name: string
+          name_en?: string | null
+          org_id: string
+          updated_at?: string
+        }
+        Update: {
+          category_id?: string | null
+          created_at?: string
+          defaults?: Json
+          id?: string
+          is_active?: boolean
+          name?: string
+          name_en?: string | null
+          org_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fixed_asset_templates_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "fixed_asset_categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fixed_asset_templates_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fixed_assets: {
+        Row: {
+          accumulated_depreciation: number
+          acquisition_cost: number
+          acquisition_date: string | null
+          ap_intake_document_id: string | null
+          barcode: string | null
+          bill_document_id: string | null
+          bill_line_id: string | null
+          branch_id: string | null
+          category_id: string | null
+          code: string
+          cost_center_id: string | null
+          created_at: string
+          created_by: string | null
+          currency: string
+          custodian_name: string | null
+          custodian_user_id: string | null
+          custom: Json
+          department: string | null
+          description: string | null
+          gps_lat: number | null
+          gps_lng: number | null
+          group_id: string | null
+          id: string
+          in_service_date: string | null
+          is_cip: boolean
+          is_component: boolean
+          last_depreciation_date: string | null
+          location_text: string | null
+          manufacturer: string | null
+          method: Database["public"]["Enums"]["fa_depreciation_method"]
+          model: string | null
+          name: string
+          name_en: string | null
+          notes: string | null
+          org_id: string
+          parent_asset_id: string | null
+          project: string | null
+          purchase_order_id: string | null
+          qr_payload: string | null
+          residual_value: number
+          rfid_tag: string | null
+          serial_number: string | null
+          status: Database["public"]["Enums"]["fa_status"]
+          supplier_party_id: string | null
+          updated_at: string
+          useful_life_months: number | null
+          warranty_from: string | null
+          warranty_to: string | null
+        }
+        Insert: {
+          accumulated_depreciation?: number
+          acquisition_cost?: number
+          acquisition_date?: string | null
+          ap_intake_document_id?: string | null
+          barcode?: string | null
+          bill_document_id?: string | null
+          bill_line_id?: string | null
+          branch_id?: string | null
+          category_id?: string | null
+          code: string
+          cost_center_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          currency?: string
+          custodian_name?: string | null
+          custodian_user_id?: string | null
+          custom?: Json
+          department?: string | null
+          description?: string | null
+          gps_lat?: number | null
+          gps_lng?: number | null
+          group_id?: string | null
+          id?: string
+          in_service_date?: string | null
+          is_cip?: boolean
+          is_component?: boolean
+          last_depreciation_date?: string | null
+          location_text?: string | null
+          manufacturer?: string | null
+          method?: Database["public"]["Enums"]["fa_depreciation_method"]
+          model?: string | null
+          name: string
+          name_en?: string | null
+          notes?: string | null
+          org_id: string
+          parent_asset_id?: string | null
+          project?: string | null
+          purchase_order_id?: string | null
+          qr_payload?: string | null
+          residual_value?: number
+          rfid_tag?: string | null
+          serial_number?: string | null
+          status?: Database["public"]["Enums"]["fa_status"]
+          supplier_party_id?: string | null
+          updated_at?: string
+          useful_life_months?: number | null
+          warranty_from?: string | null
+          warranty_to?: string | null
+        }
+        Update: {
+          accumulated_depreciation?: number
+          acquisition_cost?: number
+          acquisition_date?: string | null
+          ap_intake_document_id?: string | null
+          barcode?: string | null
+          bill_document_id?: string | null
+          bill_line_id?: string | null
+          branch_id?: string | null
+          category_id?: string | null
+          code?: string
+          cost_center_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          currency?: string
+          custodian_name?: string | null
+          custodian_user_id?: string | null
+          custom?: Json
+          department?: string | null
+          description?: string | null
+          gps_lat?: number | null
+          gps_lng?: number | null
+          group_id?: string | null
+          id?: string
+          in_service_date?: string | null
+          is_cip?: boolean
+          is_component?: boolean
+          last_depreciation_date?: string | null
+          location_text?: string | null
+          manufacturer?: string | null
+          method?: Database["public"]["Enums"]["fa_depreciation_method"]
+          model?: string | null
+          name?: string
+          name_en?: string | null
+          notes?: string | null
+          org_id?: string
+          parent_asset_id?: string | null
+          project?: string | null
+          purchase_order_id?: string | null
+          qr_payload?: string | null
+          residual_value?: number
+          rfid_tag?: string | null
+          serial_number?: string | null
+          status?: Database["public"]["Enums"]["fa_status"]
+          supplier_party_id?: string | null
+          updated_at?: string
+          useful_life_months?: number | null
+          warranty_from?: string | null
+          warranty_to?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fixed_assets_ap_intake_document_id_fkey"
+            columns: ["ap_intake_document_id"]
+            isOneToOne: false
+            referencedRelation: "ap_intake_documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fixed_assets_bill_document_id_fkey"
+            columns: ["bill_document_id"]
+            isOneToOne: false
+            referencedRelation: "document_open_balances"
+            referencedColumns: ["document_id"]
+          },
+          {
+            foreignKeyName: "fixed_assets_bill_document_id_fkey"
+            columns: ["bill_document_id"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fixed_assets_bill_line_id_fkey"
+            columns: ["bill_line_id"]
+            isOneToOne: false
+            referencedRelation: "document_lines"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fixed_assets_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fixed_assets_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "fixed_asset_categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fixed_assets_cost_center_id_fkey"
+            columns: ["cost_center_id"]
+            isOneToOne: false
+            referencedRelation: "cost_centers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fixed_assets_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "fixed_asset_groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fixed_assets_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fixed_assets_parent_asset_id_fkey"
+            columns: ["parent_asset_id"]
+            isOneToOne: false
+            referencedRelation: "fixed_assets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fixed_assets_parent_asset_id_fkey"
+            columns: ["parent_asset_id"]
+            isOneToOne: false
+            referencedRelation: "fixed_assets_overview"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fixed_assets_purchase_order_id_fkey"
+            columns: ["purchase_order_id"]
+            isOneToOne: false
+            referencedRelation: "document_open_balances"
+            referencedColumns: ["document_id"]
+          },
+          {
+            foreignKeyName: "fixed_assets_purchase_order_id_fkey"
+            columns: ["purchase_order_id"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fixed_assets_supplier_party_id_fkey"
+            columns: ["supplier_party_id"]
+            isOneToOne: false
+            referencedRelation: "parties"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       inbox_documents: {
         Row: {
           created_at: string
@@ -3726,6 +4261,100 @@ export type Database = {
           },
         ]
       }
+      fixed_assets_overview: {
+        Row: {
+          accumulated_depreciation: number | null
+          acquisition_cost: number | null
+          acquisition_date: string | null
+          bill_document_id: string | null
+          branch_id: string | null
+          category_id: string | null
+          category_name: string | null
+          code: string | null
+          cost_center_id: string | null
+          created_at: string | null
+          currency: string | null
+          custodian_name: string | null
+          custodian_user_id: string | null
+          group_id: string | null
+          group_name: string | null
+          id: string | null
+          in_service_date: string | null
+          is_cip: boolean | null
+          location_text: string | null
+          method: Database["public"]["Enums"]["fa_depreciation_method"] | null
+          name: string | null
+          name_en: string | null
+          net_book_value: number | null
+          org_id: string | null
+          residual_value: number | null
+          serial_number: string | null
+          status: Database["public"]["Enums"]["fa_status"] | null
+          supplier_name: string | null
+          supplier_party_id: string | null
+          updated_at: string | null
+          useful_life_months: number | null
+          warranty_to: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fixed_assets_bill_document_id_fkey"
+            columns: ["bill_document_id"]
+            isOneToOne: false
+            referencedRelation: "document_open_balances"
+            referencedColumns: ["document_id"]
+          },
+          {
+            foreignKeyName: "fixed_assets_bill_document_id_fkey"
+            columns: ["bill_document_id"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fixed_assets_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fixed_assets_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "fixed_asset_categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fixed_assets_cost_center_id_fkey"
+            columns: ["cost_center_id"]
+            isOneToOne: false
+            referencedRelation: "cost_centers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fixed_assets_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "fixed_asset_groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fixed_assets_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fixed_assets_supplier_party_id_fkey"
+            columns: ["supplier_party_id"]
+            isOneToOne: false
+            referencedRelation: "parties"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       party_balances: {
         Row: {
           balance: number | null
@@ -3787,6 +4416,10 @@ export type Database = {
           isOneToOne: false
           isSetofReturn: true
         }
+      }
+      capitalize_asset_from_bill: {
+        Args: { _bill: string; _org: string; _payload: Json }
+        Returns: string
       }
       check_credit: {
         Args: { _new_amount?: number; _org: string; _party: string }
@@ -4108,6 +4741,22 @@ export type Database = {
         | "pending_approval"
         | "approved"
         | "posted"
+      fa_depreciation_method:
+        | "straight_line"
+        | "declining_balance"
+        | "double_declining"
+        | "units_of_production"
+        | "manual"
+        | "none"
+      fa_revaluation_model: "cost" | "revaluation"
+      fa_status:
+        | "draft"
+        | "cip"
+        | "active"
+        | "held_for_sale"
+        | "disposed"
+        | "retired"
+        | "written_off"
       financial_audit_kind:
         | "receipt_created"
         | "payment_created"
@@ -4366,6 +5015,24 @@ export const Constants = {
         "pending_approval",
         "approved",
         "posted",
+      ],
+      fa_depreciation_method: [
+        "straight_line",
+        "declining_balance",
+        "double_declining",
+        "units_of_production",
+        "manual",
+        "none",
+      ],
+      fa_revaluation_model: ["cost", "revaluation"],
+      fa_status: [
+        "draft",
+        "cip",
+        "active",
+        "held_for_sale",
+        "disposed",
+        "retired",
+        "written_off",
       ],
       financial_audit_kind: [
         "receipt_created",

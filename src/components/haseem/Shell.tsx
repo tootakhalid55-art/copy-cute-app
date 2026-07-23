@@ -80,6 +80,15 @@ const NAV: NavItem[] = [
   },
   { icon: LayoutGrid, label: "المشاريع", to: "/projects" },
   {
+    icon: Package, label: "الأصول الثابتة",
+    children: [
+      { label: "سجل الأصول", to: "/assets" },
+      { label: "أصول تحت الإنشاء", to: "/assets/cip" },
+      { label: "الفئات", to: "/assets/categories" },
+      { label: "الإعدادات", to: "/assets/settings" },
+    ],
+  },
+  {
     icon: Calculator, label: "المحاسبة",
     children: [
       { label: "نظرة عامة", to: "/accounting", icon: Calculator },

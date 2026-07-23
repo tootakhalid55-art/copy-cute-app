@@ -17,6 +17,7 @@ import { Route as ExpensesRouteImport } from './routes/expenses'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as CopilotRouteImport } from './routes/copilot'
 import { Route as AuthRouteImport } from './routes/auth'
+import { Route as AssetsRouteImport } from './routes/assets'
 import { Route as AccountingRouteImport } from './routes/accounting'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as SettingsWorkflowsRouteImport } from './routes/settings.workflows'
@@ -78,6 +79,9 @@ import { Route as CashReconciliationRouteImport } from './routes/cash.reconcilia
 import { Route as CashReceiptsRouteImport } from './routes/cash.receipts'
 import { Route as CashPaymentsRouteImport } from './routes/cash.payments'
 import { Route as CashBanksRouteImport } from './routes/cash.banks'
+import { Route as AssetsSettingsRouteImport } from './routes/assets.settings'
+import { Route as AssetsCipRouteImport } from './routes/assets.cip'
+import { Route as AssetsCategoriesRouteImport } from './routes/assets.categories'
 import { Route as AccountingJournalEntriesRouteImport } from './routes/accounting.journal-entries'
 import { Route as AccountingGeneralLedgerRouteImport } from './routes/accounting.general-ledger'
 import { Route as AccountingChartOfAccountsRouteImport } from './routes/accounting.chart-of-accounts'
@@ -142,6 +146,11 @@ const CopilotRoute = CopilotRouteImport.update({
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
   path: '/auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AssetsRoute = AssetsRouteImport.update({
+  id: '/assets',
+  path: '/assets',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AccountingRoute = AccountingRouteImport.update({
@@ -451,6 +460,21 @@ const CashBanksRoute = CashBanksRouteImport.update({
   path: '/cash/banks',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AssetsSettingsRoute = AssetsSettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => AssetsRoute,
+} as any)
+const AssetsCipRoute = AssetsCipRouteImport.update({
+  id: '/cip',
+  path: '/cip',
+  getParentRoute: () => AssetsRoute,
+} as any)
+const AssetsCategoriesRoute = AssetsCategoriesRouteImport.update({
+  id: '/categories',
+  path: '/categories',
+  getParentRoute: () => AssetsRoute,
+} as any)
 const AccountingJournalEntriesRoute =
   AccountingJournalEntriesRouteImport.update({
     id: '/journal-entries',
@@ -590,6 +614,7 @@ const ApiPublicHooksApIntakeEmailRoute =
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/accounting': typeof AccountingRouteWithChildren
+  '/assets': typeof AssetsRouteWithChildren
   '/auth': typeof AuthRoute
   '/copilot': typeof CopilotRoute
   '/dashboard': typeof DashboardRouteWithChildren
@@ -601,6 +626,9 @@ export interface FileRoutesByFullPath {
   '/accounting/chart-of-accounts': typeof AccountingChartOfAccountsRoute
   '/accounting/general-ledger': typeof AccountingGeneralLedgerRoute
   '/accounting/journal-entries': typeof AccountingJournalEntriesRoute
+  '/assets/categories': typeof AssetsCategoriesRoute
+  '/assets/cip': typeof AssetsCipRoute
+  '/assets/settings': typeof AssetsSettingsRoute
   '/cash/banks': typeof CashBanksRoute
   '/cash/payments': typeof CashPaymentsRoute
   '/cash/receipts': typeof CashReceiptsRoute
@@ -686,6 +714,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/accounting': typeof AccountingRouteWithChildren
+  '/assets': typeof AssetsRouteWithChildren
   '/auth': typeof AuthRoute
   '/copilot': typeof CopilotRoute
   '/dashboard': typeof DashboardRouteWithChildren
@@ -697,6 +726,9 @@ export interface FileRoutesByTo {
   '/accounting/chart-of-accounts': typeof AccountingChartOfAccountsRoute
   '/accounting/general-ledger': typeof AccountingGeneralLedgerRoute
   '/accounting/journal-entries': typeof AccountingJournalEntriesRoute
+  '/assets/categories': typeof AssetsCategoriesRoute
+  '/assets/cip': typeof AssetsCipRoute
+  '/assets/settings': typeof AssetsSettingsRoute
   '/cash/banks': typeof CashBanksRoute
   '/cash/payments': typeof CashPaymentsRoute
   '/cash/receipts': typeof CashReceiptsRoute
@@ -777,6 +809,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/accounting': typeof AccountingRouteWithChildren
+  '/assets': typeof AssetsRouteWithChildren
   '/auth': typeof AuthRoute
   '/copilot': typeof CopilotRoute
   '/dashboard': typeof DashboardRouteWithChildren
@@ -788,6 +821,9 @@ export interface FileRoutesById {
   '/accounting/chart-of-accounts': typeof AccountingChartOfAccountsRoute
   '/accounting/general-ledger': typeof AccountingGeneralLedgerRoute
   '/accounting/journal-entries': typeof AccountingJournalEntriesRoute
+  '/assets/categories': typeof AssetsCategoriesRoute
+  '/assets/cip': typeof AssetsCipRoute
+  '/assets/settings': typeof AssetsSettingsRoute
   '/cash/banks': typeof CashBanksRoute
   '/cash/payments': typeof CashPaymentsRoute
   '/cash/receipts': typeof CashReceiptsRoute
@@ -875,6 +911,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/accounting'
+    | '/assets'
     | '/auth'
     | '/copilot'
     | '/dashboard'
@@ -886,6 +923,9 @@ export interface FileRouteTypes {
     | '/accounting/chart-of-accounts'
     | '/accounting/general-ledger'
     | '/accounting/journal-entries'
+    | '/assets/categories'
+    | '/assets/cip'
+    | '/assets/settings'
     | '/cash/banks'
     | '/cash/payments'
     | '/cash/receipts'
@@ -971,6 +1011,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/accounting'
+    | '/assets'
     | '/auth'
     | '/copilot'
     | '/dashboard'
@@ -982,6 +1023,9 @@ export interface FileRouteTypes {
     | '/accounting/chart-of-accounts'
     | '/accounting/general-ledger'
     | '/accounting/journal-entries'
+    | '/assets/categories'
+    | '/assets/cip'
+    | '/assets/settings'
     | '/cash/banks'
     | '/cash/payments'
     | '/cash/receipts'
@@ -1061,6 +1105,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/accounting'
+    | '/assets'
     | '/auth'
     | '/copilot'
     | '/dashboard'
@@ -1072,6 +1117,9 @@ export interface FileRouteTypes {
     | '/accounting/chart-of-accounts'
     | '/accounting/general-ledger'
     | '/accounting/journal-entries'
+    | '/assets/categories'
+    | '/assets/cip'
+    | '/assets/settings'
     | '/cash/banks'
     | '/cash/payments'
     | '/cash/receipts'
@@ -1158,6 +1206,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AccountingRoute: typeof AccountingRouteWithChildren
+  AssetsRoute: typeof AssetsRouteWithChildren
   AuthRoute: typeof AuthRoute
   CopilotRoute: typeof CopilotRoute
   DashboardRoute: typeof DashboardRouteWithChildren
@@ -1285,6 +1334,13 @@ declare module '@tanstack/react-router' {
       path: '/auth'
       fullPath: '/auth'
       preLoaderRoute: typeof AuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/assets': {
+      id: '/assets'
+      path: '/assets'
+      fullPath: '/assets'
+      preLoaderRoute: typeof AssetsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/accounting': {
@@ -1714,6 +1770,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CashBanksRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/assets/settings': {
+      id: '/assets/settings'
+      path: '/settings'
+      fullPath: '/assets/settings'
+      preLoaderRoute: typeof AssetsSettingsRouteImport
+      parentRoute: typeof AssetsRoute
+    }
+    '/assets/cip': {
+      id: '/assets/cip'
+      path: '/cip'
+      fullPath: '/assets/cip'
+      preLoaderRoute: typeof AssetsCipRouteImport
+      parentRoute: typeof AssetsRoute
+    }
+    '/assets/categories': {
+      id: '/assets/categories'
+      path: '/categories'
+      fullPath: '/assets/categories'
+      preLoaderRoute: typeof AssetsCategoriesRouteImport
+      parentRoute: typeof AssetsRoute
+    }
     '/accounting/journal-entries': {
       id: '/accounting/journal-entries'
       path: '/journal-entries'
@@ -1908,6 +1985,21 @@ const AccountingRouteWithChildren = AccountingRoute._addFileChildren(
   AccountingRouteChildren,
 )
 
+interface AssetsRouteChildren {
+  AssetsCategoriesRoute: typeof AssetsCategoriesRoute
+  AssetsCipRoute: typeof AssetsCipRoute
+  AssetsSettingsRoute: typeof AssetsSettingsRoute
+}
+
+const AssetsRouteChildren: AssetsRouteChildren = {
+  AssetsCategoriesRoute: AssetsCategoriesRoute,
+  AssetsCipRoute: AssetsCipRoute,
+  AssetsSettingsRoute: AssetsSettingsRoute,
+}
+
+const AssetsRouteWithChildren =
+  AssetsRoute._addFileChildren(AssetsRouteChildren)
+
 interface DashboardRouteChildren {
   DashboardCashFlowRoute: typeof DashboardCashFlowRoute
   DashboardProfitAndLossRoute: typeof DashboardProfitAndLossRoute
@@ -2021,6 +2113,7 @@ const SalesQuotationsRouteWithChildren = SalesQuotationsRoute._addFileChildren(
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AccountingRoute: AccountingRouteWithChildren,
+  AssetsRoute: AssetsRouteWithChildren,
   AuthRoute: AuthRoute,
   CopilotRoute: CopilotRoute,
   DashboardRoute: DashboardRouteWithChildren,
@@ -2094,13 +2187,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
