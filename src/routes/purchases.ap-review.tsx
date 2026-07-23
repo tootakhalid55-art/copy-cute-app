@@ -354,7 +354,7 @@ function ReviewDrawer({
           <button onClick={onClose} className="p-1 hover:bg-gray-100 rounded">✕</button>
         </div>
 
-        <div className="grid md:grid-cols-2 gap-4 p-5">
+        <div className="grid md:grid-cols-3 gap-4 p-5">
           {/* Left: editable extraction with heatmap */}
           <div className="space-y-3">
             {intake.error_message && (
