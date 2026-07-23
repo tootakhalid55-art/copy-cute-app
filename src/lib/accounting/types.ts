@@ -99,6 +99,39 @@ export const DETERMINATION_KEYS = [
   "opening_balance_equity",
   "retained_earnings",
   "default_expense",
+  "bank_charges",
+  "interest_income",
+  "interest_expense",
+  "cash_over_short",
+  "refunds_receivable",
+  "refunds_payable",
+  "customer_deposits",
+  "supplier_deposits",
 ] as const;
+
+// Allocation engine types (Phase B1)
+export type AllocationSourceKind =
+  | "customer_payment" | "supplier_payment" | "receipt"
+  | "credit_note" | "debit_note" | "advance" | "writeoff" | "refund";
+export type AllocationTargetKind =
+  | "invoice" | "bill" | "credit_note" | "debit_note" | "advance";
+
+export type AllocationLine = {
+  target_kind: AllocationTargetKind;
+  target_document_id: string;
+  amount: number;
+  memo?: string;
+};
+
+export type AllocatePaymentInput = {
+  source_kind: AllocationSourceKind;
+  source_document_id?: string | null;
+  party_id?: string | null;
+  branch_id?: string | null;
+  currency?: string;
+  exchange_rate?: number;
+  allocation_date?: string;
+  allocations: AllocationLine[];
+};
 
 export type DeterminationKey = (typeof DETERMINATION_KEYS)[number];
