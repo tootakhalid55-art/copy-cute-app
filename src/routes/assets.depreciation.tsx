@@ -109,10 +109,10 @@ function Page() {
       />
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-3 mb-4">
-        <StatCard label="أصول مؤهلة" value={String(totals.eligible)} icon={CalendarClock} />
-        <StatCard label="إجمالي الإهلاك الشهري" value={money(totals.totalDep)} icon={CalendarClock} />
-        <StatCard label="مستبعدة" value={String(totals.skipped)} icon={CalendarClock} />
-        <StatCard label="دورات سابقة" value={String(runs.length)} icon={CalendarClock} />
+        <StatCard label="أصول مؤهلة" value={String(totals.eligible)} />
+        <StatCard label="إجمالي الإهلاك الشهري" value={money(totals.totalDep)} />
+        <StatCard label="مستبعدة" value={String(totals.skipped)} />
+        <StatCard label="دورات سابقة" value={String(runs.length)} />
       </div>
 
       <div className="rounded-xl bg-white border border-[#eceae2] p-4 mb-4">
