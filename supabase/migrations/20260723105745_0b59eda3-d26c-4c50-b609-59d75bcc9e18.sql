@@ -1,0 +1,1 @@
+CREATE POLICY "creator views own org" ON public.organizations FOR SELECT TO authenticated USING (created_by = auth.uid());
