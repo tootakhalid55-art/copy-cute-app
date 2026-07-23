@@ -11,6 +11,7 @@ import {
 import { submitApproval, listApprovals } from "@/lib/ap/workflow.functions";
 import { resolveThreshold } from "@/lib/ap/thresholds.functions";
 import { preprocessImage } from "@/lib/ap/preprocess";
+import { CopilotPanel } from "@/components/haseem/CopilotPanel";
 
 export const Route = createFileRoute("/purchases/ap-review")({
   head: () => ({ meta: [
