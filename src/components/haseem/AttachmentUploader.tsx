@@ -10,9 +10,10 @@ type Props = {
   entityType: string; // "document" | "inbox"
   entityId: string;
   className?: string;
+  onUploadingChange?: (uploading: boolean) => void;
 };
 
-export function AttachmentUploader({ orgId, entityType, entityId, className }: Props) {
+export function AttachmentUploader({ orgId, entityType, entityId, className, onUploadingChange }: Props) {
   const [handles, setHandles] = useState<UploadHandle[]>([]);
   const [existing, setExisting] = useState<any[]>([]);
   const [dragging, setDragging] = useState(false);
@@ -30,6 +31,11 @@ export function AttachmentUploader({ orgId, entityType, entityId, className }: P
   useEffect(() => {
     refresh();
   }, [refresh]);
+
+  useEffect(() => {
+    const active = handles.some((h) => h.status === "uploading" || h.status === "processing" || h.status === "queued");
+    onUploadingChange?.(active);
+  }, [handles, onUploadingChange]);
 
   const push = useCallback((h: UploadHandle) => {
     setHandles((prev) => {
