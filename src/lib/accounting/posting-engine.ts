@@ -39,6 +39,11 @@ export function buildLinesFromRule(config: RuleConfig, payload: Record<string, u
   for (const leg of config.legs || []) {
     const amt = ROUND(evalExpr(leg.amount_expr, scope));
     if (!Number.isFinite(amt) || amt === 0) continue;
+    if (!leg.account_code) {
+      throw new Error(
+        `posting_rule_missing_account_code${leg.account_key ? `:unresolved_key=${leg.account_key}` : ""}`,
+      );
+    }
     lines.push({
       account_code: leg.account_code,
       debit: leg.side === "debit" ? amt : 0,
@@ -94,7 +99,26 @@ export async function postEvent(input: PostEventInput): Promise<PostResult> {
     }
 
     const config = (rule.config as unknown as RuleConfig) || { legs: [] };
-    const lines = buildLinesFromRule(config, input.payload);
+
+    // Account Determination Engine: resolve account_key on each leg → account_code.
+    const resolvedLegs = await Promise.all(
+      (config.legs || []).map(async (leg) => {
+        if (leg.account_code) return leg;
+        if (!leg.account_key) return leg;
+        const { data, error } = await supabase.rpc("resolve_account", {
+          _org: input.orgId,
+          _branch: (input.branchId ?? null) as never,
+          _doc_kind: (input.sourceDocumentType ?? null) as never,
+          _key: leg.account_key,
+        });
+        if (error) throw error;
+        const code = (data as string | null) ?? null;
+        if (!code) throw new Error(`missing_account_determination:${leg.account_key}`);
+        return { ...leg, account_code: code };
+      }),
+    );
+    const resolvedConfig: RuleConfig = { ...config, legs: resolvedLegs };
+    const lines = buildLinesFromRule(resolvedConfig, input.payload);
     if (lines.length < 2) {
       await supabase
         .from("posting_events")
