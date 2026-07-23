@@ -184,18 +184,27 @@ export async function updateDocument(
   if (error) throw error;
 
   if (Array.isArray(lines)) {
-    await supabase.from("document_lines").delete().eq("document_id", id).eq("org_id", orgId);
+    await supabase.from("document_lines").delete().eq("document_id", id);
     if (lines.length) {
-      const rows = lines.map((l: any) => ({
-        org_id: orgId,
+      const rows = lines.map((l: any, i: number) => ({
         document_id: id,
-        ...l,
+        position: l.position ?? l.line_no ?? i + 1,
+        description: l.description ?? "",
+        description_en: l.description_en ?? null,
+        item_id: l.item_id ?? null,
+        qty: Number(l.qty ?? l.quantity ?? 1),
+        unit: l.unit ?? null,
+        price: Number(l.price ?? l.unit_price ?? 0),
+        discount: Number(l.discount ?? l.discount_amount ?? 0),
+        tax_rate: Number(l.tax_rate ?? 15),
+        line_total: Number(l.line_total ?? 0),
         meta: l.meta ?? {},
       }));
       const { error: lErr } = await (supabase.from("document_lines") as any).insert(rows);
       if (lErr) throw lErr;
     }
   }
+
 
   await snapshotVersion(id, orgId, uid, "updated", data);
   await emitDocEvent({
