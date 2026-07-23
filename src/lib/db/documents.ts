@@ -21,20 +21,24 @@ export type DocStatus =
   | "cancelled";
 
 export type DocKind =
-  | "invoice"
-  | "quotation"
+  | "sales_invoice"
+  | "simplified_tax_invoice"
+  | "standard_tax_invoice"
+  | "sales_quotation"
   | "sales_order"
   | "delivery_note"
   | "credit_note"
-  | "bill"
+  | "purchase_invoice"
   | "purchase_order"
   | "purchase_quotation"
-  | "goods_receipt_note"
+  | "grn"
+  | "goods_receipt"
   | "debit_note"
-  | "payment"
-  | "receipt"
+  | "payment_voucher"
+  | "receipt_voucher"
   | "journal_voucher"
-  | "expense";
+  | "expense_voucher";
+
 
 const ALLOWED: Record<DocStatus, DocStatus[]> = {
   draft: ["pending_approval", "approved", "cancelled"],
