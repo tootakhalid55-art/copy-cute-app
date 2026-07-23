@@ -122,16 +122,23 @@ export function Shell({ children }: { children: ReactNode }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const { user, ready, logout } = useAuth();
   const navigate = useNavigate();
-  const [org] = useKV<{ name: string; taxNumber: string }>("org", {
-    name: "شركة كنار الحديثة للمقاولات",
-    taxNumber: "312756062700003",
-  });
+  const { currentOrg, orgs, ready: orgReady } = useOrg();
+  const org = {
+    name: currentOrg?.name ?? "بدون منشأة",
+    taxNumber: currentOrg?.vat_number ?? "",
+  };
   const [menuOpen, setMenuOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useKV<boolean>("sidebar-collapsed", false);
 
   useEffect(() => {
     if (ready && !user) navigate({ to: "/auth" });
   }, [ready, user, navigate]);
+
+  useEffect(() => {
+    if (ready && user && orgReady && orgs.length === 0 && pathname !== "/select-organization") {
+      navigate({ to: "/select-organization" });
+    }
+  }, [ready, user, orgReady, orgs.length, pathname, navigate]);
 
   const initialOpen = NAV.reduce<Record<string, boolean>>((acc, s) => {
     if (s.children?.some((c) => pathname.startsWith(c.to))) acc[s.label] = true;
