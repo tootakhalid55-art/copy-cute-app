@@ -137,13 +137,64 @@ export type Database = {
           },
         ]
       }
+      ai_copilot_conversations: {
+        Row: {
+          created_at: string
+          id: string
+          language: string
+          last_message_at: string
+          meta: Json
+          module: string | null
+          org_id: string
+          title: string
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          language?: string
+          last_message_at?: string
+          meta?: Json
+          module?: string | null
+          org_id: string
+          title?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          language?: string
+          last_message_at?: string
+          meta?: Json
+          module?: string | null
+          org_id?: string
+          title?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_copilot_conversations_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ai_copilot_decisions: {
         Row: {
           answer: string
+          citations: Json
           confidence: number | null
+          conversation_id: string | null
           created_at: string
           document_id: string | null
           evidence: Json
+          explainability: Json
+          follow_ups: Json
           id: string
           input: Json
           intake_id: string | null
@@ -151,6 +202,7 @@ export type Database = {
           language: string
           meta: Json
           model: string | null
+          module: string | null
           org_id: string
           question: string | null
           recommendation: string | null
@@ -158,10 +210,14 @@ export type Database = {
         }
         Insert: {
           answer: string
+          citations?: Json
           confidence?: number | null
+          conversation_id?: string | null
           created_at?: string
           document_id?: string | null
           evidence?: Json
+          explainability?: Json
+          follow_ups?: Json
           id?: string
           input?: Json
           intake_id?: string | null
@@ -169,6 +225,7 @@ export type Database = {
           language?: string
           meta?: Json
           model?: string | null
+          module?: string | null
           org_id: string
           question?: string | null
           recommendation?: string | null
@@ -176,10 +233,14 @@ export type Database = {
         }
         Update: {
           answer?: string
+          citations?: Json
           confidence?: number | null
+          conversation_id?: string | null
           created_at?: string
           document_id?: string | null
           evidence?: Json
+          explainability?: Json
+          follow_ups?: Json
           id?: string
           input?: Json
           intake_id?: string | null
@@ -187,12 +248,20 @@ export type Database = {
           language?: string
           meta?: Json
           model?: string | null
+          module?: string | null
           org_id?: string
           question?: string | null
           recommendation?: string | null
           user_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "ai_copilot_decisions_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "ai_copilot_conversations"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "ai_copilot_decisions_document_id_fkey"
             columns: ["document_id"]
