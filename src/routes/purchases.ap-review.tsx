@@ -475,9 +475,15 @@ function ReviewDrawer({
                   {approvedCount < requiredLevels ? `يلزم ${requiredLevels - approvedCount} اعتماد إضافي` : "اختر مورد أو أنشئ مورد جديد"}
                 </div>
               )}
-            </div>
+          </div>
+
+          {/* Copilot column */}
+          <div className="md:col-span-1">
+            <CopilotPanel orgId={orgId} intakeId={intake.id} />
           </div>
         </div>
+      </div>
+    </div>
       </div>
     </div>
   );
