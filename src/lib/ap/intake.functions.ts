@@ -1,15 +1,27 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
-// Extraction reuses the existing scan pipeline; we import lazily inside handlers
-// so the server-only AI helper never leaks into the client bundle.
-
 export type IntakeStatus =
   | "received" | "extracting" | "extracted" | "review"
   | "auto_drafted" | "posted" | "duplicate" | "rejected" | "failed";
 
 const AUTO_POST_THRESHOLD = 0.9;
 const REVIEW_THRESHOLD = 0.7;
+const PRIMARY_MODEL = "google/gemini-2.5-flash";
+const FALLBACK_MODEL = "google/gemini-2.5-pro";
+
+// ---------- notification helper ----------
+async function notify(supabase: any, orgId: string, kind: string, title: string, body: string, ref: string | null = null) {
+  try {
+    await supabase.from("notifications").insert({
+      org_id: orgId,
+      kind,
+      title,
+      body,
+      reference: ref,
+    });
+  } catch { /* best effort */ }
+}
 
 // ---------- createIntakeFromUpload ----------
 export const createIntakeFromUpload = createServerFn({ method: "POST" })
@@ -29,32 +41,57 @@ export const createIntakeFromUpload = createServerFn({ method: "POST" })
   })
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
-
     const { data: intake, error } = await supabase
       .from("ap_intake_documents")
       .insert({
-        org_id: data.orgId,
-        channel: "upload",
+        org_id: data.orgId, channel: "upload",
         source_ref: `upload:${Date.now()}:${userId}`,
-        sender: data.sender,
-        subject: data.subject || data.filename,
+        sender: data.sender, subject: data.subject || data.filename,
         status: "received",
         raw_payload: { filename: data.filename, size: data.fileDataUrl.length },
       })
-      .select("id")
-      .single();
+      .select("id").single();
     if (error) throw new Error(error.message);
 
     await supabase.from("ap_intake_events").insert({
-      intake_id: intake.id,
-      org_id: data.orgId,
-      event_type: "received",
-      actor_id: userId,
+      intake_id: intake.id, org_id: data.orgId, event_type: "received", actor_id: userId,
       payload: { channel: "upload", filename: data.filename },
     });
+    await notify(supabase, data.orgId, "ap.received", "فاتورة جديدة",
+      `تم استلام: ${data.filename}`, intake.id);
 
     return { intakeId: intake.id };
   });
+
+// ---------- extraction (primary + fallback) ----------
+async function callExtraction(model: string, fileDataUrl: string, filename: string, hints: string) {
+  const { callLovableAI } = await import("@/lib/ai-gateway.server");
+  const isPdf = fileDataUrl.startsWith("data:application/pdf");
+  const content: any = [
+    { type: "text", text: `Extract this supplier invoice as strict JSON.${hints ? `\nHints from previous invoices of this supplier:\n${hints}` : ""}` },
+    isPdf ? { type: "file", file: { filename, file_data: fileDataUrl } }
+          : { type: "image_url", image_url: { url: fileDataUrl } },
+  ];
+  const raw = await callLovableAI({
+    model, response_format: { type: "json_object" }, temperature: 0.1,
+    messages: [
+      { role: "system", content: "Return JSON with keys: supplierName, supplierNameAr, supplierVatNumber, invoiceNumber, invoiceDate (YYYY-MM-DD), dueDate, currency, subtotal, vat, grandTotal, lines[{description, qty, price, lineTotal, tax}], confidence{supplierName, invoiceNumber, invoiceDate, grandTotal, vat, lines}. Confidence values are 0..100. Support Arabic and English. If a field is unknown, use null and confidence 0." },
+      { role: "user", content },
+    ],
+  });
+  const cleaned = raw.trim().replace(/^```(?:json)?\s*/i, "").replace(/```\s*$/i, "").trim();
+  return JSON.parse(cleaned);
+}
+
+async function loadLayoutHints(supabase: any, orgId: string, partyId: string | null): Promise<string> {
+  if (!partyId) return "";
+  const { data } = await supabase
+    .from("ap_supplier_layouts")
+    .select("hints, sample_count")
+    .eq("org_id", orgId).eq("party_id", partyId).maybeSingle();
+  if (!data || !data.hints || data.sample_count < 3) return "";
+  return JSON.stringify(data.hints).slice(0, 1500);
+}
 
 // ---------- runIntakeExtraction ----------
 export const runIntakeExtraction = createServerFn({ method: "POST" })
@@ -68,123 +105,114 @@ export const runIntakeExtraction = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
 
-    // Load intake row (RLS enforces org membership)
     const { data: intake, error: fetchErr } = await supabase
       .from("ap_intake_documents")
       .select("id, org_id, status")
-      .eq("id", data.intakeId)
-      .single();
+      .eq("id", data.intakeId).single();
     if (fetchErr || !intake) throw new Error("Intake not found");
 
     await supabase
       .from("ap_intake_documents")
       .update({ status: "extracting", extraction_started_at: new Date().toISOString() })
       .eq("id", intake.id);
-
     await supabase.from("ap_intake_events").insert({
       intake_id: intake.id, org_id: intake.org_id, event_type: "extraction_started", actor_id: userId,
     });
 
     try {
-      // Lazy imports keep server-only deps out of the client graph
-      const [{ scanInvoice }, { matchSupplier, findDuplicateIntake }] = await Promise.all([
-        import("@/lib/haseem/scan.functions"),
-        import("./matcher.server"),
-      ]);
+      const { matchSupplier, findDuplicateIntake } = await import("./matcher.server");
 
-      const extraction = await (scanInvoice as any).__executeServer
-        ? await (scanInvoice as any).__executeServer({ data: { fileDataUrl: data.fileDataUrl, filename: data.filename } })
-        : await runExtractionInline(data.fileDataUrl, data.filename);
+      // Primary extraction (no supplier known yet, so no hints)
+      let extraction: any;
+      let usedModel = PRIMARY_MODEL;
+      let fallbackUsed = false;
+      try {
+        extraction = await callExtraction(PRIMARY_MODEL, data.fileDataUrl, data.filename, "");
+      } catch (e) {
+        // JSON parse or provider failure → fallback
+        fallbackUsed = true;
+        usedModel = FALLBACK_MODEL;
+        extraction = await callExtraction(FALLBACK_MODEL, data.fileDataUrl, data.filename, "");
+      }
 
-      // Aggregate confidence: average of top-level fields (already 0..100)
       const confs = extraction.confidence && typeof extraction.confidence === "object"
         ? Object.values(extraction.confidence as Record<string, number>).map(Number).filter(Number.isFinite)
         : [];
-      const avg100 = confs.length ? confs.reduce((a, b) => a + b, 0) / confs.length : 60;
-      const confidence = Math.max(0, Math.min(1, avg100 / 100));
+      let avg100 = confs.length ? confs.reduce((a, b) => a + b, 0) / confs.length : 60;
+      let confidence = Math.max(0, Math.min(1, avg100 / 100));
 
-      // Supplier match
-      const { best, all } = await matchSupplier(supabase, intake.org_id, {
-        supplierName: extraction.supplierName,
-        vat: extraction.supplierVatNumber,
+      // If primary confidence too low and we didn't already fallback, retry with pro + hints
+      const { best: preMatch } = await matchSupplier(supabase, intake.org_id, {
+        supplierName: extraction.supplierName, vat: extraction.supplierVatNumber,
       });
 
-      // Duplicate check against existing bills
+      if (confidence < REVIEW_THRESHOLD && !fallbackUsed) {
+        const hints = await loadLayoutHints(supabase, intake.org_id, preMatch?.party_id ?? null);
+        try {
+          const retry = await callExtraction(FALLBACK_MODEL, data.fileDataUrl, data.filename, hints);
+          const rConfs = retry.confidence && typeof retry.confidence === "object"
+            ? Object.values(retry.confidence as Record<string, number>).map(Number).filter(Number.isFinite) : [];
+          const rAvg = rConfs.length ? rConfs.reduce((a, b) => a + b, 0) / rConfs.length : avg100;
+          if (rAvg > avg100) {
+            extraction = retry; avg100 = rAvg;
+            confidence = Math.max(0, Math.min(1, avg100 / 100));
+            usedModel = FALLBACK_MODEL; fallbackUsed = true;
+          }
+        } catch { /* keep primary */ }
+      }
+
+      const { best, all } = await matchSupplier(supabase, intake.org_id, {
+        supplierName: extraction.supplierName, vat: extraction.supplierVatNumber,
+      });
       const dup = await findDuplicateIntake(
-        supabase,
-        intake.org_id,
-        best?.party_id ?? null,
-        extraction.invoiceNumber,
-        Number(extraction.grandTotal) || 0,
+        supabase, intake.org_id, best?.party_id ?? null,
+        extraction.invoiceNumber, Number(extraction.grandTotal) || 0,
       );
 
-      const nextStatus: IntakeStatus = dup
-        ? "duplicate"
-        : confidence >= AUTO_POST_THRESHOLD && best && best.score >= 0.9
-          ? "auto_drafted"
-          : confidence >= REVIEW_THRESHOLD
-            ? "review"
-            : "extracted";
+      const nextStatus: IntakeStatus = dup ? "duplicate"
+        : confidence >= AUTO_POST_THRESHOLD && best && best.score >= 0.9 ? "auto_drafted"
+        : confidence >= REVIEW_THRESHOLD ? "review" : "extracted";
 
-      await supabase
-        .from("ap_intake_documents")
-        .update({
-          status: nextStatus,
-          extraction,
-          extraction_model: "google/gemini-2.5-flash",
-          extraction_completed_at: new Date().toISOString(),
-          confidence,
-          matched_party_id: best?.party_id ?? null,
-          match_confidence: best?.score ?? null,
-          matched_bill_id: dup,
-        })
-        .eq("id", intake.id);
+      await supabase.from("ap_intake_documents").update({
+        status: nextStatus, extraction,
+        extraction_model: usedModel,
+        extraction_completed_at: new Date().toISOString(),
+        confidence, matched_party_id: best?.party_id ?? null,
+        match_confidence: best?.score ?? null, matched_bill_id: dup,
+      }).eq("id", intake.id);
 
       await supabase.from("ap_intake_events").insert({
-        intake_id: intake.id,
-        org_id: intake.org_id,
-        event_type: dup ? "duplicate_detected" : "extracted",
-        actor_id: userId,
-        payload: { confidence, candidates: all, matched_bill_id: dup },
+        intake_id: intake.id, org_id: intake.org_id,
+        event_type: dup ? "duplicate_detected" : "extracted", actor_id: userId,
+        payload: { confidence, model: usedModel, fallbackUsed, candidates: all, matched_bill_id: dup },
       });
+
+      // Notifications by outcome
+      const supplier = extraction.supplierName || "مورد غير محدد";
+      if (dup) {
+        await notify(supabase, intake.org_id, "ap.duplicate", "فاتورة مكررة",
+          `${supplier} — رقم ${extraction.invoiceNumber || "?"}`, intake.id);
+      } else if (nextStatus === "auto_drafted") {
+        await notify(supabase, intake.org_id, "ap.auto_drafted", "مسودة تلقائية",
+          `${supplier} — ${Number(extraction.grandTotal || 0).toLocaleString()}`, intake.id);
+      } else if (nextStatus === "review") {
+        await notify(supabase, intake.org_id, "ap.needs_review", "بحاجة لمراجعة",
+          `${supplier} — الثقة ${Math.round(confidence * 100)}%`, intake.id);
+      }
 
       return { intakeId: intake.id, status: nextStatus, confidence, matchedPartyId: best?.party_id ?? null, duplicateOf: dup };
     } catch (e: any) {
       const message = e?.message || "Extraction failed";
-      await supabase
-        .from("ap_intake_documents")
-        .update({ status: "failed", error_message: message })
-        .eq("id", intake.id);
+      await supabase.from("ap_intake_documents")
+        .update({ status: "failed", error_message: message }).eq("id", intake.id);
       await supabase.from("ap_intake_events").insert({
         intake_id: intake.id, org_id: intake.org_id, event_type: "failed", actor_id: userId,
         payload: { error: message },
       });
+      await notify(supabase, intake.org_id, "ap.failed", "فشل استخراج الفاتورة", message, intake.id);
       throw new Error(message);
     }
   });
-
-// Fallback: call the AI gateway directly if scanInvoice's private executor is unavailable.
-async function runExtractionInline(fileDataUrl: string, filename: string) {
-  const { callLovableAI } = await import("@/lib/ai-gateway.server");
-  const isPdf = fileDataUrl.startsWith("data:application/pdf");
-  const content: any = [
-    { type: "text", text: "Extract the supplier invoice as strict JSON only." },
-    isPdf
-      ? { type: "file", file: { filename, file_data: fileDataUrl } }
-      : { type: "image_url", image_url: { url: fileDataUrl } },
-  ];
-  const raw = await callLovableAI({
-    model: "google/gemini-2.5-flash",
-    response_format: { type: "json_object" },
-    temperature: 0.1,
-    messages: [
-      { role: "system", content: "Return JSON with keys: supplierName, supplierVatNumber, invoiceNumber, invoiceDate, dueDate, currency, subtotal, vat, grandTotal, lines[], confidence{}." },
-      { role: "user", content },
-    ],
-  });
-  const cleaned = raw.trim().replace(/^```(?:json)?\s*/i, "").replace(/```\s*$/i, "").trim();
-  try { return JSON.parse(cleaned); } catch { return { supplierName: "", supplierVatNumber: "", invoiceNumber: "", grandTotal: 0, lines: [], confidence: {} }; }
-}
 
 // ---------- assignReviewer ----------
 export const assignIntakeReviewer = createServerFn({ method: "POST" })
@@ -197,15 +225,12 @@ export const assignIntakeReviewer = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
     const { data: row, error } = await supabase
-      .from("ap_intake_documents")
-      .update({ assigned_to: data.userId })
-      .eq("id", data.intakeId)
-      .select("org_id")
-      .single();
+      .from("ap_intake_documents").update({ assigned_to: data.userId })
+      .eq("id", data.intakeId).select("org_id").single();
     if (error) throw new Error(error.message);
     await supabase.from("ap_intake_events").insert({
-      intake_id: data.intakeId, org_id: row.org_id, event_type: "review_assigned", actor_id: userId,
-      payload: { assigned_to: data.userId },
+      intake_id: data.intakeId, org_id: row.org_id, event_type: "review_assigned",
+      actor_id: userId, payload: { assigned_to: data.userId },
     });
     return { ok: true };
   });
@@ -223,20 +248,17 @@ export const rejectIntake = createServerFn({ method: "POST" })
     const { data: row, error } = await supabase
       .from("ap_intake_documents")
       .update({ status: "rejected", error_message: data.reason || null })
-      .eq("id", data.intakeId)
-      .select("org_id")
-      .single();
+      .eq("id", data.intakeId).select("org_id").single();
     if (error) throw new Error(error.message);
     await supabase.from("ap_intake_events").insert({
-      intake_id: data.intakeId, org_id: row.org_id, event_type: "rejected", actor_id: userId,
-      payload: { reason: data.reason },
+      intake_id: data.intakeId, org_id: row.org_id, event_type: "rejected",
+      actor_id: userId, payload: { reason: data.reason },
     });
+    await notify(supabase, row.org_id, "ap.rejected", "فاتورة مرفوضة", data.reason || "", data.intakeId);
     return { ok: true };
   });
 
 // ---------- createBillFromIntake ----------
-// Builds a draft bill in `documents` + `document_lines` from the intake extraction,
-// creating the supplier if the reviewer supplied a new party payload.
 export const createBillFromIntake = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => {
@@ -245,6 +267,7 @@ export const createBillFromIntake = createServerFn({ method: "POST" })
       partyId?: string | null;
       newParty?: { name: string; name_ar?: string; vat_number?: string; email?: string; phone?: string } | null;
       overrides?: Record<string, any>;
+      editedExtraction?: Record<string, any> | null;
     };
     if (!i?.intakeId) throw new Error("intakeId is required");
     return {
@@ -252,6 +275,7 @@ export const createBillFromIntake = createServerFn({ method: "POST" })
       partyId: i.partyId ?? null,
       newParty: i.newParty ?? null,
       overrides: i.overrides ?? {},
+      editedExtraction: i.editedExtraction ?? null,
     };
   })
   .handler(async ({ data, context }) => {
@@ -260,53 +284,48 @@ export const createBillFromIntake = createServerFn({ method: "POST" })
     const { data: intake, error: fErr } = await supabase
       .from("ap_intake_documents")
       .select("id, org_id, extraction, matched_party_id, status")
-      .eq("id", data.intakeId)
-      .single();
+      .eq("id", data.intakeId).single();
     if (fErr || !intake) throw new Error("Intake not found");
     if (["posted", "rejected"].includes(intake.status)) throw new Error("Intake already finalized");
 
-    const ex = (intake.extraction || {}) as any;
+    const originalEx = (intake.extraction || {}) as any;
+    const ex = data.editedExtraction ? { ...originalEx, ...data.editedExtraction } : originalEx;
     const o = data.overrides || {};
 
-    // Resolve party
+    // Resolve party (unchanged logic)
     let partyId = data.partyId ?? intake.matched_party_id ?? null;
     if (!partyId && data.newParty?.name) {
       const { data: created, error: pErr } = await supabase
         .from("parties")
         .insert({
-          org_id: intake.org_id,
-          type: "supplier" as any,
+          org_id: intake.org_id, type: "supplier" as any,
           name: data.newParty.name,
           name_en: data.newParty.name_ar || data.newParty.name,
           vat_number: data.newParty.vat_number || ex.supplierVatNumber || null,
-          email: data.newParty.email || null,
-          phone: data.newParty.phone || null,
+          email: data.newParty.email || null, phone: data.newParty.phone || null,
         })
-        .select("id")
-        .single();
+        .select("id").single();
       if (pErr) throw new Error(`Failed to create supplier: ${pErr.message}`);
       partyId = created.id;
 
-      // Learn aliases
       const aliases: any[] = [];
       const push = (t: string, v?: string | null) => {
         const val = (v || "").toString().trim();
         if (!val) return;
         aliases.push({
-          org_id: intake.org_id, party_id: partyId, alias_type: t,
-          alias_value: val, normalized: val.toLowerCase().replace(/\s+/g, " "),
-          source: "auto_learned",
+          org_id: intake.org_id, party_id: partyId, alias_type: t, alias_value: val,
+          normalized: val.toLowerCase().replace(/\s+/g, " "), source: "auto_learned",
         });
       };
       push("name", data.newParty.name);
       push("vat", (data.newParty.vat_number || "").replace(/\D+/g, ""));
       push("email", data.newParty.email);
       push("phone", (data.newParty.phone || "").replace(/\D+/g, ""));
-      if (aliases.length) await supabase.from("supplier_aliases").upsert(aliases as any, { onConflict: "org_id,alias_type,normalized" });
+      if (aliases.length) await supabase.from("supplier_aliases")
+        .upsert(aliases as any, { onConflict: "org_id,alias_type,normalized" });
     }
     if (!partyId) throw new Error("Supplier is required to create a bill");
 
-    // Build bill payload
     const issueDate = o.issue_date || ex.invoiceDate || new Date().toISOString().slice(0, 10);
     const dueDate = o.due_date || ex.dueDate || issueDate;
     const currency = (o.currency || ex.currency || "SAR").toUpperCase();
@@ -315,57 +334,70 @@ export const createBillFromIntake = createServerFn({ method: "POST" })
     const total = Number(o.grandTotal ?? ex.grandTotal ?? (subtotal + tax));
     const ref = o.ref || ex.invoiceNumber || `AP-${Date.now()}`;
 
-    const { data: bill, error: bErr } = await supabase
-      .from("documents")
-      .insert({
-        org_id: intake.org_id,
-        kind: "purchase_invoice" as any,
-        party_id: partyId,
-        doc_number: ref,
-        issue_date: issueDate,
-        due_date: dueDate,
-        currency,
-        subtotal,
-        vat_total: tax,
-        grand_total: total,
-        status: "draft" as any,
-        notes: o.notes || `Created from AP intake ${intake.id}`,
-        created_by: userId,
-      } as any)
-      .select("id")
-      .single();
+    const { data: bill, error: bErr } = await supabase.from("documents").insert({
+      org_id: intake.org_id, kind: "purchase_invoice" as any, party_id: partyId,
+      doc_number: ref, issue_date: issueDate, due_date: dueDate, currency,
+      subtotal, vat_total: tax, grand_total: total,
+      status: "draft" as any,
+      notes: o.notes || `Created from AP intake ${intake.id}`, created_by: userId,
+    } as any).select("id").single();
     if (bErr) throw new Error(`Failed to create bill: ${bErr.message}`);
 
-    // Lines
     const lines = Array.isArray(o.lines) ? o.lines : Array.isArray(ex.lines) ? ex.lines : [];
     if (lines.length) {
       const rows = lines.map((l: any, idx: number) => ({
-        document_id: bill.id,
-        position: idx + 1,
-        description: l.description || "",
-        qty: Number(l.qty) || 1,
-        price: Number(l.price ?? l.unit_price) || 0,
-        tax_rate: Number(l.tax) || 15,
-        discount: Number(l.discount) || 0,
+        document_id: bill.id, position: idx + 1, description: l.description || "",
+        qty: Number(l.qty) || 1, price: Number(l.price ?? l.unit_price) || 0,
+        tax_rate: Number(l.tax) || 15, discount: Number(l.discount) || 0,
         line_total: Number(l.lineTotal ?? l.line_total) || (Number(l.qty || 1) * Number(l.price || 0)),
       }));
       const { error: lErr } = await supabase.from("document_lines").insert(rows as any);
       if (lErr) throw new Error(`Failed to add bill lines: ${lErr.message}`);
     }
 
-    await supabase
-      .from("ap_intake_documents")
-      .update({
-        status: "posted",
-        matched_bill_id: bill.id,
-        matched_party_id: partyId,
-      })
-      .eq("id", intake.id);
+    await supabase.from("ap_intake_documents").update({
+      status: "posted", matched_bill_id: bill.id, matched_party_id: partyId,
+    }).eq("id", intake.id);
 
     await supabase.from("ap_intake_events").insert({
-      intake_id: intake.id, org_id: intake.org_id, event_type: "drafted", actor_id: userId,
-      payload: { bill_id: bill.id, party_id: partyId },
+      intake_id: intake.id, org_id: intake.org_id, event_type: "drafted",
+      actor_id: userId, payload: { bill_id: bill.id, party_id: partyId },
     });
+
+    // --- Learning: diff original extraction vs edited, persist corrections ---
+    try {
+      const { diffExtraction } = await import("./diff");
+      const corrections = diffExtraction(originalEx, ex);
+      if (corrections.length) {
+        await supabase.from("ap_intake_corrections").insert(
+          corrections.map((c) => ({
+            org_id: intake.org_id, intake_id: intake.id, party_id: partyId,
+            field_path: c.field_path, extracted_value: c.extracted ?? null,
+            corrected_value: c.corrected ?? null, actor_id: userId,
+          })) as any,
+        );
+
+        // Update supplier layout hints (aggregate corrected values per field)
+        const { data: existing } = await supabase
+          .from("ap_supplier_layouts")
+          .select("hints, sample_count")
+          .eq("org_id", intake.org_id).eq("party_id", partyId).maybeSingle();
+        const hints: any = existing?.hints || {};
+        for (const c of corrections) {
+          hints[c.field_path] = hints[c.field_path] || [];
+          if (hints[c.field_path].length < 5)
+            hints[c.field_path].push(String(c.corrected).slice(0, 120));
+        }
+        await supabase.from("ap_supplier_layouts").upsert({
+          org_id: intake.org_id, party_id: partyId, hints,
+          sample_count: (existing?.sample_count || 0) + 1,
+          last_seen_at: new Date().toISOString(),
+        } as any, { onConflict: "org_id,party_id" });
+      }
+    } catch { /* learning is best-effort */ }
+
+    await notify(supabase, intake.org_id, "ap.approved", "تم إنشاء مسودة فاتورة",
+      `${ex.supplierName || ""} — ${total.toLocaleString()} ${currency}`, bill.id);
 
     return { billId: bill.id, partyId };
   });

@@ -36,6 +36,7 @@ import { Route as SettingsCurrenciesRouteImport } from './routes/settings.curren
 import { Route as SettingsBranchesRouteImport } from './routes/settings.branches'
 import { Route as SettingsBillingRouteImport } from './routes/settings.billing'
 import { Route as SettingsAuditLogRouteImport } from './routes/settings.audit-log'
+import { Route as SettingsApThresholdsRouteImport } from './routes/settings.ap-thresholds'
 import { Route as SettingsAccountingFoundationRouteImport } from './routes/settings.accounting-foundation'
 import { Route as SalesStatementsRouteImport } from './routes/sales.statements'
 import { Route as SalesRecurringRouteImport } from './routes/sales.recurring'
@@ -234,6 +235,11 @@ const SettingsBillingRoute = SettingsBillingRouteImport.update({
 const SettingsAuditLogRoute = SettingsAuditLogRouteImport.update({
   id: '/settings/audit-log',
   path: '/settings/audit-log',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SettingsApThresholdsRoute = SettingsApThresholdsRouteImport.update({
+  id: '/settings/ap-thresholds',
+  path: '/settings/ap-thresholds',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SettingsAccountingFoundationRoute =
@@ -621,6 +627,7 @@ export interface FileRoutesByFullPath {
   '/sales/recurring': typeof SalesRecurringRoute
   '/sales/statements': typeof SalesStatementsRoute
   '/settings/accounting-foundation': typeof SettingsAccountingFoundationRoute
+  '/settings/ap-thresholds': typeof SettingsApThresholdsRoute
   '/settings/audit-log': typeof SettingsAuditLogRoute
   '/settings/billing': typeof SettingsBillingRoute
   '/settings/branches': typeof SettingsBranchesRoute
@@ -708,6 +715,7 @@ export interface FileRoutesByTo {
   '/sales/recurring': typeof SalesRecurringRoute
   '/sales/statements': typeof SalesStatementsRoute
   '/settings/accounting-foundation': typeof SettingsAccountingFoundationRoute
+  '/settings/ap-thresholds': typeof SettingsApThresholdsRoute
   '/settings/audit-log': typeof SettingsAuditLogRoute
   '/settings/billing': typeof SettingsBillingRoute
   '/settings/branches': typeof SettingsBranchesRoute
@@ -802,6 +810,7 @@ export interface FileRoutesById {
   '/sales/recurring': typeof SalesRecurringRoute
   '/sales/statements': typeof SalesStatementsRoute
   '/settings/accounting-foundation': typeof SettingsAccountingFoundationRoute
+  '/settings/ap-thresholds': typeof SettingsApThresholdsRoute
   '/settings/audit-log': typeof SettingsAuditLogRoute
   '/settings/billing': typeof SettingsBillingRoute
   '/settings/branches': typeof SettingsBranchesRoute
@@ -897,6 +906,7 @@ export interface FileRouteTypes {
     | '/sales/recurring'
     | '/sales/statements'
     | '/settings/accounting-foundation'
+    | '/settings/ap-thresholds'
     | '/settings/audit-log'
     | '/settings/billing'
     | '/settings/branches'
@@ -984,6 +994,7 @@ export interface FileRouteTypes {
     | '/sales/recurring'
     | '/sales/statements'
     | '/settings/accounting-foundation'
+    | '/settings/ap-thresholds'
     | '/settings/audit-log'
     | '/settings/billing'
     | '/settings/branches'
@@ -1077,6 +1088,7 @@ export interface FileRouteTypes {
     | '/sales/recurring'
     | '/sales/statements'
     | '/settings/accounting-foundation'
+    | '/settings/ap-thresholds'
     | '/settings/audit-log'
     | '/settings/billing'
     | '/settings/branches'
@@ -1166,6 +1178,7 @@ export interface RootRouteChildren {
   SalesRecurringRoute: typeof SalesRecurringRoute
   SalesStatementsRoute: typeof SalesStatementsRoute
   SettingsAccountingFoundationRoute: typeof SettingsAccountingFoundationRoute
+  SettingsApThresholdsRoute: typeof SettingsApThresholdsRoute
   SettingsAuditLogRoute: typeof SettingsAuditLogRoute
   SettingsBillingRoute: typeof SettingsBillingRoute
   SettingsBranchesRoute: typeof SettingsBranchesRoute
@@ -1379,6 +1392,13 @@ declare module '@tanstack/react-router' {
       path: '/settings/audit-log'
       fullPath: '/settings/audit-log'
       preLoaderRoute: typeof SettingsAuditLogRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/settings/ap-thresholds': {
+      id: '/settings/ap-thresholds'
+      path: '/settings/ap-thresholds'
+      fullPath: '/settings/ap-thresholds'
+      preLoaderRoute: typeof SettingsApThresholdsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/settings/accounting-foundation': {
@@ -2005,6 +2025,7 @@ const rootRouteChildren: RootRouteChildren = {
   SalesRecurringRoute: SalesRecurringRoute,
   SalesStatementsRoute: SalesStatementsRoute,
   SettingsAccountingFoundationRoute: SettingsAccountingFoundationRoute,
+  SettingsApThresholdsRoute: SettingsApThresholdsRoute,
   SettingsAuditLogRoute: SettingsAuditLogRoute,
   SettingsBillingRoute: SettingsBillingRoute,
   SettingsBranchesRoute: SettingsBranchesRoute,

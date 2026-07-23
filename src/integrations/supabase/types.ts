@@ -137,6 +137,76 @@ export type Database = {
           },
         ]
       }
+      ap_approval_thresholds: {
+        Row: {
+          active: boolean
+          auto_post: boolean
+          branch_id: string | null
+          created_at: string
+          id: string
+          max_amount: number | null
+          min_amount: number
+          name: string
+          org_id: string
+          party_id: string | null
+          priority: number
+          required_levels: number
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          auto_post?: boolean
+          branch_id?: string | null
+          created_at?: string
+          id?: string
+          max_amount?: number | null
+          min_amount?: number
+          name: string
+          org_id: string
+          party_id?: string | null
+          priority?: number
+          required_levels?: number
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          auto_post?: boolean
+          branch_id?: string | null
+          created_at?: string
+          id?: string
+          max_amount?: number | null
+          min_amount?: number
+          name?: string
+          org_id?: string
+          party_id?: string | null
+          priority?: number
+          required_levels?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ap_approval_thresholds_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ap_approval_thresholds_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ap_approval_thresholds_party_id_fkey"
+            columns: ["party_id"]
+            isOneToOne: false
+            referencedRelation: "parties"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ap_intake_approvals: {
         Row: {
           actor_id: string | null
@@ -514,6 +584,54 @@ export type Database = {
             columns: ["org_id"]
             isOneToOne: false
             referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ap_supplier_layouts: {
+        Row: {
+          created_at: string
+          hints: Json
+          id: string
+          last_seen_at: string | null
+          org_id: string
+          party_id: string
+          sample_count: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          hints?: Json
+          id?: string
+          last_seen_at?: string | null
+          org_id: string
+          party_id: string
+          sample_count?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          hints?: Json
+          id?: string
+          last_seen_at?: string | null
+          org_id?: string
+          party_id?: string
+          sample_count?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ap_supplier_layouts_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ap_supplier_layouts_party_id_fkey"
+            columns: ["party_id"]
+            isOneToOne: false
+            referencedRelation: "parties"
             referencedColumns: ["id"]
           },
         ]
