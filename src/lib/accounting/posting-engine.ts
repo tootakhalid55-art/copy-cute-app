@@ -39,6 +39,11 @@ export function buildLinesFromRule(config: RuleConfig, payload: Record<string, u
   for (const leg of config.legs || []) {
     const amt = ROUND(evalExpr(leg.amount_expr, scope));
     if (!Number.isFinite(amt) || amt === 0) continue;
+    if (!leg.account_code) {
+      throw new Error(
+        `posting_rule_missing_account_code${leg.account_key ? `:unresolved_key=${leg.account_key}` : ""}`,
+      );
+    }
     lines.push({
       account_code: leg.account_code,
       debit: leg.side === "debit" ? amt : 0,
