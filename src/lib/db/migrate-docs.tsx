@@ -65,7 +65,7 @@ export function DocumentsMigrationButton() {
         .from("documents")
         .select("doc_number")
         .eq("org_id", currentOrgId)
-        .eq("kind", legacy.kind);
+        .eq("kind", legacy.kind as any);
       const have = new Set((existing ?? []).map((d) => d.doc_number));
 
       for (const r of rows) {
