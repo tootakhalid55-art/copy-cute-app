@@ -124,6 +124,15 @@ function ApReviewPage() {
 
   return (
     <Shell>
+      <div
+        onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+        onDragLeave={() => setDragOver(false)}
+        onDrop={(e) => {
+          e.preventDefault(); setDragOver(false);
+          if (e.dataTransfer.files?.length) upload(e.dataTransfer.files);
+        }}
+        className={dragOver ? "ring-2 ring-emerald-400 ring-offset-2 rounded-xl" : ""}
+      >
       <PageHeader
         title="مراجعة فواتير الموردين (AI)"
         subtitle="ارفع فاتورة، ويتولى النظام الاستخراج ومطابقة المورد واقتراح المسودة"
@@ -132,12 +141,22 @@ function ApReviewPage() {
             <PrimaryBtn onClick={() => fileRef.current?.click()} disabled={!org?.id || !!busy}>
               {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />} رفع فاتورة
             </PrimaryBtn>
+            <OutlineBtn onClick={() => cameraRef.current?.click()} disabled={!org?.id || !!busy}>
+              📷 كاميرا
+            </OutlineBtn>
             <OutlineBtn onClick={load}><RefreshCw className="w-4 h-4" /> تحديث</OutlineBtn>
           </div>
         }
       />
       <input ref={fileRef} type="file" hidden accept="application/pdf,image/*" multiple
         onChange={(e) => e.target.files && upload(e.target.files)} />
+      <input ref={cameraRef} type="file" hidden accept="image/*" capture="environment"
+        onChange={(e) => e.target.files && upload(e.target.files)} />
+      {dragOver && (
+        <div className="rounded-xl border-2 border-dashed border-emerald-500 bg-emerald-50 p-8 text-center text-emerald-800 my-3">
+          أفلت الملفات هنا للمعالجة الفورية
+        </div>
+      )}
 
       <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
         {[
