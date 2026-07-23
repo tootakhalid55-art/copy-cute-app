@@ -86,7 +86,7 @@ async function loadSupplierHistory(supabase: any, orgId: string, partyId: string
   const { data } = await supabase
     .from("documents")
     .select("id, doc_number, issue_date, grand_total, vat_total, currency")
-    .eq("org_id", orgId).eq("party_id", partyId).eq("kind", "bill")
+    .eq("org_id", orgId).eq("party_id", partyId).eq("kind", "purchase_invoice")
     .order("issue_date", { ascending: false }).limit(limit);
   return data ?? [];
 }
