@@ -3,7 +3,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Upload, Loader2, RefreshCw, CheckCircle2, XCircle, AlertTriangle, FileText, Sparkles } from "lucide-react";
 import { Shell, PageHeader, PrimaryBtn, OutlineBtn, EmptyState } from "@/components/haseem/Shell";
-import { useOrg } from "@/lib/haseem/org";
+import { useOrg } from "@/lib/db/org";
 import { supabase } from "@/integrations/supabase/client";
 import {
   createIntakeFromUpload,
