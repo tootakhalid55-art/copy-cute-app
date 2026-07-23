@@ -1,123 +1,105 @@
 
-# Phase C2 — Fixed Assets Management
+# Phase C2B — Depreciation Engine
 
-يُقسم إلى **C2A / C2B / C2C** ويُصدَر كل قسم على وسم مستقل (`v2.2.a`, `v2.2.b`, `v2.2.c`) بنفس نمط B/C السابق: migration manifest + report + api-compat + tests + release notes.
-
----
-
-## C2A — Foundation & Asset Registry
-**Tag:** `v2.2.a-fixed-assets-registry`
-
-### قاعدة البيانات
-- `fixed_asset_categories` — شجرة (parent_id) + افتراضات (useful_life, method, salvage_%) + مفاتيح `account_determinations`:
-  `fa.cost`, `fa.accumulated_depreciation`, `fa.depreciation_expense`, `fa.disposal_gain`, `fa.disposal_loss`, `fa.cip`, `fa.impairment_expense`, `fa.revaluation_surplus`.
-- `fixed_asset_groups` — تجميعات إدارية (أسطول، أجهزة IT…) بدون تأثير محاسبي.
-- `fixed_asset_templates` — قوالب سريعة (اسم، فئة، افتراضات، حقول مخصصة).
-- `fixed_assets` — السجل الرئيسي؛ يشمل:
-  - تعريف: `code` (متسلسل عبر `numbering_sequences`)، `barcode`, `qr_payload`, `rfid_tag`, `serial_number`, `manufacturer`, `model`, `warranty_from`, `warranty_to`.
-  - ربط شراء: `supplier_party_id`, `purchase_order_id`, `bill_document_id`, `bill_line_id`, `ap_intake_document_id` (اختياري).
-  - تنظيمي: `branch_id`, `department`, `cost_center_id`, `project_id`, `custodian_user_id`, `location_text`, `gps_lat`, `gps_lng`.
-  - محاسبي: `category_id`, `acquisition_cost`, `residual_value`, `useful_life_months`, `method` (enum)، `in_service_date`, `status` (`draft|cip|active|held_for_sale|disposed|retired|written_off`)، `is_cip` bool، `parent_asset_id`، `is_component` bool.
-- `fixed_asset_components` — رابط والد/مكوّن مع نسبة/قيمة.
-- `fixed_asset_custom_fields` — JSONB على المستوى المؤسسي (تعريف الحقول) + `fixed_assets.custom` JSONB.
-- كل الجداول: GRANT قبل RLS + سياسات على `has_org_role` (viewer/editor/admin) + `updated_at` trigger + `financial_audit_log` عبر trigger.
-
-### الخادم/الواجهة
-- `src/lib/fixed-assets/registry.functions.ts`: CRUD + استيراد CSV + توليد باركود/QR + `capitalize_from_bill(bill_id, lines[])` (يستخدم `posting_events` — بدون ترحيل إهلاك بعد).
-- `/assets` (السجل)، `/assets/$id` (تفاصيل + تبويبات: Overview / Components / Documents / Custom)، `/assets/new`، `/settings/asset-categories`، `/settings/asset-templates`.
-- طباعة ملصق باركود/QR (نفس محرك `printDoc`).
-- Feature flag: `fixed_assets` (افتراضي off حتى C2B).
-
-### تكامل هذه الدفعة
-- **AP Automation:** زر "رسملة إلى أصل" داخل `purchases.ap-review.tsx` وحيث يعرض bill.
-- **Numbering, Audit, Approvals, Attachments, Notifications:** إعادة استخدام المحركات القائمة.
-
-**تسليم C2A:** لا يوجد إهلاك بعد؛ فقط سجل + رسملة + ربط.
-
----
-
-## C2B — Depreciation Engine
 **Tag:** `v2.2.b-fixed-assets-depreciation`
 
-### قاعدة البيانات
-- `fixed_asset_schedules` — سطر لكل (asset, period): `period_start/end`, `days`, `opening_nbv`, `depreciation`, `accumulated`, `closing_nbv`, `posted_journal_id`, `status` (`planned|posted|reversed`).
-- `fixed_asset_runs` — دورة إهلاك (org, period, method_snapshot, totals, status, journal_id, created_by).
-- `fixed_asset_method_params` — لكل أصل (units of production: `total_units`, `units_this_period`; DDB: `factor`؛ manual overrides).
-- `fixed_asset_conventions` — سياسة المؤسسة (`mid_month`, `mid_quarter`, `daily`, `full_month`) + `fiscal_year_id` ربط.
+## 1) Database (single migration)
 
-### المحرك (Postgres + خادم)
-- SQL functions atomic:
-  - `preview_depreciation(_org, _period, _method_filter default null)` — يُرجع الجدول قبل الترحيل.
-  - `post_depreciation_run(_org, _period)` — يُنشئ JE واحد مجمّع لكل فئة/CC عبر `posting_events` باستخدام مفاتيح `account_determinations` — ذرّي (savepoint).
-  - `reverse_depreciation_run(_run_id)` — يعكس ويحدّث الجداول.
-  - `recalculate_asset(_asset_id)` — بعد تعديل التكلفة/العمر/الطريقة → يحسب Catch-up ويقيّده في الفترة الحالية.
-- طرق مدعومة: `straight_line`, `declining_balance`, `double_declining`, `units_of_production`, `manual` + Partial Periods + Mid-month/Mid-quarter + Daily/Monthly/Yearly.
-- Health check جديد: `fa.depreciation_gap` (فترات مفتوحة بلا ترحيل)؛ ويُمنع إغلاق الفترة قبل ترحيل الإهلاك.
+- `fixed_asset_method_params` — per-asset overrides: `total_units`, `units_this_period`, `ddb_factor`, `daily_prorata` flag, `convention_override`.
+- `fixed_asset_schedules` — `(asset_id, period_start, period_end)` UNIQUE; `days`, `opening_nbv`, `depreciation`, `accumulated`, `closing_nbv`, `posted_journal_id`, `run_id`, `status` (`planned|posted|reversed`).
+- `fixed_asset_runs` — one row per period run: `period_start`, `period_end`, `method_filter`, `category_filter`, `branch_filter`, `total_amount`, `asset_count`, `status` (`preview|posted|reversed`), `journal_id`, `created_by`, `posted_at`, `reversed_at`, `reversed_by`, `notes`.
+- Extend `fixed_assets`: `last_depreciated_period` date, `accumulated_depreciation` numeric cache, `net_book_value` generated column, `depreciation_start_date` date (defaults from convention).
+- Views:
+  - `v_asset_depreciation_forecast` — projects remaining months per asset.
+  - `v_asset_rollforward` — opening cost + additions + disposals + accumulated depr movements between two dates.
+  - `v_cip_aging` — buckets 0-30/31-60/61-90/90+.
+- Grants + RLS via `has_org_role`; audit triggers to `financial_audit_log`.
 
-### الواجهة
-- `/assets/depreciation` — تشغيل الدورة: اختيار الفترة → Preview grid (فلترة بالفئة/الفرع) → Post → Reverse.
-- تبويب "Schedule" في صفحة الأصل: جدول عمري كامل + مؤشر بصري NBV.
-- Budget hook: مقارنة الإهلاك الفعلي مقابل الميزانية (ربط مع `budgets` من C3 لاحقًا — واجهة محضّرة).
+## 2) SQL RPCs (atomic, security definer)
 
-**تسليم C2B:** إهلاك دقيق مرحّل، مع Catch-up و Reverse، وربط period-close.
+- `fa_compute_period_depreciation(_asset uuid, _period_start date, _period_end date)` returns numeric — respects method, convention, salvage, catch-up.
+- `fa_preview_depreciation(_org, _period, _filters jsonb)` returns table — never writes.
+- `fa_post_depreciation_run(_org, _period, _filters, _notes)` — creates run, inserts schedule rows, calls `posting_events` with `fa.depreciation_expense` (Dr, by CC/branch) + `fa.accumulated_depreciation` (Cr) grouped by category, links `posted_journal_id`, updates `last_depreciated_period` + accumulated cache.
+- `fa_reverse_depreciation_run(_run_id)` — requires `admin`/`accountant` role; reverses JE, flips schedule status, rolls back caches.
+- `fa_recalculate_asset(_asset_id, _from_period)` — after cost/life/salvage/method change; posts catch-up JE in the current open period.
+- `fa_depreciation_forecast(_asset_id)` — full schedule to end of life (for UI + Copilot).
+- Health check function `fa.depreciation_gap` returning missing months per org.
+
+## 3) Server functions (`src/lib/assets/depreciation.functions.ts`)
+
+`previewRun`, `postRun`, `reverseRun`, `recalculateAsset`, `getSchedule(assetId)`, `getForecast(assetId)`, `listRuns`, `simulateLifeChange(assetId, newMonths)` — pure calculation for Copilot what-if.
+
+## 4) UI
+
+- `/assets/depreciation` — Runs console:
+  - Period picker (defaults to next open month), filters (category / branch / method).
+  - Preview grid: asset, method, days, opening NBV, depreciation, closing NBV, GL preview totals per account.
+  - Buttons: Post (writes JE + run), Reverse (per run, role-gated).
+  - Runs history table with journal link.
+- `/assets/$id` new tabs:
+  - **Schedule**: full posted history + planned rows.
+  - **Forecast**: monthly forecast chart to end of life + NBV curve.
+  - Buttons for "Recalculate" (opens dialog with cost/life/salvage/method fields).
+- Existing `/assets` list shows NBV + `Depreciated through` column.
+
+## 5) Reports (`/reports/assets.*`)
+
+- `assets.register` — Asset Register (all assets snapshot).
+- `assets.schedule` — Depreciation Schedule (per period).
+- `assets.forecast` — Depreciation Forecast (next N months).
+- `assets.rollforward` — Fixed Asset Rollforward between dates.
+- `assets.cip-aging` — CIP Aging.
+- `assets.additions` — Additions in range.
+- `assets.disposals` — Disposals (wired now, populated in C2C).
+- `assets.impairment` — Impairment (wired now, populated in C2C).
+- `assets.revaluation` — Revaluation (wired now, populated in C2C).
+
+Each report is a route under `src/routes/reports.assets.*.tsx`, uses `ReportShell`, exports to CSV/print.
+
+## 6) Copilot integration
+
+Extend `src/lib/copilot/erp-copilot.functions.ts` intents:
+- `explain_depreciation(asset_id, period)` — returns method, days, opening NBV, formula, JE breakdown; renders via `ExplainabilityPanel`.
+- `forecast_depreciation(asset_id)` — pulls `fa_depreciation_forecast`.
+- `simulate_life_change(asset_id, new_months)` — calls `simulateLifeChange`, shows delta vs current schedule.
+- `assets_ready_but_not_depreciating` — flags active assets with no schedule row for the current period.
+
+Registered as ERP search domains + quick-action chips in `/copilot`.
+
+## 7) Feature flag & guardrails
+
+- `fixed_assets.depreciation` flag on `organizations.settings`.
+- Period-close blocks in `accounting_periods` extended: cannot close a month if `fa.depreciation_gap > 0`.
+- All RPCs are savepointed; failure never leaves partial schedule rows.
+
+## 8) Tests & docs
+
+- E2E: acquire asset → post 3 months → change life → verify catch-up JE → reverse last run → confirm balances.
+- Perf: 5k assets × 24 months preview under 3s (uses set-based CTE, not per-row loops).
+- `docs/PHASE_C2B_REPORT.md`, `PHASE_C2_MIGRATION_MANIFEST.md` update, release notes.
 
 ---
 
-## C2C — Lifecycle, Timeline & Copilot Intelligence
-**Tag:** `v2.2.c-fixed-assets-intelligence`
+# Phase C2C — Lifecycle & Timeline (deferred, kicks off after C2B ships)
 
-### الأحداث والدورة
-- `fixed_asset_events` — نوع + payload JSONB لكل من:
-  `acquisition, capitalization (from CIP), improvement, transfer (branch/CC/custodian), split, merge, revaluation, impairment, maintenance, disposal, sale, retirement, write_off`.
-- RPCs لكل حدث تُنشئ JE عبر مفاتيح التحديد وتُحدّث الأصل والجداول:
-  - `improve_asset` (يزيد التكلفة ويعيد حساب الجدول تلقائيًا).
-  - `transfer_asset` (بلا JE ما لم يتغيّر CC/فرع مع سياسة inter-branch).
-  - `split_asset` / `merge_assets` (تكلفة/إهلاك نسبيًا).
-  - `revalue_asset` (فائض إعادة تقييم في حقوق الملكية).
-  - `impair_asset` (مصروف اضمحلال).
-  - `dispose_asset(sale_price?, method)` (يقارن NBV → gain/loss).
-- سجل الصيانة: `fixed_asset_maintenance` (تكلفة، مورد، نوع: preventive/corrective، مرفقات، حالة).
-
-### Asset Timeline موحّد
-- View `asset_timeline` يجمع من: `fixed_asset_events` + `depreciation_schedules(posted)` + `attachments` + `financial_audit_log` + bill/PO المرتبط + الصيانة.
-- مكون `AssetTimeline.tsx` (نمط `DocumentSidePanel`) داخل `/assets/$id`.
-- استعلامات Copilot جاهزة:
-  - "لماذا انخفضت القيمة الدفترية لهذا الأصل؟" → يشرح آخر أحداث + جدول الإهلاك + اضمحلال إن وُجد.
-  - "اعرض كل أحداث هذا الأصل منذ الشراء."
-
-### AI Copilot Actions (تمديد C1.3)
-`src/lib/copilot/asset-actions.functions.ts` بنفس نمط `copilot_action_proposals`:
-- `classify_asset` — من وصف/فاتورة → فئة + عمر + طريقة + مفاتيح GL مقترحة (مع Explainability).
-- `propose_useful_life` / `propose_method` / `propose_gl_mapping` — قرارات مستقلة مسجّلة في `ai_copilot_decisions`.
-- `detect_duplicate_assets` — تشابه (serial/model/supplier/cost/date).
-- `detect_idle_assets` — لا حركة صيانة/استخدام (units of production = 0) لفترة مُعرَّفة.
-- `suggest_replacement` — تكلفة الصيانة السنوية ÷ NBV مقابل سعر الاستبدال المتوقّع (input من المستخدم أو AI web-lookup).
-- `maintenance_vs_replace` — تحليل NPV مبسّط + توصية.
-كل إجراء يُقترح كـ `ActionProposal` — لا تنفيذ إلا بموافقة (نفس UI الحالي).
-
-### التكامل الكامل مع الوحدات
-- **Procurement (PO):** رسملة سطر PO مباشرة أو عبر bill.
-- **Inventory:** تحويل صنف مخزون إلى أصل ثابت (خصم من المخزون + JE + Asset جديد).
-- **AP Automation:** اقتراح "هل هذا أصل؟" داخل `ap-review` عندما يكتشف Copilot معدات/تكلفة > حد الرسملة.
-- **Journal Engine:** كل شيء عبر `posting_events` + `account_determinations` (لا حساب مضمّن).
-- **Budget:** ربط الإهلاك و CAPEX بحسابات الميزانية (interface hook, wired in C3).
-- **Notifications:** انتهاء الضمان، Custodian change، تجاوز حد الصيانة، فشل ترحيل الإهلاك.
-- **Approval Engine:** disposal/impairment/revaluation تمرّ عبر workflow قابل للتهيئة.
-- **Audit Log:** كل RPC يكتب `financial_audit_log`.
-- **Feature Flags:** `fixed_assets.depreciation`, `fixed_assets.ai`, `fixed_assets.timeline` — إطلاق تدريجي.
-
-### الاختبارات والوثائق
-- E2E: acquire → improve → transfer → depreciate 3 months → impair → dispose (JE balanced في كل خطوة).
-- Perf: 10k أصل × 60 شهر جدول.
-- تقارير: `docs/PHASE_C2A_REPORT.md`, `PHASE_C2B_REPORT.md`, `PHASE_C2C_REPORT.md` + `PHASE_C2_MIGRATION_MANIFEST.md` + `PHASE_C2_API_COMPAT.md`.
+- `fixed_asset_events` (typed payload) + RPCs: `improve_asset`, `transfer_asset`, `split_asset`, `merge_assets`, `revalue_asset`, `impair_asset`, `dispose_asset`, `retire_asset`, `write_off_asset`.
+- `fixed_asset_maintenance` table + notifications.
+- `asset_timeline` view + `AssetTimeline.tsx` component in `/assets/$id`.
+- Copilot asset actions: classify, propose life/method/GL, duplicates, idle, replacement NPV.
+- Approval workflows wired for disposal / impairment / revaluation.
+- Reports populated: Disposals / Impairment / Revaluation.
+- Release tag `v2.2.c-fixed-assets-lifecycle`.
 
 ---
 
-## قبل البدء — أحتاج تأكيدك على:
+## Delivery order in this turn
 
-1. **حد الرسملة (Capitalization Threshold):** رقم افتراضي (مثلاً 2000 ريال) قابل للتعديل من `settings.accounting-foundation`؟
-2. **Convention افتراضي:** Mid-month أم Full-month لأول شهر خدمة؟
-3. **إعادة التقييم:** IFRS (فائض في حقوق الملكية) هو الافتراضي — أم Cost model فقط؟
-4. **CIP:** هل تريد صفحة مستقلة `/assets/cip` لتجميع تكاليف الإنشاء قبل التشغيل، أم تبويب داخل صفحة الأصل يكفي؟
+1. Migration (schema + RPCs + views + grants + RLS).
+2. `depreciation.functions.ts` server layer.
+3. `/assets/depreciation` UI + Schedule/Forecast tabs on asset detail.
+4. Nine `/reports/assets.*` routes wired to the new views (disposals / impairment / revaluation show empty state until C2C).
+5. Copilot intents + quick actions.
+6. Sidebar links + feature flag toggle.
+7. `docs/PHASE_C2B_REPORT.md`.
 
-بمجرد إجابتك، أبدأ **C2A** فورًا بـ migration + registry + رسملة من الفاتورة.
+C2C ships in a follow-up turn after you confirm C2B looks right, unless you tell me to bundle both.
