@@ -14,6 +14,63 @@ export type Database = {
   }
   public: {
     Tables: {
+      account_determinations: {
+        Row: {
+          account_code: string
+          branch_id: string | null
+          created_at: string
+          description: string | null
+          doc_kind: string | null
+          id: string
+          is_active: boolean
+          key: string
+          meta: Json
+          org_id: string
+          updated_at: string
+        }
+        Insert: {
+          account_code: string
+          branch_id?: string | null
+          created_at?: string
+          description?: string | null
+          doc_kind?: string | null
+          id?: string
+          is_active?: boolean
+          key: string
+          meta?: Json
+          org_id: string
+          updated_at?: string
+        }
+        Update: {
+          account_code?: string
+          branch_id?: string | null
+          created_at?: string
+          description?: string | null
+          doc_kind?: string | null
+          id?: string
+          is_active?: boolean
+          key?: string
+          meta?: Json
+          org_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "account_determinations_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "account_determinations_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       accounting_periods: {
         Row: {
           closed_at: string | null
@@ -712,13 +769,18 @@ export type Database = {
           discount: number
           document_id: string
           id: string
+          is_reverse_charge: boolean
+          is_tax_inclusive: boolean
           item_id: string | null
           line_total: number
           meta: Json
           position: number
           price: number
           qty: number
+          tax_amount: number
+          tax_code_id: string | null
           tax_rate: number
+          taxable_amount: number
           unit: string | null
         }
         Insert: {
@@ -727,13 +789,18 @@ export type Database = {
           discount?: number
           document_id: string
           id?: string
+          is_reverse_charge?: boolean
+          is_tax_inclusive?: boolean
           item_id?: string | null
           line_total?: number
           meta?: Json
           position?: number
           price?: number
           qty?: number
+          tax_amount?: number
+          tax_code_id?: string | null
           tax_rate?: number
+          taxable_amount?: number
           unit?: string | null
         }
         Update: {
@@ -742,13 +809,18 @@ export type Database = {
           discount?: number
           document_id?: string
           id?: string
+          is_reverse_charge?: boolean
+          is_tax_inclusive?: boolean
           item_id?: string | null
           line_total?: number
           meta?: Json
           position?: number
           price?: number
           qty?: number
+          tax_amount?: number
+          tax_code_id?: string | null
           tax_rate?: number
+          taxable_amount?: number
           unit?: string | null
         }
         Relationships: [
@@ -764,6 +836,13 @@ export type Database = {
             columns: ["item_id"]
             isOneToOne: false
             referencedRelation: "items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "document_lines_tax_code_id_fkey"
+            columns: ["tax_code_id"]
+            isOneToOne: false
+            referencedRelation: "tax_codes"
             referencedColumns: ["id"]
           },
         ]
@@ -923,6 +1002,7 @@ export type Database = {
           cancelled_by: string | null
           created_at: string
           created_by: string
+          cryptographic_stamp: string | null
           currency: string
           discount_total: number
           doc_number: string
@@ -931,6 +1011,7 @@ export type Database = {
           fiscal_year_id: string | null
           grand_total: number
           id: string
+          invoice_hash: string | null
           issue_date: string
           kind: Database["public"]["Enums"]["doc_kind"]
           meta: Json
@@ -941,6 +1022,7 @@ export type Database = {
           party_snapshot: Json
           po_number: string | null
           posted_at: string | null
+          previous_invoice_hash: string | null
           project: string | null
           qr_payload: string | null
           search_text: string | null
@@ -954,6 +1036,10 @@ export type Database = {
           updated_by: string | null
           uuid_v4: string
           vat_total: number
+          xml_payload: string | null
+          zatca_clearance_status: string | null
+          zatca_reported_at: string | null
+          zatca_uuid: string | null
         }
         Insert: {
           approved_at?: string | null
@@ -963,6 +1049,7 @@ export type Database = {
           cancelled_by?: string | null
           created_at?: string
           created_by: string
+          cryptographic_stamp?: string | null
           currency?: string
           discount_total?: number
           doc_number: string
@@ -971,6 +1058,7 @@ export type Database = {
           fiscal_year_id?: string | null
           grand_total?: number
           id?: string
+          invoice_hash?: string | null
           issue_date?: string
           kind: Database["public"]["Enums"]["doc_kind"]
           meta?: Json
@@ -981,6 +1069,7 @@ export type Database = {
           party_snapshot?: Json
           po_number?: string | null
           posted_at?: string | null
+          previous_invoice_hash?: string | null
           project?: string | null
           qr_payload?: string | null
           search_text?: string | null
@@ -994,6 +1083,10 @@ export type Database = {
           updated_by?: string | null
           uuid_v4?: string
           vat_total?: number
+          xml_payload?: string | null
+          zatca_clearance_status?: string | null
+          zatca_reported_at?: string | null
+          zatca_uuid?: string | null
         }
         Update: {
           approved_at?: string | null
@@ -1003,6 +1096,7 @@ export type Database = {
           cancelled_by?: string | null
           created_at?: string
           created_by?: string
+          cryptographic_stamp?: string | null
           currency?: string
           discount_total?: number
           doc_number?: string
@@ -1011,6 +1105,7 @@ export type Database = {
           fiscal_year_id?: string | null
           grand_total?: number
           id?: string
+          invoice_hash?: string | null
           issue_date?: string
           kind?: Database["public"]["Enums"]["doc_kind"]
           meta?: Json
@@ -1021,6 +1116,7 @@ export type Database = {
           party_snapshot?: Json
           po_number?: string | null
           posted_at?: string | null
+          previous_invoice_hash?: string | null
           project?: string | null
           qr_payload?: string | null
           search_text?: string | null
@@ -1034,6 +1130,10 @@ export type Database = {
           updated_by?: string | null
           uuid_v4?: string
           vat_total?: number
+          xml_payload?: string | null
+          zatca_clearance_status?: string | null
+          zatca_reported_at?: string | null
+          zatca_uuid?: string | null
         }
         Relationships: [
           {
@@ -1596,6 +1696,82 @@ export type Database = {
           },
         ]
       }
+      numbering_sequences: {
+        Row: {
+          branch_id: string | null
+          created_at: string
+          doc_type: string
+          fiscal_year_id: string | null
+          id: string
+          is_active: boolean
+          last_reset_at: string | null
+          meta: Json
+          next_number: number
+          org_id: string
+          padding: number
+          prefix: string
+          reset_policy: Database["public"]["Enums"]["numbering_reset"]
+          suffix: string
+          updated_at: string
+        }
+        Insert: {
+          branch_id?: string | null
+          created_at?: string
+          doc_type: string
+          fiscal_year_id?: string | null
+          id?: string
+          is_active?: boolean
+          last_reset_at?: string | null
+          meta?: Json
+          next_number?: number
+          org_id: string
+          padding?: number
+          prefix?: string
+          reset_policy?: Database["public"]["Enums"]["numbering_reset"]
+          suffix?: string
+          updated_at?: string
+        }
+        Update: {
+          branch_id?: string | null
+          created_at?: string
+          doc_type?: string
+          fiscal_year_id?: string | null
+          id?: string
+          is_active?: boolean
+          last_reset_at?: string | null
+          meta?: Json
+          next_number?: number
+          org_id?: string
+          padding?: number
+          prefix?: string
+          reset_policy?: Database["public"]["Enums"]["numbering_reset"]
+          suffix?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "numbering_sequences_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "numbering_sequences_fiscal_year_id_fkey"
+            columns: ["fiscal_year_id"]
+            isOneToOne: false
+            referencedRelation: "fiscal_years"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "numbering_sequences_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ocr_jobs: {
         Row: {
           attachment_id: string
@@ -1976,6 +2152,74 @@ export type Database = {
           },
         ]
       }
+      tax_codes: {
+        Row: {
+          code: string
+          created_at: string
+          description: string
+          description_en: string | null
+          effective_from: string
+          effective_to: string | null
+          id: string
+          is_active: boolean
+          is_payable: boolean
+          is_recoverable: boolean
+          meta: Json
+          org_id: string
+          payable_key: string
+          rate: number
+          recoverable_key: string
+          tax_type: Database["public"]["Enums"]["tax_type"]
+          updated_at: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          description: string
+          description_en?: string | null
+          effective_from?: string
+          effective_to?: string | null
+          id?: string
+          is_active?: boolean
+          is_payable?: boolean
+          is_recoverable?: boolean
+          meta?: Json
+          org_id: string
+          payable_key?: string
+          rate?: number
+          recoverable_key?: string
+          tax_type: Database["public"]["Enums"]["tax_type"]
+          updated_at?: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          description?: string
+          description_en?: string | null
+          effective_from?: string
+          effective_to?: string | null
+          id?: string
+          is_active?: boolean
+          is_payable?: boolean
+          is_recoverable?: boolean
+          meta?: Json
+          org_id?: string
+          payable_key?: string
+          rate?: number
+          recoverable_key?: string
+          tax_type?: Database["public"]["Enums"]["tax_type"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tax_codes_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -2002,10 +2246,18 @@ export type Database = {
         Returns: boolean
       }
       is_org_member: { Args: { _org: string; _user: string }; Returns: boolean }
+      next_document_number: {
+        Args: { _branch: string; _doc_type: string; _fy: string; _org: string }
+        Returns: string
+      }
       post_journal: { Args: { _org: string; _payload: Json }; Returns: string }
       reopen_accounting_period: {
         Args: { _org: string; _period_id: string }
         Returns: undefined
+      }
+      resolve_account: {
+        Args: { _branch: string; _doc_kind: string; _key: string; _org: string }
+        Returns: string
       }
       reverse_journal: {
         Args: {
@@ -2015,6 +2267,34 @@ export type Database = {
           _org: string
         }
         Returns: string
+      }
+      validate_tax_code: {
+        Args: { _code: string; _date: string; _org: string }
+        Returns: {
+          code: string
+          created_at: string
+          description: string
+          description_en: string | null
+          effective_from: string
+          effective_to: string | null
+          id: string
+          is_active: boolean
+          is_payable: boolean
+          is_recoverable: boolean
+          meta: Json
+          org_id: string
+          payable_key: string
+          rate: number
+          recoverable_key: string
+          tax_type: Database["public"]["Enums"]["tax_type"]
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "tax_codes"
+          isOneToOne: true
+          isSetofReturn: false
+        }
       }
     }
     Enums: {
@@ -2057,6 +2337,7 @@ export type Database = {
         | "approved"
         | "posted"
       journal_status: "draft" | "posted" | "reversed"
+      numbering_reset: "never" | "yearly" | "monthly"
       party_type: "customer" | "supplier" | "both"
       period_status: "open" | "closed" | "locked"
       posting_event_type:
@@ -2068,6 +2349,12 @@ export type Database = {
         | "inventory_posted"
         | "expense_posted"
         | "manual_journal"
+      tax_type:
+        | "standard"
+        | "zero_rated"
+        | "exempt"
+        | "out_of_scope"
+        | "reverse_charge"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -2237,6 +2524,7 @@ export const Constants = {
         "posted",
       ],
       journal_status: ["draft", "posted", "reversed"],
+      numbering_reset: ["never", "yearly", "monthly"],
       party_type: ["customer", "supplier", "both"],
       period_status: ["open", "closed", "locked"],
       posting_event_type: [
@@ -2248,6 +2536,13 @@ export const Constants = {
         "inventory_posted",
         "expense_posted",
         "manual_journal",
+      ],
+      tax_type: [
+        "standard",
+        "zero_rated",
+        "exempt",
+        "out_of_scope",
+        "reverse_charge",
       ],
     },
   },
