@@ -193,7 +193,7 @@ export const proposeBulkSupplierPayments = createServerFn({ method: "POST" })
     for (const r of rows) {
       const g = byParty.get(r.party_id) ?? { partyId: r.party_id, total: 0, docs: [] };
       g.total += Number(r.open_as_target);
-      g.docs.push(r);
+      (g.docs as any[]).push(r);
       byParty.set(r.party_id, g);
     }
     const groups = Array.from(byParty.values());
@@ -238,7 +238,7 @@ export const proposeCollectionPlan = createServerFn({ method: "POST" })
       const g = byParty.get(r.party_id) ?? { partyId: r.party_id, total: 0, oldest: r.issue_date, docs: [] };
       g.total += Number(r.open_as_target);
       if (r.issue_date < g.oldest) g.oldest = r.issue_date;
-      g.docs.push(r);
+      (g.docs as any[]).push(r);
       byParty.set(r.party_id, g);
     }
     const parties = Array.from(byParty.values()).sort((a, b) => b.total - a.total);
