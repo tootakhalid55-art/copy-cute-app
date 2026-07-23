@@ -15,6 +15,7 @@ import { Route as ProjectsRouteImport } from './routes/projects'
 import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as ExpensesRouteImport } from './routes/expenses'
 import { Route as DashboardRouteImport } from './routes/dashboard'
+import { Route as CopilotRouteImport } from './routes/copilot'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AccountingRouteImport } from './routes/accounting'
 import { Route as IndexRouteImport } from './routes/index'
@@ -131,6 +132,11 @@ const ExpensesRoute = ExpensesRouteImport.update({
 const DashboardRoute = DashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CopilotRoute = CopilotRouteImport.update({
+  id: '/copilot',
+  path: '/copilot',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthRoute = AuthRouteImport.update({
@@ -585,6 +591,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/accounting': typeof AccountingRouteWithChildren
   '/auth': typeof AuthRoute
+  '/copilot': typeof CopilotRoute
   '/dashboard': typeof DashboardRouteWithChildren
   '/expenses': typeof ExpensesRoute
   '/profile': typeof ProfileRoute
@@ -680,6 +687,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/accounting': typeof AccountingRouteWithChildren
   '/auth': typeof AuthRoute
+  '/copilot': typeof CopilotRoute
   '/dashboard': typeof DashboardRouteWithChildren
   '/expenses': typeof ExpensesRoute
   '/profile': typeof ProfileRoute
@@ -770,6 +778,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/accounting': typeof AccountingRouteWithChildren
   '/auth': typeof AuthRoute
+  '/copilot': typeof CopilotRoute
   '/dashboard': typeof DashboardRouteWithChildren
   '/expenses': typeof ExpensesRoute
   '/profile': typeof ProfileRoute
@@ -867,6 +876,7 @@ export interface FileRouteTypes {
     | '/'
     | '/accounting'
     | '/auth'
+    | '/copilot'
     | '/dashboard'
     | '/expenses'
     | '/profile'
@@ -962,6 +972,7 @@ export interface FileRouteTypes {
     | '/'
     | '/accounting'
     | '/auth'
+    | '/copilot'
     | '/dashboard'
     | '/expenses'
     | '/profile'
@@ -1051,6 +1062,7 @@ export interface FileRouteTypes {
     | '/'
     | '/accounting'
     | '/auth'
+    | '/copilot'
     | '/dashboard'
     | '/expenses'
     | '/profile'
@@ -1147,6 +1159,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AccountingRoute: typeof AccountingRouteWithChildren
   AuthRoute: typeof AuthRoute
+  CopilotRoute: typeof CopilotRoute
   DashboardRoute: typeof DashboardRouteWithChildren
   ExpensesRoute: typeof ExpensesRoute
   ProfileRoute: typeof ProfileRoute
@@ -1258,6 +1271,13 @@ declare module '@tanstack/react-router' {
       path: '/dashboard'
       fullPath: '/dashboard'
       preLoaderRoute: typeof DashboardRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/copilot': {
+      id: '/copilot'
+      path: '/copilot'
+      fullPath: '/copilot'
+      preLoaderRoute: typeof CopilotRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/auth': {
@@ -2002,6 +2022,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AccountingRoute: AccountingRouteWithChildren,
   AuthRoute: AuthRoute,
+  CopilotRoute: CopilotRoute,
   DashboardRoute: DashboardRouteWithChildren,
   ExpensesRoute: ExpensesRoute,
   ProfileRoute: ProfileRoute,
