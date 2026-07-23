@@ -330,7 +330,8 @@ export const createBillFromIntake = createServerFn({ method: "POST" })
         grand_total: total,
         status: "draft" as any,
         notes: o.notes || `Created from AP intake ${intake.id}`,
-      })
+        created_by: userId,
+      } as any)
       .select("id")
       .single();
     if (bErr) throw new Error(`Failed to create bill: ${bErr.message}`);
