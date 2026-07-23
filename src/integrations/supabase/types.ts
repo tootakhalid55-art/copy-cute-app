@@ -1271,6 +1271,7 @@ export type Database = {
           doc_number: string
           due_date: string | null
           exchange_rate: number
+          financial_state: Database["public"]["Enums"]["financial_state"]
           fiscal_year_id: string | null
           grand_total: number
           id: string
@@ -1318,6 +1319,7 @@ export type Database = {
           doc_number: string
           due_date?: string | null
           exchange_rate?: number
+          financial_state?: Database["public"]["Enums"]["financial_state"]
           fiscal_year_id?: string | null
           grand_total?: number
           id?: string
@@ -1365,6 +1367,7 @@ export type Database = {
           doc_number?: string
           due_date?: string | null
           exchange_rate?: number
+          financial_state?: Database["public"]["Enums"]["financial_state"]
           fiscal_year_id?: string | null
           grand_total?: number
           id?: string
@@ -1425,6 +1428,68 @@ export type Database = {
             columns: ["party_id"]
             isOneToOne: false
             referencedRelation: "parties"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      financial_audit_log: {
+        Row: {
+          actor_id: string | null
+          after_state: Json | null
+          allocation_id: string | null
+          amount: number | null
+          before_state: Json | null
+          created_at: string
+          currency: string | null
+          event_kind: Database["public"]["Enums"]["financial_audit_kind"]
+          id: string
+          org_id: string
+          party_id: string | null
+          posting_event_id: string | null
+          reason: string | null
+          source_document_id: string | null
+          target_document_id: string | null
+        }
+        Insert: {
+          actor_id?: string | null
+          after_state?: Json | null
+          allocation_id?: string | null
+          amount?: number | null
+          before_state?: Json | null
+          created_at?: string
+          currency?: string | null
+          event_kind: Database["public"]["Enums"]["financial_audit_kind"]
+          id?: string
+          org_id: string
+          party_id?: string | null
+          posting_event_id?: string | null
+          reason?: string | null
+          source_document_id?: string | null
+          target_document_id?: string | null
+        }
+        Update: {
+          actor_id?: string | null
+          after_state?: Json | null
+          allocation_id?: string | null
+          amount?: number | null
+          before_state?: Json | null
+          created_at?: string
+          currency?: string | null
+          event_kind?: Database["public"]["Enums"]["financial_audit_kind"]
+          id?: string
+          org_id?: string
+          party_id?: string | null
+          posting_event_id?: string | null
+          reason?: string | null
+          source_document_id?: string | null
+          target_document_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "financial_audit_log_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
         ]
@@ -2142,6 +2207,7 @@ export type Database = {
           created_at: string
           created_by: string
           currency: string
+          default_credit_policy: Database["public"]["Enums"]["credit_limit_policy"]
           email: string | null
           id: string
           logo_url: string | null
@@ -2159,6 +2225,7 @@ export type Database = {
           created_at?: string
           created_by: string
           currency?: string
+          default_credit_policy?: Database["public"]["Enums"]["credit_limit_policy"]
           email?: string | null
           id?: string
           logo_url?: string | null
@@ -2176,6 +2243,7 @@ export type Database = {
           created_at?: string
           created_by?: string
           currency?: string
+          default_credit_policy?: Database["public"]["Enums"]["credit_limit_policy"]
           email?: string | null
           id?: string
           logo_url?: string | null
@@ -2196,7 +2264,13 @@ export type Database = {
           cr_number: string | null
           created_at: string
           credit_hold: boolean
+          credit_hold_at: string | null
+          credit_hold_by: string | null
+          credit_hold_reason: string | null
           credit_limit: number | null
+          credit_policy:
+            | Database["public"]["Enums"]["credit_limit_policy"]
+            | null
           currency: string
           email: string | null
           id: string
@@ -2218,7 +2292,13 @@ export type Database = {
           cr_number?: string | null
           created_at?: string
           credit_hold?: boolean
+          credit_hold_at?: string | null
+          credit_hold_by?: string | null
+          credit_hold_reason?: string | null
           credit_limit?: number | null
+          credit_policy?:
+            | Database["public"]["Enums"]["credit_limit_policy"]
+            | null
           currency?: string
           email?: string | null
           id?: string
@@ -2240,7 +2320,13 @@ export type Database = {
           cr_number?: string | null
           created_at?: string
           credit_hold?: boolean
+          credit_hold_at?: string | null
+          credit_hold_by?: string | null
+          credit_hold_reason?: string | null
           credit_limit?: number | null
+          credit_policy?:
+            | Database["public"]["Enums"]["credit_limit_policy"]
+            | null
           currency?: string
           email?: string | null
           id?: string
@@ -2691,7 +2777,7 @@ export type Database = {
           balance: number | null
           org_id: string | null
           party_id: string | null
-          party_type: Database["public"]["Enums"]["party_type"] | null
+          party_type: string | null
         }
         Relationships: [
           {
@@ -2712,13 +2798,38 @@ export type Database = {
       }
     }
     Functions: {
+      _create_settlement_doc: {
+        Args: {
+          _kind: Database["public"]["Enums"]["doc_kind"]
+          _org: string
+          _payload: Json
+        }
+        Returns: string
+      }
       allocate_payment: {
         Args: { _org: string; _payload: Json }
         Returns: string[]
       }
+      check_credit: {
+        Args: { _new_amount?: number; _org: string; _party: string }
+        Returns: Json
+      }
       close_accounting_period: {
         Args: { _org: string; _period_id: string }
         Returns: undefined
+      }
+      create_payment: {
+        Args: { _org: string; _payload: Json }
+        Returns: string
+      }
+      create_receipt: {
+        Args: { _org: string; _payload: Json }
+        Returns: string
+      }
+      create_refund: { Args: { _org: string; _payload: Json }; Returns: string }
+      create_writeoff: {
+        Args: { _org: string; _payload: Json }
+        Returns: string
       }
       find_open_period: {
         Args: { _date: string; _org: string }
@@ -2748,6 +2859,27 @@ export type Database = {
         Args: { _org: string; _party: string }
         Returns: number
       }
+      get_statement: {
+        Args: {
+          _account_id: string
+          _account_kind: string
+          _from?: string
+          _org: string
+          _to?: string
+        }
+        Returns: {
+          balance: number
+          credit: number
+          currency: string
+          debit: number
+          description: string
+          doc_id: string
+          doc_kind: string
+          doc_number: string
+          is_opening: boolean
+          txn_date: string
+        }[]
+      }
       has_org_role: {
         Args: {
           _org: string
@@ -2761,7 +2893,25 @@ export type Database = {
         Args: { _branch: string; _doc_type: string; _fy: string; _org: string }
         Returns: string
       }
+      override_credit_limit: {
+        Args: {
+          _amount: number
+          _document: string
+          _org: string
+          _party: string
+          _reason: string
+        }
+        Returns: undefined
+      }
       post_journal: { Args: { _org: string; _payload: Json }; Returns: string }
+      recompute_document_financial_state: {
+        Args: { _doc: string; _org: string }
+        Returns: undefined
+      }
+      release_credit_hold: {
+        Args: { _org: string; _party: string; _reason?: string }
+        Returns: undefined
+      }
       reopen_accounting_period: {
         Args: { _org: string; _period_id: string }
         Returns: undefined
@@ -2769,6 +2919,10 @@ export type Database = {
       resolve_account: {
         Args: { _branch: string; _doc_kind: string; _key: string; _org: string }
         Returns: string
+      }
+      reverse_allocation: {
+        Args: { _alloc: string; _org: string; _reason?: string }
+        Returns: undefined
       }
       reverse_journal: {
         Args: {
@@ -2778,6 +2932,10 @@ export type Database = {
           _org: string
         }
         Returns: string
+      }
+      set_credit_hold: {
+        Args: { _org: string; _party: string; _reason: string }
+        Returns: undefined
       }
       validate_posting: {
         Args: { _org: string; _payload: Json }
@@ -2849,6 +3007,11 @@ export type Database = {
         | "adjustment"
         | "payment_out"
         | "receipt_in"
+      credit_limit_policy:
+        | "warn_only"
+        | "block"
+        | "require_approval"
+        | "allow_override"
       doc_kind:
         | "sales_invoice"
         | "simplified_tax_invoice"
@@ -2877,6 +3040,26 @@ export type Database = {
         | "pending_approval"
         | "approved"
         | "posted"
+      financial_audit_kind:
+        | "receipt_created"
+        | "payment_created"
+        | "allocation_created"
+        | "allocation_reversed"
+        | "advance_created"
+        | "refund_created"
+        | "writeoff_created"
+        | "credit_hold_set"
+        | "credit_hold_released"
+        | "credit_limit_overridden"
+        | "credit_policy_changed"
+      financial_state:
+        | "open"
+        | "partially_settled"
+        | "fully_settled"
+        | "overpaid"
+        | "advance_available"
+        | "refunded"
+        | "written_off"
       journal_status: "draft" | "posted" | "reversed"
       numbering_reset: "never" | "yearly" | "monthly"
       party_type: "customer" | "supplier" | "both"
@@ -3072,6 +3255,12 @@ export const Constants = {
         "payment_out",
         "receipt_in",
       ],
+      credit_limit_policy: [
+        "warn_only",
+        "block",
+        "require_approval",
+        "allow_override",
+      ],
       doc_kind: [
         "sales_invoice",
         "simplified_tax_invoice",
@@ -3101,6 +3290,28 @@ export const Constants = {
         "pending_approval",
         "approved",
         "posted",
+      ],
+      financial_audit_kind: [
+        "receipt_created",
+        "payment_created",
+        "allocation_created",
+        "allocation_reversed",
+        "advance_created",
+        "refund_created",
+        "writeoff_created",
+        "credit_hold_set",
+        "credit_hold_released",
+        "credit_limit_overridden",
+        "credit_policy_changed",
+      ],
+      financial_state: [
+        "open",
+        "partially_settled",
+        "fully_settled",
+        "overpaid",
+        "advance_available",
+        "refunded",
+        "written_off",
       ],
       journal_status: ["draft", "posted", "reversed"],
       numbering_reset: ["never", "yearly", "monthly"],

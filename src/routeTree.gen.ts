@@ -44,6 +44,7 @@ import { Route as SalesCustomersRouteImport } from './routes/sales.customers'
 import { Route as SalesCreditNotesRouteImport } from './routes/sales.credit-notes'
 import { Route as ReportsVatReturnRouteImport } from './routes/reports.vat-return'
 import { Route as ReportsTrialBalanceRouteImport } from './routes/reports.trial-balance'
+import { Route as ReportsStatementRouteImport } from './routes/reports.statement'
 import { Route as ReportsSalesReportRouteImport } from './routes/reports.sales-report'
 import { Route as ReportsSalesByItemRouteImport } from './routes/reports.sales-by-item'
 import { Route as ReportsSalesByCustomerRouteImport } from './routes/reports.sales-by-customer'
@@ -267,6 +268,11 @@ const ReportsVatReturnRoute = ReportsVatReturnRouteImport.update({
 const ReportsTrialBalanceRoute = ReportsTrialBalanceRouteImport.update({
   id: '/reports/trial-balance',
   path: '/reports/trial-balance',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ReportsStatementRoute = ReportsStatementRouteImport.update({
+  id: '/reports/statement',
+  path: '/reports/statement',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ReportsSalesReportRoute = ReportsSalesReportRouteImport.update({
@@ -557,6 +563,7 @@ export interface FileRoutesByFullPath {
   '/reports/sales-by-customer': typeof ReportsSalesByCustomerRoute
   '/reports/sales-by-item': typeof ReportsSalesByItemRoute
   '/reports/sales-report': typeof ReportsSalesReportRoute
+  '/reports/statement': typeof ReportsStatementRoute
   '/reports/trial-balance': typeof ReportsTrialBalanceRoute
   '/reports/vat-return': typeof ReportsVatReturnRoute
   '/sales/credit-notes': typeof SalesCreditNotesRouteWithChildren
@@ -639,6 +646,7 @@ export interface FileRoutesByTo {
   '/reports/sales-by-customer': typeof ReportsSalesByCustomerRoute
   '/reports/sales-by-item': typeof ReportsSalesByItemRoute
   '/reports/sales-report': typeof ReportsSalesReportRoute
+  '/reports/statement': typeof ReportsStatementRoute
   '/reports/trial-balance': typeof ReportsTrialBalanceRoute
   '/reports/vat-return': typeof ReportsVatReturnRoute
   '/sales/customers': typeof SalesCustomersRoute
@@ -722,6 +730,7 @@ export interface FileRoutesById {
   '/reports/sales-by-customer': typeof ReportsSalesByCustomerRoute
   '/reports/sales-by-item': typeof ReportsSalesByItemRoute
   '/reports/sales-report': typeof ReportsSalesReportRoute
+  '/reports/statement': typeof ReportsStatementRoute
   '/reports/trial-balance': typeof ReportsTrialBalanceRoute
   '/reports/vat-return': typeof ReportsVatReturnRoute
   '/sales/credit-notes': typeof SalesCreditNotesRouteWithChildren
@@ -809,6 +818,7 @@ export interface FileRouteTypes {
     | '/reports/sales-by-customer'
     | '/reports/sales-by-item'
     | '/reports/sales-report'
+    | '/reports/statement'
     | '/reports/trial-balance'
     | '/reports/vat-return'
     | '/sales/credit-notes'
@@ -891,6 +901,7 @@ export interface FileRouteTypes {
     | '/reports/sales-by-customer'
     | '/reports/sales-by-item'
     | '/reports/sales-report'
+    | '/reports/statement'
     | '/reports/trial-balance'
     | '/reports/vat-return'
     | '/sales/customers'
@@ -973,6 +984,7 @@ export interface FileRouteTypes {
     | '/reports/sales-by-customer'
     | '/reports/sales-by-item'
     | '/reports/sales-report'
+    | '/reports/statement'
     | '/reports/trial-balance'
     | '/reports/vat-return'
     | '/sales/credit-notes'
@@ -1054,6 +1066,7 @@ export interface RootRouteChildren {
   ReportsSalesByCustomerRoute: typeof ReportsSalesByCustomerRoute
   ReportsSalesByItemRoute: typeof ReportsSalesByItemRoute
   ReportsSalesReportRoute: typeof ReportsSalesReportRoute
+  ReportsStatementRoute: typeof ReportsStatementRoute
   ReportsTrialBalanceRoute: typeof ReportsTrialBalanceRoute
   ReportsVatReturnRoute: typeof ReportsVatReturnRoute
   SalesCreditNotesRoute: typeof SalesCreditNotesRouteWithChildren
@@ -1327,6 +1340,13 @@ declare module '@tanstack/react-router' {
       path: '/reports/trial-balance'
       fullPath: '/reports/trial-balance'
       preLoaderRoute: typeof ReportsTrialBalanceRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/reports/statement': {
+      id: '/reports/statement'
+      path: '/reports/statement'
+      fullPath: '/reports/statement'
+      preLoaderRoute: typeof ReportsStatementRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/reports/sales-report': {
@@ -1829,6 +1849,7 @@ const rootRouteChildren: RootRouteChildren = {
   ReportsSalesByCustomerRoute: ReportsSalesByCustomerRoute,
   ReportsSalesByItemRoute: ReportsSalesByItemRoute,
   ReportsSalesReportRoute: ReportsSalesReportRoute,
+  ReportsStatementRoute: ReportsStatementRoute,
   ReportsTrialBalanceRoute: ReportsTrialBalanceRoute,
   ReportsVatReturnRoute: ReportsVatReturnRoute,
   SalesCreditNotesRoute: SalesCreditNotesRouteWithChildren,
