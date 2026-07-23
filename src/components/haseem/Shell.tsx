@@ -58,6 +58,7 @@ const NAV: NavItem[] = [
       { label: "مسح الفواتير بالذكاء الاصطناعي", to: "/purchases/scan", icon: ScanLine },
       { label: "صندوق المستندات الواردة", to: "/purchases/inbox" },
       { label: "مراجعة فواتير AI", to: "/purchases/ap-review" },
+      { label: "لوحة معالجة الفواتير", to: "/purchases/ap-dashboard" },
       { label: "أوامر الشراء", to: "/purchases/purchase-orders" },
       { label: "الإشعارات المدينة", to: "/purchases/debit-notes", icon: FileMinus },
       { label: "الموردون", to: "/purchases/suppliers" },

@@ -137,6 +137,112 @@ export type Database = {
           },
         ]
       }
+      ap_intake_approvals: {
+        Row: {
+          actor_id: string | null
+          comment: string | null
+          created_at: string
+          decision: string
+          id: string
+          intake_id: string
+          level: number
+          org_id: string
+        }
+        Insert: {
+          actor_id?: string | null
+          comment?: string | null
+          created_at?: string
+          decision: string
+          id?: string
+          intake_id: string
+          level?: number
+          org_id: string
+        }
+        Update: {
+          actor_id?: string | null
+          comment?: string | null
+          created_at?: string
+          decision?: string
+          id?: string
+          intake_id?: string
+          level?: number
+          org_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ap_intake_approvals_intake_id_fkey"
+            columns: ["intake_id"]
+            isOneToOne: false
+            referencedRelation: "ap_intake_documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ap_intake_approvals_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ap_intake_corrections: {
+        Row: {
+          actor_id: string | null
+          corrected_value: Json | null
+          created_at: string
+          extracted_value: Json | null
+          field_path: string
+          id: string
+          intake_id: string
+          org_id: string
+          party_id: string | null
+        }
+        Insert: {
+          actor_id?: string | null
+          corrected_value?: Json | null
+          created_at?: string
+          extracted_value?: Json | null
+          field_path: string
+          id?: string
+          intake_id: string
+          org_id: string
+          party_id?: string | null
+        }
+        Update: {
+          actor_id?: string | null
+          corrected_value?: Json | null
+          created_at?: string
+          extracted_value?: Json | null
+          field_path?: string
+          id?: string
+          intake_id?: string
+          org_id?: string
+          party_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ap_intake_corrections_intake_id_fkey"
+            columns: ["intake_id"]
+            isOneToOne: false
+            referencedRelation: "ap_intake_documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ap_intake_corrections_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ap_intake_corrections_party_id_fkey"
+            columns: ["party_id"]
+            isOneToOne: false
+            referencedRelation: "parties"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ap_intake_documents: {
         Row: {
           assigned_to: string | null
@@ -150,11 +256,16 @@ export type Database = {
           extraction_completed_at: string | null
           extraction_model: string | null
           extraction_started_at: string | null
+          grn_document_id: string | null
           id: string
           match_confidence: number | null
           matched_bill_id: string | null
           matched_party_id: string | null
+          ocr_language: string | null
           org_id: string
+          page_count: number | null
+          po_document_id: string | null
+          processing_time_ms: number | null
           raw_payload: Json | null
           received_at: string
           sender: string | null
@@ -162,6 +273,7 @@ export type Database = {
           status: string
           subject: string | null
           updated_at: string
+          validation: Json | null
         }
         Insert: {
           assigned_to?: string | null
@@ -175,11 +287,16 @@ export type Database = {
           extraction_completed_at?: string | null
           extraction_model?: string | null
           extraction_started_at?: string | null
+          grn_document_id?: string | null
           id?: string
           match_confidence?: number | null
           matched_bill_id?: string | null
           matched_party_id?: string | null
+          ocr_language?: string | null
           org_id: string
+          page_count?: number | null
+          po_document_id?: string | null
+          processing_time_ms?: number | null
           raw_payload?: Json | null
           received_at?: string
           sender?: string | null
@@ -187,6 +304,7 @@ export type Database = {
           status?: string
           subject?: string | null
           updated_at?: string
+          validation?: Json | null
         }
         Update: {
           assigned_to?: string | null
@@ -200,11 +318,16 @@ export type Database = {
           extraction_completed_at?: string | null
           extraction_model?: string | null
           extraction_started_at?: string | null
+          grn_document_id?: string | null
           id?: string
           match_confidence?: number | null
           matched_bill_id?: string | null
           matched_party_id?: string | null
+          ocr_language?: string | null
           org_id?: string
+          page_count?: number | null
+          po_document_id?: string | null
+          processing_time_ms?: number | null
           raw_payload?: Json | null
           received_at?: string
           sender?: string | null
@@ -212,6 +335,7 @@ export type Database = {
           status?: string
           subject?: string | null
           updated_at?: string
+          validation?: Json | null
         }
         Relationships: [
           {
@@ -226,6 +350,20 @@ export type Database = {
             columns: ["duplicate_of"]
             isOneToOne: false
             referencedRelation: "ap_intake_documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ap_intake_documents_grn_document_id_fkey"
+            columns: ["grn_document_id"]
+            isOneToOne: false
+            referencedRelation: "document_open_balances"
+            referencedColumns: ["document_id"]
+          },
+          {
+            foreignKeyName: "ap_intake_documents_grn_document_id_fkey"
+            columns: ["grn_document_id"]
+            isOneToOne: false
+            referencedRelation: "documents"
             referencedColumns: ["id"]
           },
           {
@@ -254,6 +392,20 @@ export type Database = {
             columns: ["org_id"]
             isOneToOne: false
             referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ap_intake_documents_po_document_id_fkey"
+            columns: ["po_document_id"]
+            isOneToOne: false
+            referencedRelation: "document_open_balances"
+            referencedColumns: ["document_id"]
+          },
+          {
+            foreignKeyName: "ap_intake_documents_po_document_id_fkey"
+            columns: ["po_document_id"]
+            isOneToOne: false
+            referencedRelation: "documents"
             referencedColumns: ["id"]
           },
         ]
@@ -296,6 +448,69 @@ export type Database = {
           },
           {
             foreignKeyName: "ap_intake_events_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ap_intake_queue: {
+        Row: {
+          attempts: number
+          created_at: string
+          id: string
+          intake_id: string
+          last_error: string | null
+          locked_at: string | null
+          locked_by: string | null
+          max_attempts: number
+          next_run_at: string
+          org_id: string
+          payload: Json
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          attempts?: number
+          created_at?: string
+          id?: string
+          intake_id: string
+          last_error?: string | null
+          locked_at?: string | null
+          locked_by?: string | null
+          max_attempts?: number
+          next_run_at?: string
+          org_id: string
+          payload?: Json
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          attempts?: number
+          created_at?: string
+          id?: string
+          intake_id?: string
+          last_error?: string | null
+          locked_at?: string | null
+          locked_by?: string | null
+          max_attempts?: number
+          next_run_at?: string
+          org_id?: string
+          payload?: Json
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ap_intake_queue_intake_id_fkey"
+            columns: ["intake_id"]
+            isOneToOne: false
+            referencedRelation: "ap_intake_documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ap_intake_queue_org_id_fkey"
             columns: ["org_id"]
             isOneToOne: false
             referencedRelation: "organizations"
@@ -2966,6 +3181,28 @@ export type Database = {
       }
     }
     Views: {
+      ap_intake_metrics: {
+        Row: {
+          auto_drafted: number | null
+          avg_confidence: number | null
+          avg_processing_ms: number | null
+          duplicates: number | null
+          failed: number | null
+          org_id: string | null
+          posted: number | null
+          review_queue: number | null
+          total: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ap_intake_documents_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cash_bank_balances: {
         Row: {
           account_id: string | null
@@ -3084,6 +3321,30 @@ export type Database = {
       allocate_payment: {
         Args: { _org: string; _payload: Json }
         Returns: string[]
+      }
+      ap_intake_queue_pick: {
+        Args: { _limit?: number }
+        Returns: {
+          attempts: number
+          created_at: string
+          id: string
+          intake_id: string
+          last_error: string | null
+          locked_at: string | null
+          locked_by: string | null
+          max_attempts: number
+          next_run_at: string
+          org_id: string
+          payload: Json
+          status: string
+          updated_at: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "ap_intake_queue"
+          isOneToOne: false
+          isSetofReturn: true
+        }
       }
       check_credit: {
         Args: { _new_amount?: number; _org: string; _party: string }

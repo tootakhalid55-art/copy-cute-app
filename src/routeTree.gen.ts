@@ -61,6 +61,7 @@ import { Route as PurchasesInboxRouteImport } from './routes/purchases.inbox'
 import { Route as PurchasesDebitNotesRouteImport } from './routes/purchases.debit-notes'
 import { Route as PurchasesBillsRouteImport } from './routes/purchases.bills'
 import { Route as PurchasesApReviewRouteImport } from './routes/purchases.ap-review'
+import { Route as PurchasesApDashboardRouteImport } from './routes/purchases.ap-dashboard'
 import { Route as InventoryWarehousesRouteImport } from './routes/inventory.warehouses'
 import { Route as InventoryReportsRouteImport } from './routes/inventory.reports'
 import { Route as InventoryItemsRouteImport } from './routes/inventory.items'
@@ -96,6 +97,9 @@ import { Route as PurchasesDebitNotesIdRouteImport } from './routes/purchases.de
 import { Route as PurchasesBillsNewRouteImport } from './routes/purchases.bills.new'
 import { Route as PurchasesBillsIdRouteImport } from './routes/purchases.bills.$id'
 import { Route as ApiPublicHooksFinanceHealthRouteImport } from './routes/api/public/hooks/finance-health'
+import { Route as ApiPublicHooksApIntakeWhatsappRouteImport } from './routes/api/public/hooks/ap-intake-whatsapp'
+import { Route as ApiPublicHooksApIntakeProcessRouteImport } from './routes/api/public/hooks/ap-intake-process'
+import { Route as ApiPublicHooksApIntakeEmailRouteImport } from './routes/api/public/hooks/ap-intake-email'
 
 const VerifyRoute = VerifyRouteImport.update({
   id: '/verify',
@@ -359,6 +363,11 @@ const PurchasesApReviewRoute = PurchasesApReviewRouteImport.update({
   path: '/purchases/ap-review',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PurchasesApDashboardRoute = PurchasesApDashboardRouteImport.update({
+  id: '/purchases/ap-dashboard',
+  path: '/purchases/ap-dashboard',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const InventoryWarehousesRoute = InventoryWarehousesRouteImport.update({
   id: '/inventory/warehouses',
   path: '/inventory/warehouses',
@@ -541,6 +550,24 @@ const ApiPublicHooksFinanceHealthRoute =
     path: '/api/public/hooks/finance-health',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicHooksApIntakeWhatsappRoute =
+  ApiPublicHooksApIntakeWhatsappRouteImport.update({
+    id: '/api/public/hooks/ap-intake-whatsapp',
+    path: '/api/public/hooks/ap-intake-whatsapp',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiPublicHooksApIntakeProcessRoute =
+  ApiPublicHooksApIntakeProcessRouteImport.update({
+    id: '/api/public/hooks/ap-intake-process',
+    path: '/api/public/hooks/ap-intake-process',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiPublicHooksApIntakeEmailRoute =
+  ApiPublicHooksApIntakeEmailRouteImport.update({
+    id: '/api/public/hooks/ap-intake-email',
+    path: '/api/public/hooks/ap-intake-email',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -568,6 +595,7 @@ export interface FileRoutesByFullPath {
   '/inventory/items': typeof InventoryItemsRoute
   '/inventory/reports': typeof InventoryReportsRoute
   '/inventory/warehouses': typeof InventoryWarehousesRoute
+  '/purchases/ap-dashboard': typeof PurchasesApDashboardRoute
   '/purchases/ap-review': typeof PurchasesApReviewRoute
   '/purchases/bills': typeof PurchasesBillsRouteWithChildren
   '/purchases/debit-notes': typeof PurchasesDebitNotesRouteWithChildren
@@ -629,6 +657,9 @@ export interface FileRoutesByFullPath {
   '/sales/credit-notes/': typeof SalesCreditNotesIndexRoute
   '/sales/invoices/': typeof SalesInvoicesIndexRoute
   '/sales/quotations/': typeof SalesQuotationsIndexRoute
+  '/api/public/hooks/ap-intake-email': typeof ApiPublicHooksApIntakeEmailRoute
+  '/api/public/hooks/ap-intake-process': typeof ApiPublicHooksApIntakeProcessRoute
+  '/api/public/hooks/ap-intake-whatsapp': typeof ApiPublicHooksApIntakeWhatsappRoute
   '/api/public/hooks/finance-health': typeof ApiPublicHooksFinanceHealthRoute
 }
 export interface FileRoutesByTo {
@@ -657,6 +688,7 @@ export interface FileRoutesByTo {
   '/inventory/items': typeof InventoryItemsRoute
   '/inventory/reports': typeof InventoryReportsRoute
   '/inventory/warehouses': typeof InventoryWarehousesRoute
+  '/purchases/ap-dashboard': typeof PurchasesApDashboardRoute
   '/purchases/ap-review': typeof PurchasesApReviewRoute
   '/purchases/inbox': typeof PurchasesInboxRoute
   '/purchases/scan': typeof PurchasesScanRoute
@@ -712,6 +744,9 @@ export interface FileRoutesByTo {
   '/sales/credit-notes': typeof SalesCreditNotesIndexRoute
   '/sales/invoices': typeof SalesInvoicesIndexRoute
   '/sales/quotations': typeof SalesQuotationsIndexRoute
+  '/api/public/hooks/ap-intake-email': typeof ApiPublicHooksApIntakeEmailRoute
+  '/api/public/hooks/ap-intake-process': typeof ApiPublicHooksApIntakeProcessRoute
+  '/api/public/hooks/ap-intake-whatsapp': typeof ApiPublicHooksApIntakeWhatsappRoute
   '/api/public/hooks/finance-health': typeof ApiPublicHooksFinanceHealthRoute
 }
 export interface FileRoutesById {
@@ -741,6 +776,7 @@ export interface FileRoutesById {
   '/inventory/items': typeof InventoryItemsRoute
   '/inventory/reports': typeof InventoryReportsRoute
   '/inventory/warehouses': typeof InventoryWarehousesRoute
+  '/purchases/ap-dashboard': typeof PurchasesApDashboardRoute
   '/purchases/ap-review': typeof PurchasesApReviewRoute
   '/purchases/bills': typeof PurchasesBillsRouteWithChildren
   '/purchases/debit-notes': typeof PurchasesDebitNotesRouteWithChildren
@@ -802,6 +838,9 @@ export interface FileRoutesById {
   '/sales/credit-notes/': typeof SalesCreditNotesIndexRoute
   '/sales/invoices/': typeof SalesInvoicesIndexRoute
   '/sales/quotations/': typeof SalesQuotationsIndexRoute
+  '/api/public/hooks/ap-intake-email': typeof ApiPublicHooksApIntakeEmailRoute
+  '/api/public/hooks/ap-intake-process': typeof ApiPublicHooksApIntakeProcessRoute
+  '/api/public/hooks/ap-intake-whatsapp': typeof ApiPublicHooksApIntakeWhatsappRoute
   '/api/public/hooks/finance-health': typeof ApiPublicHooksFinanceHealthRoute
 }
 export interface FileRouteTypes {
@@ -832,6 +871,7 @@ export interface FileRouteTypes {
     | '/inventory/items'
     | '/inventory/reports'
     | '/inventory/warehouses'
+    | '/purchases/ap-dashboard'
     | '/purchases/ap-review'
     | '/purchases/bills'
     | '/purchases/debit-notes'
@@ -893,6 +933,9 @@ export interface FileRouteTypes {
     | '/sales/credit-notes/'
     | '/sales/invoices/'
     | '/sales/quotations/'
+    | '/api/public/hooks/ap-intake-email'
+    | '/api/public/hooks/ap-intake-process'
+    | '/api/public/hooks/ap-intake-whatsapp'
     | '/api/public/hooks/finance-health'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -921,6 +964,7 @@ export interface FileRouteTypes {
     | '/inventory/items'
     | '/inventory/reports'
     | '/inventory/warehouses'
+    | '/purchases/ap-dashboard'
     | '/purchases/ap-review'
     | '/purchases/inbox'
     | '/purchases/scan'
@@ -976,6 +1020,9 @@ export interface FileRouteTypes {
     | '/sales/credit-notes'
     | '/sales/invoices'
     | '/sales/quotations'
+    | '/api/public/hooks/ap-intake-email'
+    | '/api/public/hooks/ap-intake-process'
+    | '/api/public/hooks/ap-intake-whatsapp'
     | '/api/public/hooks/finance-health'
   id:
     | '__root__'
@@ -1004,6 +1051,7 @@ export interface FileRouteTypes {
     | '/inventory/items'
     | '/inventory/reports'
     | '/inventory/warehouses'
+    | '/purchases/ap-dashboard'
     | '/purchases/ap-review'
     | '/purchases/bills'
     | '/purchases/debit-notes'
@@ -1065,6 +1113,9 @@ export interface FileRouteTypes {
     | '/sales/credit-notes/'
     | '/sales/invoices/'
     | '/sales/quotations/'
+    | '/api/public/hooks/ap-intake-email'
+    | '/api/public/hooks/ap-intake-process'
+    | '/api/public/hooks/ap-intake-whatsapp'
     | '/api/public/hooks/finance-health'
   fileRoutesById: FileRoutesById
 }
@@ -1089,6 +1140,7 @@ export interface RootRouteChildren {
   InventoryItemsRoute: typeof InventoryItemsRoute
   InventoryReportsRoute: typeof InventoryReportsRoute
   InventoryWarehousesRoute: typeof InventoryWarehousesRoute
+  PurchasesApDashboardRoute: typeof PurchasesApDashboardRoute
   PurchasesApReviewRoute: typeof PurchasesApReviewRoute
   PurchasesBillsRoute: typeof PurchasesBillsRouteWithChildren
   PurchasesDebitNotesRoute: typeof PurchasesDebitNotesRouteWithChildren
@@ -1132,6 +1184,9 @@ export interface RootRouteChildren {
   SettingsTestDataRoute: typeof SettingsTestDataRoute
   SettingsUsersRoute: typeof SettingsUsersRoute
   SettingsWorkflowsRoute: typeof SettingsWorkflowsRoute
+  ApiPublicHooksApIntakeEmailRoute: typeof ApiPublicHooksApIntakeEmailRoute
+  ApiPublicHooksApIntakeProcessRoute: typeof ApiPublicHooksApIntakeProcessRoute
+  ApiPublicHooksApIntakeWhatsappRoute: typeof ApiPublicHooksApIntakeWhatsappRoute
   ApiPublicHooksFinanceHealthRoute: typeof ApiPublicHooksFinanceHealthRoute
 }
 
@@ -1501,6 +1556,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PurchasesApReviewRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/purchases/ap-dashboard': {
+      id: '/purchases/ap-dashboard'
+      path: '/purchases/ap-dashboard'
+      fullPath: '/purchases/ap-dashboard'
+      preLoaderRoute: typeof PurchasesApDashboardRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/inventory/warehouses': {
       id: '/inventory/warehouses'
       path: '/inventory/warehouses'
@@ -1746,6 +1808,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicHooksFinanceHealthRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/hooks/ap-intake-whatsapp': {
+      id: '/api/public/hooks/ap-intake-whatsapp'
+      path: '/api/public/hooks/ap-intake-whatsapp'
+      fullPath: '/api/public/hooks/ap-intake-whatsapp'
+      preLoaderRoute: typeof ApiPublicHooksApIntakeWhatsappRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/hooks/ap-intake-process': {
+      id: '/api/public/hooks/ap-intake-process'
+      path: '/api/public/hooks/ap-intake-process'
+      fullPath: '/api/public/hooks/ap-intake-process'
+      preLoaderRoute: typeof ApiPublicHooksApIntakeProcessRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/hooks/ap-intake-email': {
+      id: '/api/public/hooks/ap-intake-email'
+      path: '/api/public/hooks/ap-intake-email'
+      fullPath: '/api/public/hooks/ap-intake-email'
+      preLoaderRoute: typeof ApiPublicHooksApIntakeEmailRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -1896,6 +1979,7 @@ const rootRouteChildren: RootRouteChildren = {
   InventoryItemsRoute: InventoryItemsRoute,
   InventoryReportsRoute: InventoryReportsRoute,
   InventoryWarehousesRoute: InventoryWarehousesRoute,
+  PurchasesApDashboardRoute: PurchasesApDashboardRoute,
   PurchasesApReviewRoute: PurchasesApReviewRoute,
   PurchasesBillsRoute: PurchasesBillsRouteWithChildren,
   PurchasesDebitNotesRoute: PurchasesDebitNotesRouteWithChildren,
@@ -1939,6 +2023,9 @@ const rootRouteChildren: RootRouteChildren = {
   SettingsTestDataRoute: SettingsTestDataRoute,
   SettingsUsersRoute: SettingsUsersRoute,
   SettingsWorkflowsRoute: SettingsWorkflowsRoute,
+  ApiPublicHooksApIntakeEmailRoute: ApiPublicHooksApIntakeEmailRoute,
+  ApiPublicHooksApIntakeProcessRoute: ApiPublicHooksApIntakeProcessRoute,
+  ApiPublicHooksApIntakeWhatsappRoute: ApiPublicHooksApIntakeWhatsappRoute,
   ApiPublicHooksFinanceHealthRoute: ApiPublicHooksFinanceHealthRoute,
 }
 export const routeTree = rootRouteImport
