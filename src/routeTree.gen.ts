@@ -34,6 +34,7 @@ import { Route as SettingsCurrenciesRouteImport } from './routes/settings.curren
 import { Route as SettingsBranchesRouteImport } from './routes/settings.branches'
 import { Route as SettingsBillingRouteImport } from './routes/settings.billing'
 import { Route as SettingsAuditLogRouteImport } from './routes/settings.audit-log'
+import { Route as SettingsAccountingFoundationRouteImport } from './routes/settings.accounting-foundation'
 import { Route as SalesStatementsRouteImport } from './routes/sales.statements'
 import { Route as SalesRecurringRouteImport } from './routes/sales.recurring'
 import { Route as SalesQuotationsRouteImport } from './routes/sales.quotations'
@@ -216,6 +217,12 @@ const SettingsAuditLogRoute = SettingsAuditLogRouteImport.update({
   path: '/settings/audit-log',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SettingsAccountingFoundationRoute =
+  SettingsAccountingFoundationRouteImport.update({
+    id: '/settings/accounting-foundation',
+    path: '/settings/accounting-foundation',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const SalesStatementsRoute = SalesStatementsRouteImport.update({
   id: '/sales/statements',
   path: '/sales/statements',
@@ -552,6 +559,7 @@ export interface FileRoutesByFullPath {
   '/sales/quotations': typeof SalesQuotationsRouteWithChildren
   '/sales/recurring': typeof SalesRecurringRoute
   '/sales/statements': typeof SalesStatementsRoute
+  '/settings/accounting-foundation': typeof SettingsAccountingFoundationRoute
   '/settings/audit-log': typeof SettingsAuditLogRoute
   '/settings/billing': typeof SettingsBillingRoute
   '/settings/branches': typeof SettingsBranchesRoute
@@ -629,6 +637,7 @@ export interface FileRoutesByTo {
   '/sales/customers': typeof SalesCustomersRoute
   '/sales/recurring': typeof SalesRecurringRoute
   '/sales/statements': typeof SalesStatementsRoute
+  '/settings/accounting-foundation': typeof SettingsAccountingFoundationRoute
   '/settings/audit-log': typeof SettingsAuditLogRoute
   '/settings/billing': typeof SettingsBillingRoute
   '/settings/branches': typeof SettingsBranchesRoute
@@ -713,6 +722,7 @@ export interface FileRoutesById {
   '/sales/quotations': typeof SalesQuotationsRouteWithChildren
   '/sales/recurring': typeof SalesRecurringRoute
   '/sales/statements': typeof SalesStatementsRoute
+  '/settings/accounting-foundation': typeof SettingsAccountingFoundationRoute
   '/settings/audit-log': typeof SettingsAuditLogRoute
   '/settings/billing': typeof SettingsBillingRoute
   '/settings/branches': typeof SettingsBranchesRoute
@@ -798,6 +808,7 @@ export interface FileRouteTypes {
     | '/sales/quotations'
     | '/sales/recurring'
     | '/sales/statements'
+    | '/settings/accounting-foundation'
     | '/settings/audit-log'
     | '/settings/billing'
     | '/settings/branches'
@@ -875,6 +886,7 @@ export interface FileRouteTypes {
     | '/sales/customers'
     | '/sales/recurring'
     | '/sales/statements'
+    | '/settings/accounting-foundation'
     | '/settings/audit-log'
     | '/settings/billing'
     | '/settings/branches'
@@ -958,6 +970,7 @@ export interface FileRouteTypes {
     | '/sales/quotations'
     | '/sales/recurring'
     | '/sales/statements'
+    | '/settings/accounting-foundation'
     | '/settings/audit-log'
     | '/settings/billing'
     | '/settings/branches'
@@ -1037,6 +1050,7 @@ export interface RootRouteChildren {
   SalesQuotationsRoute: typeof SalesQuotationsRouteWithChildren
   SalesRecurringRoute: typeof SalesRecurringRoute
   SalesStatementsRoute: typeof SalesStatementsRoute
+  SettingsAccountingFoundationRoute: typeof SettingsAccountingFoundationRoute
   SettingsAuditLogRoute: typeof SettingsAuditLogRoute
   SettingsBillingRoute: typeof SettingsBillingRoute
   SettingsBranchesRoute: typeof SettingsBranchesRoute
@@ -1230,6 +1244,13 @@ declare module '@tanstack/react-router' {
       path: '/settings/audit-log'
       fullPath: '/settings/audit-log'
       preLoaderRoute: typeof SettingsAuditLogRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/settings/accounting-foundation': {
+      id: '/settings/accounting-foundation'
+      path: '/settings/accounting-foundation'
+      fullPath: '/settings/accounting-foundation'
+      preLoaderRoute: typeof SettingsAccountingFoundationRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/sales/statements': {
@@ -1796,6 +1817,7 @@ const rootRouteChildren: RootRouteChildren = {
   SalesQuotationsRoute: SalesQuotationsRouteWithChildren,
   SalesRecurringRoute: SalesRecurringRoute,
   SalesStatementsRoute: SalesStatementsRoute,
+  SettingsAccountingFoundationRoute: SettingsAccountingFoundationRoute,
   SettingsAuditLogRoute: SettingsAuditLogRoute,
   SettingsBillingRoute: SettingsBillingRoute,
   SettingsBranchesRoute: SettingsBranchesRoute,
