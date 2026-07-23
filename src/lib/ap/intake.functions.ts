@@ -319,16 +319,16 @@ export const createBillFromIntake = createServerFn({ method: "POST" })
       .from("documents")
       .insert({
         org_id: intake.org_id,
-        kind: "bill",
+        kind: "purchase_invoice" as any,
         party_id: partyId,
-        ref,
+        doc_number: ref,
         issue_date: issueDate,
         due_date: dueDate,
         currency,
         subtotal,
-        tax,
-        total,
-        status: "draft",
+        vat_total: tax,
+        grand_total: total,
+        status: "draft" as any,
         notes: o.notes || `Created from AP intake ${intake.id}`,
       })
       .select("id")
