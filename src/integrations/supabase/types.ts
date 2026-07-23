@@ -137,6 +137,92 @@ export type Database = {
           },
         ]
       }
+      ai_copilot_decisions: {
+        Row: {
+          answer: string
+          confidence: number | null
+          created_at: string
+          document_id: string | null
+          evidence: Json
+          id: string
+          input: Json
+          intake_id: string | null
+          kind: string
+          language: string
+          meta: Json
+          model: string | null
+          org_id: string
+          question: string | null
+          recommendation: string | null
+          user_id: string | null
+        }
+        Insert: {
+          answer: string
+          confidence?: number | null
+          created_at?: string
+          document_id?: string | null
+          evidence?: Json
+          id?: string
+          input?: Json
+          intake_id?: string | null
+          kind: string
+          language?: string
+          meta?: Json
+          model?: string | null
+          org_id: string
+          question?: string | null
+          recommendation?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          answer?: string
+          confidence?: number | null
+          created_at?: string
+          document_id?: string | null
+          evidence?: Json
+          id?: string
+          input?: Json
+          intake_id?: string | null
+          kind?: string
+          language?: string
+          meta?: Json
+          model?: string | null
+          org_id?: string
+          question?: string | null
+          recommendation?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_copilot_decisions_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "document_open_balances"
+            referencedColumns: ["document_id"]
+          },
+          {
+            foreignKeyName: "ai_copilot_decisions_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_copilot_decisions_intake_id_fkey"
+            columns: ["intake_id"]
+            isOneToOne: false
+            referencedRelation: "ap_intake_documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_copilot_decisions_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ap_approval_thresholds: {
         Row: {
           active: boolean
