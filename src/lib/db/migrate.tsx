@@ -74,7 +74,7 @@ export function MigrationGate() {
             currency: r.currency ?? "SAR",
             meta: { imported: true, imported_from: k, legacy_id: r.id ?? null, type: r.type ?? null },
           }));
-          const { error } = await supabase.from("parties").insert(payload);
+          const { error } = await (supabase.from("parties") as any).insert(payload);
           if (error) throw error;
           ok += payload.length;
         } else if (k === "items") {
@@ -90,7 +90,7 @@ export function MigrationGate() {
             tax_rate: Number(r.taxRate ?? 15) || 0,
             meta: { imported: true, legacy_id: r.id ?? null },
           }));
-          const { error } = await supabase.from("items").insert(payload);
+          const { error } = await (supabase.from("items") as any).insert(payload);
           if (error) throw error;
           ok += payload.length;
         }

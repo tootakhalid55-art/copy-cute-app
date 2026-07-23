@@ -131,12 +131,12 @@ async function fetchAll(key: string, orgId: string): Promise<Rec[]> {
 async function insertOne(key: string, orgId: string, input: any) {
   if (key === "customers" || key === "suppliers") {
     const payload = toPartyInsert(input, orgId, key === "customers" ? "customer" : "supplier");
-    const { data, error } = await supabase.from("parties").insert(payload).select("*").single();
+    const { data, error } = await (supabase.from("parties") as any).insert(payload).select("*").single();
     if (error) throw error;
     return mapPartyRow(data);
   }
   if (key === "items") {
-    const { data, error } = await supabase.from("items").insert(toItemInsert(input, orgId)).select("*").single();
+    const { data, error } = await (supabase.from("items") as any).insert(toItemInsert(input, orgId)).select("*").single();
     if (error) throw error;
     return mapItemRow(data);
   }
