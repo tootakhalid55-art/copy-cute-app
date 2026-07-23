@@ -199,14 +199,75 @@ export function DocumentForm({
   const updateLine = (i: number, patch: Partial<Line>) =>
     setLines((ls) => ls.map((l, idx) => (idx === i ? { ...l, ...patch } : l)));
 
-  const save = (finalStatus: string) => {
-    const payload = {
+  const { currentOrgId } = useOrg();
+  const cloudKind = useMemo(() => toDocKind(kind ?? storageKey), [kind, storageKey]);
+  const [dbId, setDbId] = useState<string | null>(existing?.dbId ?? null);
+  useEffect(() => {
+    setDbId(existing?.dbId ?? null);
+  }, [existing?.id, existing?.dbId]);
+  const [enablingCloud, setEnablingCloud] = useState(false);
+  const [uploading, setUploading] = useState(false);
+
+  const validation = useMemo(() => {
+    const errs: string[] = [];
+    if (!partyId) errs.push(`اختر ${partyLabel}`);
+    if (!lines.length) errs.push("أضف صنفاً واحداً على الأقل");
+    lines.forEach((l, i) => {
+      if (!l.description?.trim()) errs.push(`الصنف ${i + 1}: الوصف مطلوب`);
+      if (!(Number(l.qty) > 0)) errs.push(`الصنف ${i + 1}: الكمية يجب أن تكون > 0`);
+      if (Number(l.price) < 0) errs.push(`الصنف ${i + 1}: السعر غير صالح`);
+    });
+    return errs;
+  }, [partyId, partyLabel, lines]);
+  const isValid = validation.length === 0;
+
+  const save = async (finalStatus: string) => {
+    const payload: any = {
       ref, date, dueDate, partyId, partyName, notes,
       status: finalStatus, lines, subtotal, tax, total,
+      dbId,
     };
+    let localId = existing?.id;
     if (existing) update(existing.id, payload);
-    else add(payload);
+    else {
+      const rec = add(payload);
+      localId = rec?.id;
+    }
+    // Best-effort mirror to Supabase when cloud already enabled for this doc
+    if (currentOrgId && dbId) {
+      try {
+        await syncDocumentToCloud(currentOrgId, cloudKind, { ...payload, id: localId }, dbId);
+      } catch (e: any) {
+        console.error("cloud sync failed", e);
+      }
+    }
     navigate({ to: backTo });
+  };
+
+  const enableCloud = async () => {
+    if (!currentOrgId) {
+      alert("اختر منشأة أولاً لتفعيل التخزين السحابي");
+      return;
+    }
+    if (!isValid) {
+      alert(`لا يمكن التفعيل قبل استيفاء الحقول:\n- ${validation.join("\n- ")}`);
+      return;
+    }
+    setEnablingCloud(true);
+    try {
+      const newDbId = await syncDocumentToCloud(
+        currentOrgId,
+        cloudKind,
+        { id: existing?.id, ref, date, dueDate, partyId, partyName, notes, lines, subtotal, tax, total },
+        null,
+      );
+      setDbId(newDbId);
+      if (existing) update(existing.id, { dbId: newDbId } as any);
+    } catch (e: any) {
+      alert(`تعذّر التفعيل: ${e.message ?? e}`);
+    } finally {
+      setEnablingCloud(false);
+    }
   };
 
   return (
