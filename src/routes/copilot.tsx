@@ -226,6 +226,40 @@ function Page() {
     } finally { setBusy(null); refreshConvs(); }
   }
 
+  async function onConfirmProposal(id: string, note?: string) {
+    await confirmProp({ data: { proposalId: id, note } });
+    await refreshProposals();
+  }
+  async function onRejectProposal(id: string, note?: string) {
+    await rejectProp({ data: { proposalId: id, note } });
+    await refreshProposals();
+  }
+  async function proposeQuickCollection() {
+    if (!orgId) return;
+    setBusy("propose-collect");
+    try {
+      const p = await proposeCollectFn({ data: { orgId, language: lang, daysOverdue: 30, conversationId: activeId ?? undefined } });
+      setMessages((prev) => [...prev, { role: "assistant", content: (lang === "ar" ? "تم إعداد اقتراح: " : "Proposal created: ") + (p as any).title, kind: "proposal" }]);
+      await refreshProposals();
+    } catch (e: any) {
+      setMessages((prev) => [...prev, { role: "assistant", content: (lang === "ar" ? "تعذر: " : "Failed: ") + (e?.message || String(e)) }]);
+    } finally { setBusy(null); }
+  }
+  async function proposeQuickBulkPay() {
+    if (!orgId) return;
+    const bank = window.prompt(lang === "ar" ? "معرّف حساب البنك (UUID):" : "Bank account id (UUID):");
+    if (!bank) return;
+    setBusy("propose-bulk");
+    try {
+      const dueBefore = new Date().toISOString().slice(0, 10);
+      const p = await proposeBulkPayFn({ data: { orgId, language: lang, cashBankAccountId: bank, dueBefore, conversationId: activeId ?? undefined } });
+      setMessages((prev) => [...prev, { role: "assistant", content: (lang === "ar" ? "تم إعداد اقتراح: " : "Proposal created: ") + (p as any).title, kind: "proposal" }]);
+      await refreshProposals();
+    } catch (e: any) {
+      setMessages((prev) => [...prev, { role: "assistant", content: (lang === "ar" ? "تعذر: " : "Failed: ") + (e?.message || String(e)) }]);
+    } finally { setBusy(null); }
+  }
+
   const today = new Date();
   const period = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}`;
   const from = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-01`;
@@ -240,6 +274,8 @@ function Page() {
     { key: "dupP", icon: CopyIcon, label: t.dupParties, fn: () => dupFn({ data: { orgId, scope: "parties" as const, language: lang, conversationId: activeId ?? undefined } }) },
     { key: "dupI", icon: CopyIcon, label: t.dupItems, fn: () => dupFn({ data: { orgId, scope: "items" as const, language: lang, conversationId: activeId ?? undefined } }) },
   ] : [], [orgId, lang, activeId, t]);
+
+  const pendingProposals = proposals.filter((p) => p.status === "pending");
 
   function exportPDF() {
     const el = transcriptRef.current;
