@@ -80,6 +80,7 @@ import { Route as CashReceiptsRouteImport } from './routes/cash.receipts'
 import { Route as CashPaymentsRouteImport } from './routes/cash.payments'
 import { Route as CashBanksRouteImport } from './routes/cash.banks'
 import { Route as AssetsSettingsRouteImport } from './routes/assets.settings'
+import { Route as AssetsDepreciationRouteImport } from './routes/assets.depreciation'
 import { Route as AssetsCipRouteImport } from './routes/assets.cip'
 import { Route as AssetsCategoriesRouteImport } from './routes/assets.categories'
 import { Route as AccountingJournalEntriesRouteImport } from './routes/accounting.journal-entries'
@@ -465,6 +466,11 @@ const AssetsSettingsRoute = AssetsSettingsRouteImport.update({
   path: '/settings',
   getParentRoute: () => AssetsRoute,
 } as any)
+const AssetsDepreciationRoute = AssetsDepreciationRouteImport.update({
+  id: '/depreciation',
+  path: '/depreciation',
+  getParentRoute: () => AssetsRoute,
+} as any)
 const AssetsCipRoute = AssetsCipRouteImport.update({
   id: '/cip',
   path: '/cip',
@@ -628,6 +634,7 @@ export interface FileRoutesByFullPath {
   '/accounting/journal-entries': typeof AccountingJournalEntriesRoute
   '/assets/categories': typeof AssetsCategoriesRoute
   '/assets/cip': typeof AssetsCipRoute
+  '/assets/depreciation': typeof AssetsDepreciationRoute
   '/assets/settings': typeof AssetsSettingsRoute
   '/cash/banks': typeof CashBanksRoute
   '/cash/payments': typeof CashPaymentsRoute
@@ -728,6 +735,7 @@ export interface FileRoutesByTo {
   '/accounting/journal-entries': typeof AccountingJournalEntriesRoute
   '/assets/categories': typeof AssetsCategoriesRoute
   '/assets/cip': typeof AssetsCipRoute
+  '/assets/depreciation': typeof AssetsDepreciationRoute
   '/assets/settings': typeof AssetsSettingsRoute
   '/cash/banks': typeof CashBanksRoute
   '/cash/payments': typeof CashPaymentsRoute
@@ -823,6 +831,7 @@ export interface FileRoutesById {
   '/accounting/journal-entries': typeof AccountingJournalEntriesRoute
   '/assets/categories': typeof AssetsCategoriesRoute
   '/assets/cip': typeof AssetsCipRoute
+  '/assets/depreciation': typeof AssetsDepreciationRoute
   '/assets/settings': typeof AssetsSettingsRoute
   '/cash/banks': typeof CashBanksRoute
   '/cash/payments': typeof CashPaymentsRoute
@@ -925,6 +934,7 @@ export interface FileRouteTypes {
     | '/accounting/journal-entries'
     | '/assets/categories'
     | '/assets/cip'
+    | '/assets/depreciation'
     | '/assets/settings'
     | '/cash/banks'
     | '/cash/payments'
@@ -1025,6 +1035,7 @@ export interface FileRouteTypes {
     | '/accounting/journal-entries'
     | '/assets/categories'
     | '/assets/cip'
+    | '/assets/depreciation'
     | '/assets/settings'
     | '/cash/banks'
     | '/cash/payments'
@@ -1119,6 +1130,7 @@ export interface FileRouteTypes {
     | '/accounting/journal-entries'
     | '/assets/categories'
     | '/assets/cip'
+    | '/assets/depreciation'
     | '/assets/settings'
     | '/cash/banks'
     | '/cash/payments'
@@ -1777,6 +1789,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AssetsSettingsRouteImport
       parentRoute: typeof AssetsRoute
     }
+    '/assets/depreciation': {
+      id: '/assets/depreciation'
+      path: '/depreciation'
+      fullPath: '/assets/depreciation'
+      preLoaderRoute: typeof AssetsDepreciationRouteImport
+      parentRoute: typeof AssetsRoute
+    }
     '/assets/cip': {
       id: '/assets/cip'
       path: '/cip'
@@ -1988,12 +2007,14 @@ const AccountingRouteWithChildren = AccountingRoute._addFileChildren(
 interface AssetsRouteChildren {
   AssetsCategoriesRoute: typeof AssetsCategoriesRoute
   AssetsCipRoute: typeof AssetsCipRoute
+  AssetsDepreciationRoute: typeof AssetsDepreciationRoute
   AssetsSettingsRoute: typeof AssetsSettingsRoute
 }
 
 const AssetsRouteChildren: AssetsRouteChildren = {
   AssetsCategoriesRoute: AssetsCategoriesRoute,
   AssetsCipRoute: AssetsCipRoute,
+  AssetsDepreciationRoute: AssetsDepreciationRoute,
   AssetsSettingsRoute: AssetsSettingsRoute,
 }
 
@@ -2187,13 +2208,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
