@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { Plus, Trash2, Printer, Eye, X, Pencil, Upload, Check } from "lucide-react";
 import QRCode from "qrcode";
@@ -6,6 +6,9 @@ import { Shell, PrimaryBtn, OutlineBtn } from "./Shell";
 import { useCollection, useKV } from "@/lib/haseem/store";
 import { useInvoiceTemplates, type DocKind } from "@/lib/haseem/templates";
 import { printDoc } from "@/lib/haseem/printDoc";
+import { DocumentSidePanel } from "./DocumentSidePanel";
+import { useOrg } from "@/lib/db/org";
+import { syncDocumentToCloud, toDocKind } from "@/lib/db/document-bridge";
 
 // Read a File as base64 data URL
 function fileToDataURL(f: File): Promise<string> {
