@@ -68,7 +68,7 @@ export function DocumentSidePanel({
       supabase.from("documents").select("id,status,doc_number,grand_total,kind").eq("id", dbDocId).eq("org_id", orgId).maybeSingle(),
       supabase.from("notifications").select("id,title,body,event_type,user_id,created_at").eq("org_id", orgId).eq("document_id", dbDocId).order("created_at", { ascending: false }).limit(30),
       supabase.from("attachments").select("id", { count: "exact", head: true }).eq("org_id", orgId).eq("entity_type", "document").eq("entity_id", dbDocId),
-      supabase.from("document_relations").select("id", { count: "exact", head: true }).eq("org_id", orgId).or(`source_id.eq.${dbDocId},target_id.eq.${dbDocId}`),
+      supabase.from("document_relations").select("id", { count: "exact", head: true }).eq("org_id", orgId).or(`from_document_id.eq.${dbDocId},to_document_id.eq.${dbDocId}`),
       supabase.from("approval_requests").select("current_step,workflow_id,status").eq("org_id", orgId).eq("document_id", dbDocId).order("created_at", { ascending: false }).limit(1).maybeSingle(),
     ]);
     setDoc(d.data);
