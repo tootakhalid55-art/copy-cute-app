@@ -4,17 +4,23 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Bot, Sparkles, Loader2, Send, Plus, Trash2, Edit3,
   Users, Copy as CopyIcon, FileText, BookText, TrendingUp,
-  Calendar, Coins, AlertTriangle, Download, MessageSquare,
+  Calendar, Coins, AlertTriangle, Download, MessageSquare, Zap,
 } from "lucide-react";
 import { Shell } from "@/components/haseem/Shell";
 import { useOrg } from "@/lib/db/org";
 import { ExplainabilityPanel, type ExplainabilityCitation } from "@/components/haseem/ExplainabilityPanel";
+import { ActionProposalCard, type ActionProposal } from "@/components/haseem/ActionProposalCard";
+import { supabase } from "@/integrations/supabase/client";
 import {
   listConversations, createConversation, renameConversation, deleteConversation,
   loadConversationMessages, erpChat,
   recommendCollectionPriorities, recommendPaymentPriorities,
   monthEndChecklist, executiveSummary, detectDuplicates, explainCashFlow,
 } from "@/lib/copilot/erp-copilot.functions";
+import {
+  listProposals, confirmProposal, rejectProposal,
+  proposeCollectionPlan, proposeBulkSupplierPayments,
+} from "@/lib/copilot/actions.functions";
 
 export const Route = createFileRoute("/copilot")({
   head: () => ({ meta: [
