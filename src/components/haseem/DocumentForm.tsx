@@ -310,7 +310,11 @@ export function DocumentForm({
           <OutlineBtn type="button" onClick={() => save("مسودة")}>
             حفظ كمسودة
           </OutlineBtn>
-          <PrimaryBtn onClick={() => save("مؤكد")}>حفظ واعتماد</PrimaryBtn>
+          <PrimaryBtn
+            onClick={() => save("مؤكد")}
+            disabled={!isValid || uploading}
+            title={!isValid ? validation.join(" · ") : uploading ? "يوجد مرفقات قيد الرفع" : undefined}
+          >حفظ واعتماد</PrimaryBtn>
         </div>
       </div>
 
