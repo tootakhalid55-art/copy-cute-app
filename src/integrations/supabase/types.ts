@@ -249,6 +249,13 @@ export type Database = {
             foreignKeyName: "approval_requests_document_id_fkey"
             columns: ["document_id"]
             isOneToOne: false
+            referencedRelation: "document_open_balances"
+            referencedColumns: ["document_id"]
+          },
+          {
+            foreignKeyName: "approval_requests_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
             referencedRelation: "documents"
             referencedColumns: ["id"]
           },
@@ -627,6 +634,227 @@ export type Database = {
           },
         ]
       }
+      cash_bank_accounts: {
+        Row: {
+          account_number: string | null
+          bank_name: string | null
+          branch_id: string | null
+          created_at: string
+          currency: string
+          gl_account_code: string
+          iban: string | null
+          id: string
+          is_active: boolean
+          kind: Database["public"]["Enums"]["cash_account_kind"]
+          meta: Json
+          name: string
+          name_en: string | null
+          opening_balance: number
+          opening_date: string | null
+          org_id: string
+          updated_at: string
+        }
+        Insert: {
+          account_number?: string | null
+          bank_name?: string | null
+          branch_id?: string | null
+          created_at?: string
+          currency?: string
+          gl_account_code: string
+          iban?: string | null
+          id?: string
+          is_active?: boolean
+          kind: Database["public"]["Enums"]["cash_account_kind"]
+          meta?: Json
+          name: string
+          name_en?: string | null
+          opening_balance?: number
+          opening_date?: string | null
+          org_id: string
+          updated_at?: string
+        }
+        Update: {
+          account_number?: string | null
+          bank_name?: string | null
+          branch_id?: string | null
+          created_at?: string
+          currency?: string
+          gl_account_code?: string
+          iban?: string | null
+          id?: string
+          is_active?: boolean
+          kind?: Database["public"]["Enums"]["cash_account_kind"]
+          meta?: Json
+          name?: string
+          name_en?: string | null
+          opening_balance?: number
+          opening_date?: string | null
+          org_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cash_bank_accounts_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cash_bank_accounts_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cash_bank_transactions: {
+        Row: {
+          account_id: string
+          amount: number
+          branch_id: string | null
+          counter_account_id: string | null
+          created_at: string
+          created_by: string | null
+          currency: string
+          exchange_rate: number
+          id: string
+          journal_entry_id: string | null
+          kind: Database["public"]["Enums"]["cash_txn_kind"]
+          memo: string | null
+          meta: Json
+          org_id: string
+          party_id: string | null
+          reconciled: boolean
+          reconciled_at: string | null
+          reconciled_by: string | null
+          reference: string | null
+          source_document_id: string | null
+          txn_date: string
+          updated_at: string
+        }
+        Insert: {
+          account_id: string
+          amount: number
+          branch_id?: string | null
+          counter_account_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          currency?: string
+          exchange_rate?: number
+          id?: string
+          journal_entry_id?: string | null
+          kind: Database["public"]["Enums"]["cash_txn_kind"]
+          memo?: string | null
+          meta?: Json
+          org_id: string
+          party_id?: string | null
+          reconciled?: boolean
+          reconciled_at?: string | null
+          reconciled_by?: string | null
+          reference?: string | null
+          source_document_id?: string | null
+          txn_date?: string
+          updated_at?: string
+        }
+        Update: {
+          account_id?: string
+          amount?: number
+          branch_id?: string | null
+          counter_account_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          currency?: string
+          exchange_rate?: number
+          id?: string
+          journal_entry_id?: string | null
+          kind?: Database["public"]["Enums"]["cash_txn_kind"]
+          memo?: string | null
+          meta?: Json
+          org_id?: string
+          party_id?: string | null
+          reconciled?: boolean
+          reconciled_at?: string | null
+          reconciled_by?: string | null
+          reference?: string | null
+          source_document_id?: string | null
+          txn_date?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cash_bank_transactions_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "cash_bank_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cash_bank_transactions_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "cash_bank_balances"
+            referencedColumns: ["account_id"]
+          },
+          {
+            foreignKeyName: "cash_bank_transactions_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cash_bank_transactions_counter_account_id_fkey"
+            columns: ["counter_account_id"]
+            isOneToOne: false
+            referencedRelation: "cash_bank_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cash_bank_transactions_counter_account_id_fkey"
+            columns: ["counter_account_id"]
+            isOneToOne: false
+            referencedRelation: "cash_bank_balances"
+            referencedColumns: ["account_id"]
+          },
+          {
+            foreignKeyName: "cash_bank_transactions_journal_entry_id_fkey"
+            columns: ["journal_entry_id"]
+            isOneToOne: false
+            referencedRelation: "journal_entries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cash_bank_transactions_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cash_bank_transactions_party_id_fkey"
+            columns: ["party_id"]
+            isOneToOne: false
+            referencedRelation: "parties"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cash_bank_transactions_source_document_id_fkey"
+            columns: ["source_document_id"]
+            isOneToOne: false
+            referencedRelation: "document_open_balances"
+            referencedColumns: ["document_id"]
+          },
+          {
+            foreignKeyName: "cash_bank_transactions_source_document_id_fkey"
+            columns: ["source_document_id"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       chart_of_accounts: {
         Row: {
           allow_branch: boolean
@@ -828,6 +1056,13 @@ export type Database = {
             foreignKeyName: "document_lines_document_id_fkey"
             columns: ["document_id"]
             isOneToOne: false
+            referencedRelation: "document_open_balances"
+            referencedColumns: ["document_id"]
+          },
+          {
+            foreignKeyName: "document_lines_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
             referencedRelation: "documents"
             referencedColumns: ["id"]
           },
@@ -883,6 +1118,13 @@ export type Database = {
             foreignKeyName: "document_relations_from_document_id_fkey"
             columns: ["from_document_id"]
             isOneToOne: false
+            referencedRelation: "document_open_balances"
+            referencedColumns: ["document_id"]
+          },
+          {
+            foreignKeyName: "document_relations_from_document_id_fkey"
+            columns: ["from_document_id"]
+            isOneToOne: false
             referencedRelation: "documents"
             referencedColumns: ["id"]
           },
@@ -892,6 +1134,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "organizations"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "document_relations_to_document_id_fkey"
+            columns: ["to_document_id"]
+            isOneToOne: false
+            referencedRelation: "document_open_balances"
+            referencedColumns: ["document_id"]
           },
           {
             foreignKeyName: "document_relations_to_document_id_fkey"
@@ -922,6 +1171,13 @@ export type Database = {
           tag_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "document_tags_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "document_open_balances"
+            referencedColumns: ["document_id"]
+          },
           {
             foreignKeyName: "document_tags_document_id_fkey"
             columns: ["document_id"]
@@ -977,6 +1233,13 @@ export type Database = {
           version?: number
         }
         Relationships: [
+          {
+            foreignKeyName: "document_versions_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "document_open_balances"
+            referencedColumns: ["document_id"]
+          },
           {
             foreignKeyName: "document_versions_document_id_fkey"
             columns: ["document_id"]
@@ -1266,6 +1529,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "inbox_documents_linked_document_id_fkey"
+            columns: ["linked_document_id"]
+            isOneToOne: false
+            referencedRelation: "document_open_balances"
+            referencedColumns: ["document_id"]
+          },
           {
             foreignKeyName: "inbox_documents_linked_document_id_fkey"
             columns: ["linked_document_id"]
@@ -1684,6 +1954,13 @@ export type Database = {
             foreignKeyName: "notifications_document_id_fkey"
             columns: ["document_id"]
             isOneToOne: false
+            referencedRelation: "document_open_balances"
+            referencedColumns: ["document_id"]
+          },
+          {
+            foreignKeyName: "notifications_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
             referencedRelation: "documents"
             referencedColumns: ["id"]
           },
@@ -1918,6 +2195,8 @@ export type Database = {
           code: string | null
           cr_number: string | null
           created_at: string
+          credit_hold: boolean
+          credit_limit: number | null
           currency: string
           email: string | null
           id: string
@@ -1938,6 +2217,8 @@ export type Database = {
           code?: string | null
           cr_number?: string | null
           created_at?: string
+          credit_hold?: boolean
+          credit_limit?: number | null
           currency?: string
           email?: string | null
           id?: string
@@ -1958,6 +2239,8 @@ export type Database = {
           code?: string | null
           cr_number?: string | null
           created_at?: string
+          credit_hold?: boolean
+          credit_limit?: number | null
           currency?: string
           email?: string | null
           id?: string
@@ -1979,6 +2262,126 @@ export type Database = {
             columns: ["org_id"]
             isOneToOne: false
             referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      payment_allocations: {
+        Row: {
+          allocation_date: string
+          amount: number
+          branch_id: string | null
+          created_at: string
+          created_by: string | null
+          currency: string
+          exchange_rate: number
+          id: string
+          journal_entry_id: string | null
+          memo: string | null
+          meta: Json
+          org_id: string
+          party_id: string | null
+          source_document_id: string | null
+          source_kind: Database["public"]["Enums"]["allocation_source_kind"]
+          target_document_id: string
+          target_kind: Database["public"]["Enums"]["allocation_target_kind"]
+          updated_at: string
+        }
+        Insert: {
+          allocation_date?: string
+          amount: number
+          branch_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          currency?: string
+          exchange_rate?: number
+          id?: string
+          journal_entry_id?: string | null
+          memo?: string | null
+          meta?: Json
+          org_id: string
+          party_id?: string | null
+          source_document_id?: string | null
+          source_kind: Database["public"]["Enums"]["allocation_source_kind"]
+          target_document_id: string
+          target_kind: Database["public"]["Enums"]["allocation_target_kind"]
+          updated_at?: string
+        }
+        Update: {
+          allocation_date?: string
+          amount?: number
+          branch_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          currency?: string
+          exchange_rate?: number
+          id?: string
+          journal_entry_id?: string | null
+          memo?: string | null
+          meta?: Json
+          org_id?: string
+          party_id?: string | null
+          source_document_id?: string | null
+          source_kind?: Database["public"]["Enums"]["allocation_source_kind"]
+          target_document_id?: string
+          target_kind?: Database["public"]["Enums"]["allocation_target_kind"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_allocations_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payment_allocations_journal_entry_id_fkey"
+            columns: ["journal_entry_id"]
+            isOneToOne: false
+            referencedRelation: "journal_entries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payment_allocations_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payment_allocations_party_id_fkey"
+            columns: ["party_id"]
+            isOneToOne: false
+            referencedRelation: "parties"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payment_allocations_source_document_id_fkey"
+            columns: ["source_document_id"]
+            isOneToOne: false
+            referencedRelation: "document_open_balances"
+            referencedColumns: ["document_id"]
+          },
+          {
+            foreignKeyName: "payment_allocations_source_document_id_fkey"
+            columns: ["source_document_id"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payment_allocations_target_document_id_fkey"
+            columns: ["target_document_id"]
+            isOneToOne: false
+            referencedRelation: "document_open_balances"
+            referencedColumns: ["document_id"]
+          },
+          {
+            foreignKeyName: "payment_allocations_target_document_id_fkey"
+            columns: ["target_document_id"]
+            isOneToOne: false
+            referencedRelation: "documents"
             referencedColumns: ["id"]
           },
         ]
@@ -2222,9 +2625,97 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      cash_bank_balances: {
+        Row: {
+          account_id: string | null
+          balance: number | null
+          currency: string | null
+          kind: Database["public"]["Enums"]["cash_account_kind"] | null
+          name: string | null
+          org_id: string | null
+          reconciled_balance: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cash_bank_accounts_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      document_open_balances: {
+        Row: {
+          allocated_amount: number | null
+          branch_id: string | null
+          consumed_amount: number | null
+          currency: string | null
+          document_id: string | null
+          due_date: string | null
+          issue_date: string | null
+          kind: string | null
+          open_as_target: number | null
+          org_id: string | null
+          original_amount: number | null
+          party_id: string | null
+          status: string | null
+          unapplied_as_source: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "documents_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "documents_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "documents_party_id_fkey"
+            columns: ["party_id"]
+            isOneToOne: false
+            referencedRelation: "parties"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      party_balances: {
+        Row: {
+          balance: number | null
+          org_id: string | null
+          party_id: string | null
+          party_type: Database["public"]["Enums"]["party_type"] | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "documents_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "documents_party_id_fkey"
+            columns: ["party_id"]
+            isOneToOne: false
+            referencedRelation: "parties"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
+      allocate_payment: {
+        Args: { _org: string; _payload: Json }
+        Returns: string[]
+      }
       close_accounting_period: {
         Args: { _org: string; _period_id: string }
         Returns: undefined
@@ -2236,6 +2727,26 @@ export type Database = {
           period_id: string
           status: Database["public"]["Enums"]["period_status"]
         }[]
+      }
+      get_aging_buckets: {
+        Args: { _asof?: string; _org: string; _party_type?: string }
+        Returns: {
+          current_amt: number
+          d1_30: number
+          d31_60: number
+          d61_90: number
+          d91_plus: number
+          party_id: string
+          total: number
+        }[]
+      }
+      get_document_open_balance: {
+        Args: { _doc: string; _org: string }
+        Returns: number
+      }
+      get_party_balance: {
+        Args: { _org: string; _party: string }
+        Returns: number
       }
       has_org_role: {
         Args: {
@@ -2267,6 +2778,10 @@ export type Database = {
           _org: string
         }
         Returns: string
+      }
+      validate_posting: {
+        Args: { _org: string; _payload: Json }
+        Returns: Json
       }
       validate_tax_code: {
         Args: { _code: string; _date: string; _org: string }
@@ -2307,7 +2822,33 @@ export type Database = {
         | "expense"
         | "other_income"
         | "other_expense"
+      allocation_source_kind:
+        | "customer_payment"
+        | "supplier_payment"
+        | "receipt"
+        | "credit_note"
+        | "debit_note"
+        | "advance"
+        | "writeoff"
+        | "refund"
+      allocation_target_kind:
+        | "invoice"
+        | "bill"
+        | "credit_note"
+        | "debit_note"
+        | "advance"
       app_role: "owner" | "admin" | "accountant" | "user" | "viewer"
+      cash_account_kind: "cash" | "bank"
+      cash_txn_kind:
+        | "deposit"
+        | "withdrawal"
+        | "transfer_in"
+        | "transfer_out"
+        | "bank_charge"
+        | "interest"
+        | "adjustment"
+        | "payment_out"
+        | "receipt_in"
       doc_kind:
         | "sales_invoice"
         | "simplified_tax_invoice"
@@ -2349,6 +2890,15 @@ export type Database = {
         | "inventory_posted"
         | "expense_posted"
         | "manual_journal"
+        | "receipt_created"
+        | "payment_allocated"
+        | "bank_transfer"
+        | "bank_charge"
+        | "bank_interest"
+        | "cash_adjustment"
+        | "writeoff_created"
+        | "refund_created"
+        | "advance_created"
       tax_type:
         | "standard"
         | "zero_rated"
@@ -2492,7 +3042,36 @@ export const Constants = {
         "other_income",
         "other_expense",
       ],
+      allocation_source_kind: [
+        "customer_payment",
+        "supplier_payment",
+        "receipt",
+        "credit_note",
+        "debit_note",
+        "advance",
+        "writeoff",
+        "refund",
+      ],
+      allocation_target_kind: [
+        "invoice",
+        "bill",
+        "credit_note",
+        "debit_note",
+        "advance",
+      ],
       app_role: ["owner", "admin", "accountant", "user", "viewer"],
+      cash_account_kind: ["cash", "bank"],
+      cash_txn_kind: [
+        "deposit",
+        "withdrawal",
+        "transfer_in",
+        "transfer_out",
+        "bank_charge",
+        "interest",
+        "adjustment",
+        "payment_out",
+        "receipt_in",
+      ],
       doc_kind: [
         "sales_invoice",
         "simplified_tax_invoice",
@@ -2536,6 +3115,15 @@ export const Constants = {
         "inventory_posted",
         "expense_posted",
         "manual_journal",
+        "receipt_created",
+        "payment_allocated",
+        "bank_transfer",
+        "bank_charge",
+        "bank_interest",
+        "cash_adjustment",
+        "writeoff_created",
+        "refund_created",
+        "advance_created",
       ],
       tax_type: [
         "standard",
