@@ -127,15 +127,24 @@ export async function createDocument(input: CreateDocumentInput) {
   if (error) throw error;
 
   if (lines.length) {
-    const rows = lines.map((l) => ({
-      org_id: orgId,
+    const rows = lines.map((l: any, i: number) => ({
       document_id: doc.id,
-      ...l,
+      position: l.position ?? l.line_no ?? i + 1,
+      description: l.description ?? "",
+      description_en: l.description_en ?? null,
+      item_id: l.item_id ?? null,
+      qty: Number(l.qty ?? l.quantity ?? 1),
+      unit: l.unit ?? null,
+      price: Number(l.price ?? l.unit_price ?? 0),
+      discount: Number(l.discount ?? l.discount_amount ?? 0),
+      tax_rate: Number(l.tax_rate ?? 15),
+      line_total: Number(l.line_total ?? 0),
       meta: l.meta ?? {},
     }));
     const { error: lErr } = await (supabase.from("document_lines") as any).insert(rows);
     if (lErr) throw lErr;
   }
+
 
   await snapshotVersion(doc.id, orgId, uid, "created", doc);
   await emitDocEvent({
