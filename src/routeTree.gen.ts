@@ -30,6 +30,7 @@ import { Route as SettingsOrganizationRouteImport } from './routes/settings.orga
 import { Route as SettingsNumberingRouteImport } from './routes/settings.numbering'
 import { Route as SettingsIntegrationsRouteImport } from './routes/settings.integrations'
 import { Route as SettingsImportExportRouteImport } from './routes/settings.import-export'
+import { Route as SettingsDeterminationsRouteImport } from './routes/settings.determinations'
 import { Route as SettingsCurrenciesRouteImport } from './routes/settings.currencies'
 import { Route as SettingsBranchesRouteImport } from './routes/settings.branches'
 import { Route as SettingsBillingRouteImport } from './routes/settings.billing'
@@ -195,6 +196,11 @@ const SettingsIntegrationsRoute = SettingsIntegrationsRouteImport.update({
 const SettingsImportExportRoute = SettingsImportExportRouteImport.update({
   id: '/settings/import-export',
   path: '/settings/import-export',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SettingsDeterminationsRoute = SettingsDeterminationsRouteImport.update({
+  id: '/settings/determinations',
+  path: '/settings/determinations',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SettingsCurrenciesRoute = SettingsCurrenciesRouteImport.update({
@@ -564,6 +570,7 @@ export interface FileRoutesByFullPath {
   '/settings/billing': typeof SettingsBillingRoute
   '/settings/branches': typeof SettingsBranchesRoute
   '/settings/currencies': typeof SettingsCurrenciesRoute
+  '/settings/determinations': typeof SettingsDeterminationsRoute
   '/settings/import-export': typeof SettingsImportExportRoute
   '/settings/integrations': typeof SettingsIntegrationsRoute
   '/settings/numbering': typeof SettingsNumberingRoute
@@ -642,6 +649,7 @@ export interface FileRoutesByTo {
   '/settings/billing': typeof SettingsBillingRoute
   '/settings/branches': typeof SettingsBranchesRoute
   '/settings/currencies': typeof SettingsCurrenciesRoute
+  '/settings/determinations': typeof SettingsDeterminationsRoute
   '/settings/import-export': typeof SettingsImportExportRoute
   '/settings/integrations': typeof SettingsIntegrationsRoute
   '/settings/numbering': typeof SettingsNumberingRoute
@@ -727,6 +735,7 @@ export interface FileRoutesById {
   '/settings/billing': typeof SettingsBillingRoute
   '/settings/branches': typeof SettingsBranchesRoute
   '/settings/currencies': typeof SettingsCurrenciesRoute
+  '/settings/determinations': typeof SettingsDeterminationsRoute
   '/settings/import-export': typeof SettingsImportExportRoute
   '/settings/integrations': typeof SettingsIntegrationsRoute
   '/settings/numbering': typeof SettingsNumberingRoute
@@ -813,6 +822,7 @@ export interface FileRouteTypes {
     | '/settings/billing'
     | '/settings/branches'
     | '/settings/currencies'
+    | '/settings/determinations'
     | '/settings/import-export'
     | '/settings/integrations'
     | '/settings/numbering'
@@ -891,6 +901,7 @@ export interface FileRouteTypes {
     | '/settings/billing'
     | '/settings/branches'
     | '/settings/currencies'
+    | '/settings/determinations'
     | '/settings/import-export'
     | '/settings/integrations'
     | '/settings/numbering'
@@ -975,6 +986,7 @@ export interface FileRouteTypes {
     | '/settings/billing'
     | '/settings/branches'
     | '/settings/currencies'
+    | '/settings/determinations'
     | '/settings/import-export'
     | '/settings/integrations'
     | '/settings/numbering'
@@ -1055,6 +1067,7 @@ export interface RootRouteChildren {
   SettingsBillingRoute: typeof SettingsBillingRoute
   SettingsBranchesRoute: typeof SettingsBranchesRoute
   SettingsCurrenciesRoute: typeof SettingsCurrenciesRoute
+  SettingsDeterminationsRoute: typeof SettingsDeterminationsRoute
   SettingsImportExportRoute: typeof SettingsImportExportRoute
   SettingsIntegrationsRoute: typeof SettingsIntegrationsRoute
   SettingsNumberingRoute: typeof SettingsNumberingRoute
@@ -1216,6 +1229,13 @@ declare module '@tanstack/react-router' {
       path: '/settings/import-export'
       fullPath: '/settings/import-export'
       preLoaderRoute: typeof SettingsImportExportRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/settings/determinations': {
+      id: '/settings/determinations'
+      path: '/settings/determinations'
+      fullPath: '/settings/determinations'
+      preLoaderRoute: typeof SettingsDeterminationsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/settings/currencies': {
@@ -1822,6 +1842,7 @@ const rootRouteChildren: RootRouteChildren = {
   SettingsBillingRoute: SettingsBillingRoute,
   SettingsBranchesRoute: SettingsBranchesRoute,
   SettingsCurrenciesRoute: SettingsCurrenciesRoute,
+  SettingsDeterminationsRoute: SettingsDeterminationsRoute,
   SettingsImportExportRoute: SettingsImportExportRoute,
   SettingsIntegrationsRoute: SettingsIntegrationsRoute,
   SettingsNumberingRoute: SettingsNumberingRoute,
