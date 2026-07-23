@@ -185,6 +185,7 @@ export function Shell({ children }: { children: ReactNode }) {
         </div>
 
         <div className="flex items-center gap-2 relative">
+          <GlobalSearch />
           <Link to="/sales/invoices/new">
             <button className="flex items-center gap-2 bg-[#0f2a1d] text-white rounded-lg px-4 py-2 text-sm font-medium hover:bg-[#163a29]">
               <Plus className="w-4 h-4" />
