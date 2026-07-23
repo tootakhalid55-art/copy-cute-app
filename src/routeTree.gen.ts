@@ -18,6 +18,7 @@ import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AccountingRouteImport } from './routes/accounting'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as SettingsWorkflowsRouteImport } from './routes/settings.workflows'
 import { Route as SettingsUsersRouteImport } from './routes/settings.users'
 import { Route as SettingsTemplatesRouteImport } from './routes/settings.templates'
 import { Route as SettingsTaxesRouteImport } from './routes/settings.taxes'
@@ -132,6 +133,11 @@ const AccountingRoute = AccountingRouteImport.update({
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SettingsWorkflowsRoute = SettingsWorkflowsRouteImport.update({
+  id: '/settings/workflows',
+  path: '/settings/workflows',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SettingsUsersRoute = SettingsUsersRouteImport.update({
@@ -554,6 +560,7 @@ export interface FileRoutesByFullPath {
   '/settings/taxes': typeof SettingsTaxesRoute
   '/settings/templates': typeof SettingsTemplatesRoute
   '/settings/users': typeof SettingsUsersRoute
+  '/settings/workflows': typeof SettingsWorkflowsRoute
   '/purchases/bills/$id': typeof PurchasesBillsIdRoute
   '/purchases/bills/new': typeof PurchasesBillsNewRoute
   '/purchases/debit-notes/$id': typeof PurchasesDebitNotesIdRoute
@@ -629,6 +636,7 @@ export interface FileRoutesByTo {
   '/settings/taxes': typeof SettingsTaxesRoute
   '/settings/templates': typeof SettingsTemplatesRoute
   '/settings/users': typeof SettingsUsersRoute
+  '/settings/workflows': typeof SettingsWorkflowsRoute
   '/purchases/bills/$id': typeof PurchasesBillsIdRoute
   '/purchases/bills/new': typeof PurchasesBillsNewRoute
   '/purchases/debit-notes/$id': typeof PurchasesDebitNotesIdRoute
@@ -711,6 +719,7 @@ export interface FileRoutesById {
   '/settings/taxes': typeof SettingsTaxesRoute
   '/settings/templates': typeof SettingsTemplatesRoute
   '/settings/users': typeof SettingsUsersRoute
+  '/settings/workflows': typeof SettingsWorkflowsRoute
   '/purchases/bills/$id': typeof PurchasesBillsIdRoute
   '/purchases/bills/new': typeof PurchasesBillsNewRoute
   '/purchases/debit-notes/$id': typeof PurchasesDebitNotesIdRoute
@@ -794,6 +803,7 @@ export interface FileRouteTypes {
     | '/settings/taxes'
     | '/settings/templates'
     | '/settings/users'
+    | '/settings/workflows'
     | '/purchases/bills/$id'
     | '/purchases/bills/new'
     | '/purchases/debit-notes/$id'
@@ -869,6 +879,7 @@ export interface FileRouteTypes {
     | '/settings/taxes'
     | '/settings/templates'
     | '/settings/users'
+    | '/settings/workflows'
     | '/purchases/bills/$id'
     | '/purchases/bills/new'
     | '/purchases/debit-notes/$id'
@@ -950,6 +961,7 @@ export interface FileRouteTypes {
     | '/settings/taxes'
     | '/settings/templates'
     | '/settings/users'
+    | '/settings/workflows'
     | '/purchases/bills/$id'
     | '/purchases/bills/new'
     | '/purchases/debit-notes/$id'
@@ -1027,6 +1039,7 @@ export interface RootRouteChildren {
   SettingsTaxesRoute: typeof SettingsTaxesRoute
   SettingsTemplatesRoute: typeof SettingsTemplatesRoute
   SettingsUsersRoute: typeof SettingsUsersRoute
+  SettingsWorkflowsRoute: typeof SettingsWorkflowsRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -1092,6 +1105,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/settings/workflows': {
+      id: '/settings/workflows'
+      path: '/settings/workflows'
+      fullPath: '/settings/workflows'
+      preLoaderRoute: typeof SettingsWorkflowsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/settings/users': {
@@ -1770,6 +1790,7 @@ const rootRouteChildren: RootRouteChildren = {
   SettingsTaxesRoute: SettingsTaxesRoute,
   SettingsTemplatesRoute: SettingsTemplatesRoute,
   SettingsUsersRoute: SettingsUsersRoute,
+  SettingsWorkflowsRoute: SettingsWorkflowsRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
