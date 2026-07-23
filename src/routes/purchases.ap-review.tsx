@@ -484,8 +484,6 @@ function ReviewDrawer({
         </div>
       </div>
     </div>
-      </div>
-    </div>
   );
 }
 
