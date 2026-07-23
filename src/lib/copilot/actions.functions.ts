@@ -48,7 +48,7 @@ export const listProposals = createServerFn({ method: "GET" })
       .eq("org_id", data.orgId)
       .order("created_at", { ascending: false })
       .limit(Math.min(data.limit ?? 100, 500));
-    if (data.status) q = q.eq("status", data.status);
+    if (data.status) q = q.eq("status", data.status as any);
     if (data.conversationId) q = q.eq("conversation_id", data.conversationId);
     const { data: rows, error } = await q;
     if (error) throw error;
