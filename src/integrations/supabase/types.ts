@@ -137,6 +137,172 @@ export type Database = {
           },
         ]
       }
+      ap_intake_documents: {
+        Row: {
+          assigned_to: string | null
+          attachment_id: string | null
+          channel: string
+          confidence: number | null
+          created_at: string
+          duplicate_of: string | null
+          error_message: string | null
+          extraction: Json | null
+          extraction_completed_at: string | null
+          extraction_model: string | null
+          extraction_started_at: string | null
+          id: string
+          match_confidence: number | null
+          matched_bill_id: string | null
+          matched_party_id: string | null
+          org_id: string
+          raw_payload: Json | null
+          received_at: string
+          sender: string | null
+          source_ref: string | null
+          status: string
+          subject: string | null
+          updated_at: string
+        }
+        Insert: {
+          assigned_to?: string | null
+          attachment_id?: string | null
+          channel: string
+          confidence?: number | null
+          created_at?: string
+          duplicate_of?: string | null
+          error_message?: string | null
+          extraction?: Json | null
+          extraction_completed_at?: string | null
+          extraction_model?: string | null
+          extraction_started_at?: string | null
+          id?: string
+          match_confidence?: number | null
+          matched_bill_id?: string | null
+          matched_party_id?: string | null
+          org_id: string
+          raw_payload?: Json | null
+          received_at?: string
+          sender?: string | null
+          source_ref?: string | null
+          status?: string
+          subject?: string | null
+          updated_at?: string
+        }
+        Update: {
+          assigned_to?: string | null
+          attachment_id?: string | null
+          channel?: string
+          confidence?: number | null
+          created_at?: string
+          duplicate_of?: string | null
+          error_message?: string | null
+          extraction?: Json | null
+          extraction_completed_at?: string | null
+          extraction_model?: string | null
+          extraction_started_at?: string | null
+          id?: string
+          match_confidence?: number | null
+          matched_bill_id?: string | null
+          matched_party_id?: string | null
+          org_id?: string
+          raw_payload?: Json | null
+          received_at?: string
+          sender?: string | null
+          source_ref?: string | null
+          status?: string
+          subject?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ap_intake_documents_attachment_id_fkey"
+            columns: ["attachment_id"]
+            isOneToOne: false
+            referencedRelation: "attachments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ap_intake_documents_duplicate_of_fkey"
+            columns: ["duplicate_of"]
+            isOneToOne: false
+            referencedRelation: "ap_intake_documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ap_intake_documents_matched_bill_id_fkey"
+            columns: ["matched_bill_id"]
+            isOneToOne: false
+            referencedRelation: "document_open_balances"
+            referencedColumns: ["document_id"]
+          },
+          {
+            foreignKeyName: "ap_intake_documents_matched_bill_id_fkey"
+            columns: ["matched_bill_id"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ap_intake_documents_matched_party_id_fkey"
+            columns: ["matched_party_id"]
+            isOneToOne: false
+            referencedRelation: "parties"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ap_intake_documents_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ap_intake_events: {
+        Row: {
+          actor_id: string | null
+          created_at: string
+          event_type: string
+          id: string
+          intake_id: string
+          org_id: string
+          payload: Json | null
+        }
+        Insert: {
+          actor_id?: string | null
+          created_at?: string
+          event_type: string
+          id?: string
+          intake_id: string
+          org_id: string
+          payload?: Json | null
+        }
+        Update: {
+          actor_id?: string | null
+          created_at?: string
+          event_type?: string
+          id?: string
+          intake_id?: string
+          org_id?: string
+          payload?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ap_intake_events_intake_id_fkey"
+            columns: ["intake_id"]
+            isOneToOne: false
+            referencedRelation: "ap_intake_documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ap_intake_events_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       approval_actions: {
         Row: {
           action: string
@@ -2646,6 +2812,57 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      supplier_aliases: {
+        Row: {
+          alias_type: string
+          alias_value: string
+          confidence: number | null
+          created_at: string
+          id: string
+          normalized: string
+          org_id: string
+          party_id: string
+          source: string | null
+        }
+        Insert: {
+          alias_type: string
+          alias_value: string
+          confidence?: number | null
+          created_at?: string
+          id?: string
+          normalized: string
+          org_id: string
+          party_id: string
+          source?: string | null
+        }
+        Update: {
+          alias_type?: string
+          alias_value?: string
+          confidence?: number | null
+          created_at?: string
+          id?: string
+          normalized?: string
+          org_id?: string
+          party_id?: string
+          source?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "supplier_aliases_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "supplier_aliases_party_id_fkey"
+            columns: ["party_id"]
+            isOneToOne: false
+            referencedRelation: "parties"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       tags: {
         Row: {
