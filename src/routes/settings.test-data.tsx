@@ -304,7 +304,7 @@ function TestDataPage() {
       const tables = ["attachments", "documents", "items", "parties"];
       for (const t of tables) {
         const t0 = performance.now();
-        const { error } = await supabase.from(t).delete().eq("org_id", currentOrgId).not("meta->>seed", "is", null);
+        const { error } = await ((supabase as any).from(t)).delete().eq("org_id", currentOrgId).not("meta->>seed", "is", null);
         const ms = Math.round(performance.now() - t0);
         if (error) setLog((l) => [...l, `❌ delete ${t}: ${error.message}`]);
         else setLog((l) => [...l, `🗑 حذف ${t} (${ms}ms)`]);
