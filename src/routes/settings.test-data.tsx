@@ -264,7 +264,7 @@ function TestDataPage() {
       if (cancelRef.current) break;
       const size = Math.min(BATCH, total - start);
       const rows = Array.from({ length: size }, (_, k) => build(start + k));
-      const { data, error } = await (supabase.from(table) as any).insert(rows).select("id");
+      const { data, error } = await ((supabase as any).from(table)).insert(rows).select("id");
       if (error) { push(`❌ ${table}: ${error.message}`); break; }
       (data || []).forEach((d: any) => ids.push(d.id));
       push(`  ${table}: ${ids.length}/${total}`);
