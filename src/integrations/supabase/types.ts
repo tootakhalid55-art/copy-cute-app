@@ -1025,6 +1025,176 @@ export type Database = {
           },
         ]
       }
+      migration_reports: {
+        Row: {
+          created_at: string
+          details: Json
+          duplicate: number
+          failed: number
+          id: string
+          imported: number
+          org_id: string
+          scope: string
+          skipped: number
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          details?: Json
+          duplicate?: number
+          failed?: number
+          id?: string
+          imported?: number
+          org_id: string
+          scope: string
+          skipped?: number
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          details?: Json
+          duplicate?: number
+          failed?: number
+          id?: string
+          imported?: number
+          org_id?: string
+          scope?: string
+          skipped?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "migration_reports_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notifications: {
+        Row: {
+          body: string | null
+          channel: string
+          created_at: string
+          document_id: string | null
+          entity_id: string | null
+          entity_type: string | null
+          event_type: string
+          id: string
+          org_id: string
+          payload: Json
+          read_at: string | null
+          status: string
+          title: string
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          body?: string | null
+          channel?: string
+          created_at?: string
+          document_id?: string | null
+          entity_id?: string | null
+          entity_type?: string | null
+          event_type: string
+          id?: string
+          org_id: string
+          payload?: Json
+          read_at?: string | null
+          status?: string
+          title: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          body?: string | null
+          channel?: string
+          created_at?: string
+          document_id?: string | null
+          entity_id?: string | null
+          entity_type?: string | null
+          event_type?: string
+          id?: string
+          org_id?: string
+          payload?: Json
+          read_at?: string | null
+          status?: string
+          title?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notifications_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notifications_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ocr_jobs: {
+        Row: {
+          attachment_id: string
+          attempts: number
+          created_at: string
+          id: string
+          last_error: string | null
+          org_id: string
+          provider: string | null
+          result: Json | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          attachment_id: string
+          attempts?: number
+          created_at?: string
+          id?: string
+          last_error?: string | null
+          org_id: string
+          provider?: string | null
+          result?: Json | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          attachment_id?: string
+          attempts?: number
+          created_at?: string
+          id?: string
+          last_error?: string | null
+          org_id?: string
+          provider?: string | null
+          result?: Json | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ocr_jobs_attachment_id_fkey"
+            columns: ["attachment_id"]
+            isOneToOne: false
+            referencedRelation: "attachments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ocr_jobs_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       org_members: {
         Row: {
           created_at: string
