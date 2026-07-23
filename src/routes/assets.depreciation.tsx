@@ -173,9 +173,9 @@ function Page() {
                   <td className="p-2 tabular-nums font-medium">{money(r.depreciation)}</td>
                   <td className="p-2 tabular-nums">{money(r.closing_nbv)}</td>
                   <td className="p-2">
-                    {r.already_posted ? <Badge tone="emerald">مُرحّل</Badge>
+                    {r.already_posted ? <Badge tone="green">مُرحّل</Badge>
                       : r.reason ? <Badge tone="amber">{r.reason}</Badge>
-                      : r.depreciation > 0 ? <Badge tone="sky">مؤهل</Badge>
+                      : r.depreciation > 0 ? <Badge tone="blue">مؤهل</Badge>
                       : <Badge>—</Badge>}
                   </td>
                 </tr>
@@ -205,7 +205,7 @@ function Page() {
                   <td className="p-2 tabular-nums">{r.asset_count}</td>
                   <td className="p-2 tabular-nums font-medium">{money(r.total_depreciation)}</td>
                   <td className="p-2">
-                    {r.status === "posted" ? <Badge tone="emerald">مُرحّل</Badge> : <Badge tone="red">عُكس</Badge>}
+                    {r.status === "posted" ? <Badge tone="green">مُرحّل</Badge> : <Badge tone="red">عُكس</Badge>}
                   </td>
                   <td className="p-2 text-xs text-[#0f2a1d]/70">{r.memo || "—"}</td>
                   <td className="p-2">
