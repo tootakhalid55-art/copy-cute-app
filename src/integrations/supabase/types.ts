@@ -1432,6 +1432,44 @@ export type Database = {
           },
         ]
       }
+      finance_health_snapshots: {
+        Row: {
+          check_name: string
+          details: Json
+          id: string
+          issue_count: number
+          org_id: string
+          ran_at: string
+          severity: string
+        }
+        Insert: {
+          check_name: string
+          details?: Json
+          id?: string
+          issue_count?: number
+          org_id: string
+          ran_at?: string
+          severity: string
+        }
+        Update: {
+          check_name?: string
+          details?: Json
+          id?: string
+          issue_count?: number
+          org_id?: string
+          ran_at?: string
+          severity?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "finance_health_snapshots_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       financial_audit_log: {
         Row: {
           actor_id: string | null
@@ -2773,6 +2811,49 @@ export type Database = {
           },
         ]
       }
+      finance_health_latest: {
+        Row: {
+          check_name: string | null
+          details: Json | null
+          issue_count: number | null
+          org_id: string | null
+          ran_at: string | null
+          severity: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "finance_health_snapshots_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      party_balances: {
+        Row: {
+          balance: number | null
+          org_id: string | null
+          party_id: string | null
+          party_type: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "documents_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "documents_party_id_fkey"
+            columns: ["party_id"]
+            isOneToOne: false
+            referencedRelation: "parties"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       _create_settlement_doc: {
@@ -2808,6 +2889,7 @@ export type Database = {
         Args: { _org: string; _payload: Json }
         Returns: string
       }
+      cron_run_finance_health_all: { Args: never; Returns: number }
       find_open_period: {
         Args: { _date: string; _org: string }
         Returns: {
@@ -2865,6 +2947,79 @@ export type Database = {
         }
         Returns: boolean
       }
+      hc_duplicate_allocations: {
+        Args: { _org: string }
+        Returns: {
+          allocation_date: string
+          amount: number
+          occurrences: number
+          source_document_id: string
+          target_document_id: string
+        }[]
+      }
+      hc_duplicate_journal_refs: {
+        Args: { _org: string }
+        Returns: {
+          event_id: string
+          occurrences: number
+        }[]
+      }
+      hc_failed_posting_events: {
+        Args: { _org: string }
+        Returns: {
+          created_at: string
+          error: string
+          event_type: string
+          id: string
+          source_document_id: string
+        }[]
+      }
+      hc_invalid_posting_sequences: {
+        Args: { _org: string }
+        Returns: {
+          doc_number: string
+          document_id: string
+          kind: string
+          reason: string
+        }[]
+      }
+      hc_negative_open_balances: {
+        Args: { _org: string }
+        Returns: {
+          allocated_amount: number
+          document_id: string
+          kind: string
+          open_as_target: number
+          original_amount: number
+        }[]
+      }
+      hc_orphan_allocations: {
+        Args: { _org: string }
+        Returns: {
+          allocation_id: string
+          reason: string
+          source_document_id: string
+          target_document_id: string
+        }[]
+      }
+      hc_settlement_mismatch: {
+        Args: { _org: string }
+        Returns: {
+          delta: number
+          party_balance: number
+          party_id: string
+          sum_open: number
+        }[]
+      }
+      hc_unbalanced_journals: {
+        Args: { _org: string }
+        Returns: {
+          entry_id: string
+          entry_number: string
+          total_credit: number
+          total_debit: number
+        }[]
+      }
       is_org_member: { Args: { _org: string; _user: string }; Returns: boolean }
       next_document_number: {
         Args: { _branch: string; _doc_type: string; _fy: string; _org: string }
@@ -2909,6 +3064,15 @@ export type Database = {
           _org: string
         }
         Returns: string
+      }
+      run_finance_health_check: {
+        Args: { _org: string }
+        Returns: {
+          check_name: string
+          details: Json
+          issue_count: number
+          severity: string
+        }[]
       }
       set_credit_hold: {
         Args: { _org: string; _party: string; _reason: string }
