@@ -755,6 +755,16 @@ export function QuotationForm({ docId }: { docId?: string }) {
           />
         </div>
       </div>
+
+      <div className="mt-6">
+        <DocumentSidePanel
+          orgId={currentOrgId}
+          dbDocId={dbId}
+          enabling={enablingCloud}
+          onEnable={enableCloud}
+          onUploadingChange={setUploading}
+        />
+      </div>
     </Shell>
   );
 }
