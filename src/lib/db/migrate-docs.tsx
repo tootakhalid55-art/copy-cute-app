@@ -8,13 +8,14 @@ import { supabase } from "@/integrations/supabase/client";
 import { useOrg } from "./org";
 
 const LEGACY: Array<{ key: string; kind: string; prefix: string }> = [
-  { key: "invoices", kind: "invoice", prefix: "INV" },
-  { key: "bills", kind: "bill", prefix: "BILL" },
-  { key: "quotations", kind: "quotation", prefix: "Q" },
+  { key: "invoices", kind: "sales_invoice", prefix: "INV" },
+  { key: "bills", kind: "purchase_invoice", prefix: "BILL" },
+  { key: "quotations", kind: "sales_quotation", prefix: "Q" },
   { key: "credit-notes", kind: "credit_note", prefix: "CN" },
   { key: "debit-notes", kind: "debit_note", prefix: "DN" },
   { key: "purchase-orders", kind: "purchase_order", prefix: "PO" },
 ];
+
 
 type ReportRow = { key: string; docNumber: string; outcome: "imported" | "duplicate" | "failed" | "skipped"; error?: string };
 type Report = {
