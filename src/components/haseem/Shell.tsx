@@ -83,6 +83,7 @@ const NAV: NavItem[] = [
     icon: Package, label: "الأصول الثابتة",
     children: [
       { label: "سجل الأصول", to: "/assets" },
+      { label: "دورة الإهلاك", to: "/assets/depreciation" },
       { label: "أصول تحت الإنشاء", to: "/assets/cip" },
       { label: "الفئات", to: "/assets/categories" },
       { label: "الإعدادات", to: "/assets/settings" },
