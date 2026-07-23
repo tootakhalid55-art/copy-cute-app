@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { CLOUD_KEYS, useCloudCollection } from "@/lib/db/collections";
 
 type Rec = { id: string; [k: string]: any };
 const listeners: Record<string, Set<() => void>> = {};
@@ -23,7 +24,12 @@ function writeRaw<T extends Rec>(key: string, next: T[]) {
   listeners[key]?.forEach((fn) => fn());
 }
 
-export function useCollection<T extends Rec = Rec>(key: string) {
+/**
+ * Legacy localStorage collection. Kept as fallback for keys we haven't migrated yet.
+ * DO NOT call directly from feature code — use `useCollection` which routes to Supabase
+ * when the key is registered in CLOUD_KEYS.
+ */
+function useLocalCollection<T extends Rec = Rec>(key: string) {
   const [items, setItems] = useState<T[]>([]);
   useEffect(() => {
     const fn = () => setItems(readRaw<T>(key));
@@ -37,34 +43,39 @@ export function useCollection<T extends Rec = Rec>(key: string) {
   const add = useCallback(
     (item: Omit<T, "id">) => {
       const id =
-        (globalThis.crypto && "randomUUID" in globalThis.crypto
+        globalThis.crypto && "randomUUID" in globalThis.crypto
           ? (globalThis.crypto as any).randomUUID()
-          : String(Date.now()) + Math.random().toString(36).slice(2, 8));
+          : String(Date.now()) + Math.random().toString(36).slice(2, 8);
       const rec = { ...(item as any), id, createdAt: new Date().toISOString() } as T;
       writeRaw(key, [rec, ...readRaw<T>(key)]);
       return rec;
     },
-    [key]
+    [key],
   );
   const update = useCallback(
     (id: string, patch: Partial<T>) => {
-      writeRaw(
-        key,
-        readRaw<T>(key).map((i) => (i.id === id ? { ...i, ...patch } : i))
-      );
+      writeRaw(key, readRaw<T>(key).map((i) => (i.id === id ? { ...i, ...patch } : i)));
     },
-    [key]
+    [key],
   );
   const remove = useCallback(
     (id: string) => {
-      writeRaw(
-        key,
-        readRaw<T>(key).filter((i) => i.id !== id)
-      );
+      writeRaw(key, readRaw<T>(key).filter((i) => i.id !== id));
     },
-    [key]
+    [key],
   );
   return { items, add, update, remove };
+}
+
+export function useCollection<T extends Rec = Rec>(key: string) {
+  const isCloud = CLOUD_KEYS.has(key);
+  // Both hooks must be called unconditionally to satisfy the Rules of Hooks.
+  const cloud = useCloudCollection<T>(key);
+  const local = useLocalCollection<T>(key);
+  if (isCloud && cloud.enabled) {
+    return { items: cloud.items, add: cloud.add, update: cloud.update, remove: cloud.remove };
+  }
+  return local;
 }
 
 export function useKV<T>(key: string, initial: T) {
@@ -85,7 +96,7 @@ export function useKV<T>(key: string, initial: T) {
         return next;
       });
     },
-    [storageKey]
+    [storageKey],
   );
   return [value, set] as const;
 }
