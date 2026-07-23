@@ -93,13 +93,39 @@ function Page() {
   const dupFn = useServerFn(detectDuplicates);
   const cashFn = useServerFn(explainCashFlow);
 
+  const listProp = useServerFn(listProposals);
+  const confirmProp = useServerFn(confirmProposal);
+  const rejectProp = useServerFn(rejectProposal);
+  const proposeCollectFn = useServerFn(proposeCollectionPlan);
+  const proposeBulkPayFn = useServerFn(proposeBulkSupplierPayments);
+
   const [convs, setConvs] = useState<Conv[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [messages, setMessages] = useState<Msg[]>([]);
+  const [proposals, setProposals] = useState<ActionProposal[]>([]);
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState<string | null>(null);
   const scroller = useRef<HTMLDivElement>(null);
   const transcriptRef = useRef<HTMLDivElement>(null);
+
+  async function refreshProposals() {
+    if (!orgId) return;
+    try {
+      const rows = await listProp({ data: { orgId, limit: 50 } }) as ActionProposal[];
+      setProposals(rows);
+    } catch (e) { console.warn("[proposals]", e); }
+  }
+  useEffect(() => {
+    refreshProposals();
+    if (!orgId) return;
+    const ch = supabase
+      .channel(`proposals-${orgId}`)
+      .on("postgres_changes", { event: "*", schema: "public", table: "copilot_action_proposals", filter: `org_id=eq.${orgId}` },
+        () => refreshProposals())
+      .subscribe();
+    return () => { supabase.removeChannel(ch); };
+    // eslint-disable-next-line
+  }, [orgId]);
 
   async function refreshConvs() {
     if (!orgId) return;
