@@ -11,6 +11,7 @@ import {
 import { submitApproval, listApprovals } from "@/lib/ap/workflow.functions";
 import { resolveThreshold } from "@/lib/ap/thresholds.functions";
 import { preprocessImage } from "@/lib/ap/preprocess";
+import { CopilotPanel } from "@/components/haseem/CopilotPanel";
 
 export const Route = createFileRoute("/purchases/ap-review")({
   head: () => ({ meta: [
@@ -353,7 +354,7 @@ function ReviewDrawer({
           <button onClick={onClose} className="p-1 hover:bg-gray-100 rounded">✕</button>
         </div>
 
-        <div className="grid md:grid-cols-2 gap-4 p-5">
+        <div className="grid md:grid-cols-3 gap-4 p-5">
           {/* Left: editable extraction with heatmap */}
           <div className="space-y-3">
             {intake.error_message && (
@@ -475,6 +476,13 @@ function ReviewDrawer({
                 </div>
               )}
             </div>
+          </div>
+
+
+
+          {/* Copilot column */}
+          <div className="md:col-span-1">
+            <CopilotPanel orgId={orgId} intakeId={intake.id} />
           </div>
         </div>
       </div>
