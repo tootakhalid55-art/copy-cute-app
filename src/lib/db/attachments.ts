@@ -229,7 +229,7 @@ export function uploadAttachment(file: File, opts: UploadOpts): UploadHandle {
       handle.status = "done";
       emit();
     } catch (err: any) {
-      if (handle.status === "cancelled") return;
+      if ((handle.status as string) === "cancelled") return;
       handle.status = "failed";
       handle.error = err?.message ?? String(err);
       emit();
