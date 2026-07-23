@@ -2602,6 +2602,222 @@ export type Database = {
           },
         ]
       }
+      fixed_asset_method_params: {
+        Row: {
+          asset_id: string
+          created_at: string
+          ddb_factor: number | null
+          id: string
+          manual_monthly_amount: number | null
+          meta: Json
+          org_id: string
+          total_units: number | null
+          units_this_period: number | null
+          updated_at: string
+        }
+        Insert: {
+          asset_id: string
+          created_at?: string
+          ddb_factor?: number | null
+          id?: string
+          manual_monthly_amount?: number | null
+          meta?: Json
+          org_id: string
+          total_units?: number | null
+          units_this_period?: number | null
+          updated_at?: string
+        }
+        Update: {
+          asset_id?: string
+          created_at?: string
+          ddb_factor?: number | null
+          id?: string
+          manual_monthly_amount?: number | null
+          meta?: Json
+          org_id?: string
+          total_units?: number | null
+          units_this_period?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fixed_asset_method_params_asset_id_fkey"
+            columns: ["asset_id"]
+            isOneToOne: true
+            referencedRelation: "fixed_assets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fixed_asset_method_params_asset_id_fkey"
+            columns: ["asset_id"]
+            isOneToOne: true
+            referencedRelation: "fixed_assets_overview"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fixed_asset_method_params_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fixed_asset_runs: {
+        Row: {
+          asset_count: number
+          created_at: string
+          created_by: string | null
+          id: string
+          journal_id: string | null
+          memo: string | null
+          meta: Json
+          org_id: string
+          period_end: string
+          period_start: string
+          reversed_at: string | null
+          reversed_by: string | null
+          status: string
+          total_depreciation: number
+          updated_at: string
+        }
+        Insert: {
+          asset_count?: number
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          journal_id?: string | null
+          memo?: string | null
+          meta?: Json
+          org_id: string
+          period_end: string
+          period_start: string
+          reversed_at?: string | null
+          reversed_by?: string | null
+          status?: string
+          total_depreciation?: number
+          updated_at?: string
+        }
+        Update: {
+          asset_count?: number
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          journal_id?: string | null
+          memo?: string | null
+          meta?: Json
+          org_id?: string
+          period_end?: string
+          period_start?: string
+          reversed_at?: string | null
+          reversed_by?: string | null
+          status?: string
+          total_depreciation?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fixed_asset_runs_journal_id_fkey"
+            columns: ["journal_id"]
+            isOneToOne: false
+            referencedRelation: "journal_entries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fixed_asset_runs_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fixed_asset_schedules: {
+        Row: {
+          accumulated: number
+          asset_id: string
+          closing_nbv: number
+          created_at: string
+          days: number
+          depreciation: number
+          id: string
+          method: Database["public"]["Enums"]["fa_depreciation_method"]
+          notes: string | null
+          opening_nbv: number
+          org_id: string
+          period_end: string
+          period_start: string
+          run_id: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          accumulated?: number
+          asset_id: string
+          closing_nbv?: number
+          created_at?: string
+          days?: number
+          depreciation?: number
+          id?: string
+          method: Database["public"]["Enums"]["fa_depreciation_method"]
+          notes?: string | null
+          opening_nbv?: number
+          org_id: string
+          period_end: string
+          period_start: string
+          run_id?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          accumulated?: number
+          asset_id?: string
+          closing_nbv?: number
+          created_at?: string
+          days?: number
+          depreciation?: number
+          id?: string
+          method?: Database["public"]["Enums"]["fa_depreciation_method"]
+          notes?: string | null
+          opening_nbv?: number
+          org_id?: string
+          period_end?: string
+          period_start?: string
+          run_id?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fixed_asset_schedules_asset_id_fkey"
+            columns: ["asset_id"]
+            isOneToOne: false
+            referencedRelation: "fixed_assets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fixed_asset_schedules_asset_id_fkey"
+            columns: ["asset_id"]
+            isOneToOne: false
+            referencedRelation: "fixed_assets_overview"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fixed_asset_schedules_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fixed_asset_schedules_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "fixed_asset_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       fixed_asset_settings: {
         Row: {
           capitalization_threshold: number
@@ -4242,6 +4458,51 @@ export type Database = {
           },
         ]
       }
+      fa_asset_rollforward: {
+        Row: {
+          accumulated: number | null
+          asset_id: string | null
+          closing_nbv: number | null
+          code: string | null
+          depreciation: number | null
+          name: string | null
+          opening_nbv: number | null
+          org_id: string | null
+          period_end: string | null
+          run_id: string | null
+          status: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fixed_asset_schedules_asset_id_fkey"
+            columns: ["asset_id"]
+            isOneToOne: false
+            referencedRelation: "fixed_assets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fixed_asset_schedules_asset_id_fkey"
+            columns: ["asset_id"]
+            isOneToOne: false
+            referencedRelation: "fixed_assets_overview"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fixed_asset_schedules_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fixed_asset_schedules_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "fixed_asset_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       finance_health_latest: {
         Row: {
           check_name: string | null
@@ -4443,6 +4704,54 @@ export type Database = {
         Returns: string
       }
       cron_run_finance_health_all: { Args: never; Returns: number }
+      fa_compute_month_depreciation: {
+        Args: {
+          _asset: Database["public"]["Tables"]["fixed_assets"]["Row"]
+          _params: Database["public"]["Tables"]["fixed_asset_method_params"]["Row"]
+          _period_end: string
+        }
+        Returns: number
+      }
+      fa_depreciation_forecast: {
+        Args: { _asset_id: string; _months?: number }
+        Returns: {
+          accumulated: number
+          closing_nbv: number
+          depreciation: number
+          opening_nbv: number
+          period_end: string
+        }[]
+      }
+      fa_post_depreciation_run: {
+        Args: { _memo?: string; _org: string; _period_end: string }
+        Returns: string
+      }
+      fa_preview_depreciation: {
+        Args: {
+          _branch_id?: string
+          _category_id?: string
+          _org: string
+          _period_end: string
+        }
+        Returns: {
+          already_posted: boolean
+          asset_id: string
+          category_id: string
+          category_name: string
+          closing_nbv: number
+          code: string
+          cost_center_id: string
+          depreciation: number
+          method: Database["public"]["Enums"]["fa_depreciation_method"]
+          name: string
+          opening_nbv: number
+          reason: string
+        }[]
+      }
+      fa_reverse_depreciation_run: {
+        Args: { _memo?: string; _run_id: string }
+        Returns: string
+      }
       find_open_period: {
         Args: { _date: string; _org: string }
         Returns: {
