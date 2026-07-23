@@ -22,8 +22,8 @@ export async function resolveAccount(params: {
 }): Promise<string | null> {
   const { data, error } = await supabase.rpc("resolve_account", {
     _org: params.orgId,
-    _branch: params.branchId ?? null,
-    _doc_kind: params.docKind ?? null,
+    _branch: (params.branchId ?? null) as never,
+    _doc_kind: (params.docKind ?? null) as never,
     _key: params.key,
   });
   if (error) throw error;
