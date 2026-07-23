@@ -9,17 +9,16 @@ const MODEL = "google/gemini-3.6-flash";
 
 type Lang = "ar" | "en";
 export type Citation = {
-  kind: string;            // documents | parties | journal_entries | payments | items | ap_intake_documents ...
+  kind: string;
   id: string;
-  label: string;           // short human title
+  label: string;
   subtitle?: string | null;
   amount?: number | null;
   ref?: string | null;
-  href?: string | null;    // in-app route
+  href?: string | null;
   meta?: any;
 };
 
-// ─────────────── AI helpers ───────────────
 function langInstruction(lang: Lang) {
   return lang === "ar"
     ? "أجب بالعربية بأسلوب محاسبي احترافي موجز. استخدم النقاط عند الحاجة. لا تختلق أي أرقام."
@@ -48,7 +47,6 @@ async function askJSON<T = any>(system: string, user: string, lang: Lang): Promi
   try { return JSON.parse(raw) as T; } catch { return {} as T; }
 }
 
-// ─────────────── Persistence ───────────────
 async function recordDecision(ctx: any, payload: {
   orgId: string; conversationId?: string | null;
   kind: string; module?: string | null;
@@ -75,7 +73,7 @@ async function recordDecision(ctx: any, payload: {
       explainability: payload.explainability ?? {},
       citations: payload.citations ?? [],
       follow_ups: payload.follow_ups ?? [],
-    });
+    } as any);
     if (payload.conversationId) {
       await ctx.supabase.from("ai_copilot_conversations")
         .update({ last_message_at: new Date().toISOString() })
@@ -153,6 +151,8 @@ export const loadConversationMessages = createServerFn({ method: "GET" })
   });
 
 // ─────────────── ERP Search (natural language) ───────────────
+const sel = (s: string): string => s;
+
 export const erpSearch = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: any) => d as { orgId: string; query: string; limit?: number })
@@ -163,60 +163,58 @@ export const erpSearch = createServerFn({ method: "POST" })
     const like = `%${q.toLowerCase()}%`;
     const sb = context.supabase;
 
-    const [docs, parties, items, journals, payments] = await Promise.all([
+    const [docs, parties, items, journals, txns] = await Promise.all([
       sb.from("documents")
-        .select("id, doc_number, kind, issue_date, grand_total, party_snapshot")
+        .select(sel("id, doc_number, kind, issue_date, grand_total, party_snapshot"))
         .eq("org_id", data.orgId).ilike("search_text", like).limit(limit),
       sb.from("parties")
-        .select("id, name, type, vat_number, email, phone")
+        .select(sel("id, name, name_en, type, vat_number, email, phone"))
         .eq("org_id", data.orgId)
-        .or(`name.ilike.${like},vat_number.ilike.${like},email.ilike.${like},phone.ilike.${like}`)
+        .or(`name.ilike.${like},name_en.ilike.${like},vat_number.ilike.${like},email.ilike.${like},phone.ilike.${like}`)
         .limit(limit),
       sb.from("items")
-        .select("id, sku, name, name_ar, sale_price")
+        .select(sel("id, sku, name, name_en, price"))
         .eq("org_id", data.orgId)
-        .or(`name.ilike.${like},name_ar.ilike.${like},sku.ilike.${like}`)
+        .or(`name.ilike.${like},name_en.ilike.${like},sku.ilike.${like}`)
         .limit(limit),
       sb.from("journal_entries")
-        .select("id, entry_number, entry_date, memo, total_debit")
+        .select(sel("id, entry_number, entry_date, memo, total_debit"))
         .eq("org_id", data.orgId)
         .or(`entry_number.ilike.${like},memo.ilike.${like}`)
         .limit(limit),
       sb.from("cash_bank_transactions")
-        .select("id, reference, txn_date, amount, direction, memo")
+        .select(sel("id, reference, txn_date, amount, kind, memo"))
         .eq("org_id", data.orgId)
         .or(`reference.ilike.${like},memo.ilike.${like}`)
         .limit(limit),
     ]);
 
     const hits: Citation[] = [];
-    for (const d of docs.data ?? []) hits.push({
+    for (const d of (docs.data ?? []) as any[]) hits.push({
       kind: "documents", id: d.id,
       label: `${d.doc_number} · ${d.kind}`,
       subtitle: (d.party_snapshot as any)?.name ?? null,
       amount: Number(d.grand_total) || null, ref: d.doc_number,
-      href: `/sales/invoices/${d.id}`,
       meta: { kind: d.kind, issue_date: d.issue_date },
     });
-    for (const p of parties.data ?? []) hits.push({
+    for (const p of (parties.data ?? []) as any[]) hits.push({
       kind: "parties", id: p.id, label: p.name,
       subtitle: p.vat_number ?? p.type, meta: { type: p.type, email: p.email, phone: p.phone },
     });
-    for (const it of items.data ?? []) hits.push({
-      kind: "items", id: it.id, label: it.name_ar || it.name,
-      subtitle: it.sku ?? null, amount: Number(it.sale_price) || null,
+    for (const it of (items.data ?? []) as any[]) hits.push({
+      kind: "items", id: it.id, label: it.name_en || it.name,
+      subtitle: it.sku ?? null, amount: Number(it.price) || null,
     });
-    for (const j of journals.data ?? []) hits.push({
+    for (const j of (journals.data ?? []) as any[]) hits.push({
       kind: "journal_entries", id: j.id,
       label: `${j.entry_number} · ${j.memo ?? ""}`.trim(),
       subtitle: j.entry_date, amount: Number(j.total_debit) || null,
-      href: `/accounting/journal-entries`,
     });
-    for (const p of payments.data ?? []) hits.push({
-      kind: "cash_bank_transactions", id: p.id,
-      label: `${p.direction === "in" ? "قبض" : "صرف"} · ${p.reference ?? ""}`.trim(),
-      subtitle: p.txn_date, amount: Number(p.amount) || null,
-      meta: { direction: p.direction, memo: p.memo },
+    for (const t of (txns.data ?? []) as any[]) hits.push({
+      kind: "cash_bank_transactions", id: t.id,
+      label: `${t.kind} · ${t.reference ?? ""}`.trim(),
+      subtitle: t.txn_date, amount: Number(t.amount) || null,
+      meta: { kind: t.kind, memo: t.memo },
     });
     return { hits };
   });
@@ -230,45 +228,47 @@ export const explainJournal = createServerFn({ method: "POST" })
     const { data: entry } = await context.supabase
       .from("journal_entries").select("*").eq("id", data.journalId).maybeSingle();
     if (!entry) throw new Error("journal not found");
-    const { data: lines } = await context.supabase
+    const { data: rawLines } = await context.supabase
       .from("journal_lines")
-      .select("line_number, account_code, description, debit, credit, cost_center_code, party_id, currency")
-      .eq("journal_entry_id", data.journalId)
-      .order("line_number");
+      .select(sel("line_no, account_id, description, debit, credit, cost_center_id, party_id, currency"))
+      .eq("entry_id", data.journalId)
+      .order("line_no");
+    const lines = (rawLines ?? []) as any[];
 
-    const codes = Array.from(new Set((lines ?? []).map((l) => l.account_code).filter(Boolean)));
-    const { data: accounts } = codes.length
+    const accountIds = Array.from(new Set(lines.map((l) => l.account_id).filter(Boolean)));
+    const { data: accounts } = accountIds.length
       ? await context.supabase.from("chart_of_accounts")
-          .select("code, name, name_ar, account_type")
-          .eq("org_id", data.orgId).in("code", codes)
+          .select("id, code, name, name_en, account_type")
+          .eq("org_id", data.orgId).in("id", accountIds)
       : { data: [] as any[] };
-    const accountMap = Object.fromEntries((accounts ?? []).map((a: any) => [a.code, a]));
+    const accountMap: Record<string, any> = Object.fromEntries(((accounts ?? []) as any[]).map((a) => [a.id, a]));
 
     const evidence = {
       entry: {
-        number: entry.entry_number, date: entry.entry_date,
-        memo: entry.memo, source: entry.source_module, event: entry.event_type,
-        total_debit: entry.total_debit, total_credit: entry.total_credit,
-        status: entry.status, currency: entry.currency,
+        number: (entry as any).entry_number, date: (entry as any).entry_date,
+        memo: (entry as any).memo, source: (entry as any).source_module, event: (entry as any).event_type,
+        total_debit: (entry as any).total_debit, total_credit: (entry as any).total_credit,
+        status: (entry as any).status, currency: (entry as any).currency,
       },
-      lines: (lines ?? []).map((l) => ({
-        ...l,
-        account_name: accountMap[l.account_code]?.name ?? null,
-        account_name_ar: accountMap[l.account_code]?.name_ar ?? null,
-        account_type: accountMap[l.account_code]?.account_type ?? null,
+      lines: lines.map((l) => ({
+        line_no: l.line_no, description: l.description, debit: l.debit, credit: l.credit,
+        currency: l.currency,
+        account_code: accountMap[l.account_id]?.code ?? null,
+        account_name: accountMap[l.account_id]?.name ?? null,
+        account_name_en: accountMap[l.account_id]?.name_en ?? null,
+        account_type: accountMap[l.account_id]?.account_type ?? null,
       })),
     };
 
     const answer = await ask(
-      "You are a Finance Copilot. Explain this journal entry line-by-line in plain business language. State: what event triggered it, why each account is debited or credited (using account type semantics), how it affects the financial statements, and whether the entry looks balanced/reasonable.",
+      "You are a Finance Copilot. Explain this journal entry line-by-line. State what event triggered it, why each account is debited or credited using account-type semantics, how it affects the financial statements, and whether it looks balanced/reasonable.",
       JSON.stringify(evidence), lang,
     );
 
     const citations: Citation[] = [{
-      kind: "journal_entries", id: entry.id,
-      label: `${entry.entry_number} · ${entry.memo ?? ""}`.trim(),
-      subtitle: entry.entry_date, amount: Number(entry.total_debit) || null,
-      href: `/accounting/journal-entries`,
+      kind: "journal_entries", id: (entry as any).id,
+      label: `${(entry as any).entry_number} · ${(entry as any).memo ?? ""}`.trim(),
+      subtitle: (entry as any).entry_date, amount: Number((entry as any).total_debit) || null,
     }];
 
     await recordDecision(context, {
@@ -279,14 +279,14 @@ export const explainJournal = createServerFn({ method: "POST" })
     return { answer, evidence, citations };
   });
 
-// ─────────────── Collection priorities (AR aging + payment behavior) ───────────────
+// ─────────────── Collection priorities ───────────────
 export const recommendCollectionPriorities = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: any) => d as { orgId: string; language?: Lang; conversationId?: string; limit?: number })
   .handler(async ({ data, context }) => {
     const lang = data.language ?? "ar";
     const limit = Math.min(data.limit ?? 15, 50);
-    const { data: openBalances } = await context.supabase
+    const { data: openRaw } = await (context.supabase as any)
       .from("document_open_balances")
       .select("document_id, party_id, party_name, kind, issue_date, due_date, grand_total, open_amount, currency")
       .eq("org_id", data.orgId)
@@ -294,31 +294,30 @@ export const recommendCollectionPriorities = createServerFn({ method: "POST" })
       .gt("open_amount", 0)
       .order("due_date", { ascending: true })
       .limit(300);
+    const openBalances = (openRaw ?? []) as any[];
 
     const today = Date.now();
-    const bucketed = (openBalances ?? []).map((b: any) => {
+    const bucketed = openBalances.map((b: any) => {
       const due = b.due_date ? new Date(b.due_date).getTime() : new Date(b.issue_date).getTime();
-      const daysOverdue = Math.floor((today - due) / 86400000);
-      return { ...b, daysOverdue };
+      return { ...b, daysOverdue: Math.floor((today - due) / 86400000) };
     });
-
-    // party rollup
     const byParty: Record<string, any> = {};
     for (const b of bucketed) {
       const key = b.party_id || b.party_name;
-      byParty[key] ??= { party_id: b.party_id, name: b.party_name, total: 0, max_days: 0, count: 0, invoices: [] };
+      byParty[key] ??= { party_id: b.party_id, name: b.party_name, total: 0, max_days: 0, count: 0 };
       byParty[key].total += Number(b.open_amount) || 0;
       byParty[key].max_days = Math.max(byParty[key].max_days, b.daysOverdue);
       byParty[key].count++;
-      byParty[key].invoices.push(b);
     }
-    const parties = Object.values(byParty).sort((a: any, b: any) => (b.total * (1 + b.max_days / 30)) - (a.total * (1 + a.max_days / 30))).slice(0, limit);
+    const parties = Object.values(byParty)
+      .sort((a: any, b: any) => (b.total * (1 + b.max_days / 30)) - (a.total * (1 + a.max_days / 30)))
+      .slice(0, limit);
 
     const parsed = await askJSON<{
-      priorities: Array<{ party: string; priority: "urgent" | "high" | "medium" | "low"; reason: string; suggested_action: string; }>;
+      priorities: Array<{ party: string; priority: string; reason: string; suggested_action: string }>;
       overall: string;
     }>(
-      "You are a Finance Copilot. Rank customers by collection priority. Weight overdue days heavily, absolute exposure, and count of overdue invoices. Suggest a concrete action per party (call, reminder, dunning, legal). Return JSON: { priorities: [{party, priority, reason, suggested_action}], overall }.",
+      "You are a Finance Copilot. Rank customers by collection priority. Weight overdue days heavily, absolute exposure, and count of overdue invoices. Suggest a concrete action per party. Return JSON: { priorities: [{party, priority(urgent|high|medium|low), reason, suggested_action}], overall }.",
       JSON.stringify(parties.map((p: any) => ({
         party: p.name, total_open: p.total, max_days_overdue: p.max_days, invoice_count: p.count,
       }))),
@@ -351,7 +350,7 @@ export const recommendPaymentPriorities = createServerFn({ method: "POST" })
   .inputValidator((d: any) => d as { orgId: string; language?: Lang; conversationId?: string; cashAvailable?: number })
   .handler(async ({ data, context }) => {
     const lang = data.language ?? "ar";
-    const { data: openBills } = await context.supabase
+    const { data: openRaw } = await (context.supabase as any)
       .from("document_open_balances")
       .select("document_id, party_id, party_name, kind, issue_date, due_date, open_amount, grand_total")
       .eq("org_id", data.orgId)
@@ -359,29 +358,27 @@ export const recommendPaymentPriorities = createServerFn({ method: "POST" })
       .gt("open_amount", 0)
       .order("due_date", { ascending: true })
       .limit(200);
+    const openBills = (openRaw ?? []) as any[];
 
     const today = Date.now();
-    const rows = (openBills ?? []).map((b: any) => {
+    const rows = openBills.map((b: any) => {
       const due = b.due_date ? new Date(b.due_date).getTime() : new Date(b.issue_date).getTime();
-      const daysToDue = Math.floor((due - today) / 86400000);
-      return { ...b, daysToDue };
+      return { ...b, daysToDue: Math.floor((due - today) / 86400000) };
     });
 
-    // cash position
     const { data: banks } = await context.supabase
       .from("cash_bank_accounts").select("current_balance, currency").eq("org_id", data.orgId);
-    const cashPos = (banks ?? []).reduce((s: number, b: any) => s + (Number(b.current_balance) || 0), 0);
+    const cashPos = ((banks ?? []) as any[]).reduce((s, b) => s + (Number(b.current_balance) || 0), 0);
 
     const parsed = await askJSON<{
-      priorities: Array<{ supplier: string; priority: "urgent" | "high" | "medium" | "low"; amount: number; reason: string; capture_discount?: boolean }>;
+      priorities: Array<{ supplier: string; priority: string; amount: number; reason: string; capture_discount?: boolean }>;
       overall: string;
     }>(
-      "You are a Finance Copilot. Given open supplier bills and cash position, recommend which to pay first. Prioritize: overdue bills, bills losing early-payment discounts, critical suppliers. Respect the cash cap if provided. Return JSON: { priorities: [{supplier, priority, amount, reason, capture_discount}], overall }.",
+      "You are a Finance Copilot. Given open supplier bills and cash position, recommend which to pay first. Prioritize overdue bills, bills losing early-payment discounts, and critical suppliers. Respect the cash cap. Return JSON: { priorities: [{supplier, priority, amount, reason, capture_discount}], overall }.",
       JSON.stringify({
         cash_available: data.cashAvailable ?? cashPos,
         bills: rows.map((r: any) => ({
-          supplier: r.party_name, open: r.open_amount,
-          days_to_due: r.daysToDue, doc_id: r.document_id,
+          supplier: r.party_name, open: r.open_amount, days_to_due: r.daysToDue, doc_id: r.document_id,
         })),
       }),
       lang,
@@ -409,7 +406,6 @@ export const monthEndChecklist = createServerFn({ method: "POST" })
   .inputValidator((d: any) => d as { orgId: string; period: string; language?: Lang; conversationId?: string })
   .handler(async ({ data, context }) => {
     const lang = data.language ?? "ar";
-    // pull a snapshot of period health
     const [openDocs, pendingApprovals, pendingIntake] = await Promise.all([
       context.supabase.from("documents").select("id", { count: "exact", head: true })
         .eq("org_id", data.orgId).eq("status", "draft"),
@@ -424,9 +420,8 @@ export const monthEndChecklist = createServerFn({ method: "POST" })
       pending_approvals: pendingApprovals.count ?? 0,
       pending_ap_intake: pendingIntake.count ?? 0,
     };
-
     const answer = await ask(
-      "You are a Finance Copilot. Produce a KSA/ZATCA month-end closing checklist tailored to the snapshot. Include: bank reconciliation, AR/AP aging review, VAT return prep, accruals, FX revaluation, inventory count, payroll, closing draft docs, approvals, journal reversal review, and management reports. Mark items that are blocked by the snapshot (e.g. drafts still open).",
+      "You are a Finance Copilot. Produce a KSA/ZATCA month-end closing checklist tailored to the snapshot. Include: bank reconciliation, AR/AP aging review, VAT return prep, accruals, FX revaluation, inventory count, payroll, closing draft docs, approvals, journal reversal review, and management reports. Mark items blocked by the snapshot.",
       JSON.stringify(snapshot), lang,
     );
     await recordDecision(context, {
@@ -437,13 +432,13 @@ export const monthEndChecklist = createServerFn({ method: "POST" })
     return { answer, snapshot };
   });
 
-// ─────────────── Executive summary for a period ───────────────
+// ─────────────── Executive summary ───────────────
 export const executiveSummary = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: any) => d as { orgId: string; from: string; to: string; language?: Lang; conversationId?: string })
   .handler(async ({ data, context }) => {
     const lang = data.language ?? "ar";
-    const [salesInv, purchInv, receipts, payments] = await Promise.all([
+    const [salesInv, purchInv, receiptsIn, paymentsOut] = await Promise.all([
       context.supabase.from("documents").select("grand_total, vat_total, currency")
         .eq("org_id", data.orgId).eq("kind", "sales_invoice")
         .gte("issue_date", data.from).lte("issue_date", data.to),
@@ -451,18 +446,18 @@ export const executiveSummary = createServerFn({ method: "POST" })
         .eq("org_id", data.orgId).eq("kind", "purchase_invoice")
         .gte("issue_date", data.from).lte("issue_date", data.to),
       context.supabase.from("cash_bank_transactions").select("amount")
-        .eq("org_id", data.orgId).eq("direction", "in")
+        .eq("org_id", data.orgId).eq("kind", "receipt_in")
         .gte("txn_date", data.from).lte("txn_date", data.to),
       context.supabase.from("cash_bank_transactions").select("amount")
-        .eq("org_id", data.orgId).eq("direction", "out")
+        .eq("org_id", data.orgId).eq("kind", "payment_out")
         .gte("txn_date", data.from).lte("txn_date", data.to),
     ]);
-    const sum = (rows: any[] | null, k = "grand_total") => (rows ?? []).reduce((s, r) => s + (Number(r[k]) || 0), 0);
+    const sum = (rows: any, k = "grand_total") => ((rows ?? []) as any[]).reduce((s, r) => s + (Number(r[k]) || 0), 0);
     const snapshot = {
       period: { from: data.from, to: data.to },
-      sales: { count: salesInv.data?.length ?? 0, total: sum(salesInv.data, "grand_total"), vat: sum(salesInv.data, "vat_total") },
-      purchases: { count: purchInv.data?.length ?? 0, total: sum(purchInv.data, "grand_total"), vat: sum(purchInv.data, "vat_total") },
-      cash: { inflow: sum(receipts.data, "amount"), outflow: sum(payments.data, "amount") },
+      sales: { count: (salesInv.data as any[] | null)?.length ?? 0, total: sum(salesInv.data, "grand_total"), vat: sum(salesInv.data, "vat_total") },
+      purchases: { count: (purchInv.data as any[] | null)?.length ?? 0, total: sum(purchInv.data, "grand_total"), vat: sum(purchInv.data, "vat_total") },
+      cash: { inflow: sum(receiptsIn.data, "amount"), outflow: sum(paymentsOut.data, "amount") },
       gross_margin_approx: sum(salesInv.data, "grand_total") - sum(purchInv.data, "grand_total"),
     };
     const answer = await ask(
@@ -483,33 +478,44 @@ export const detectDuplicates = createServerFn({ method: "POST" })
   .inputValidator((d: any) => d as { orgId: string; scope: "parties" | "items"; language?: Lang; conversationId?: string })
   .handler(async ({ data, context }) => {
     const lang = data.language ?? "ar";
-    const rows = data.scope === "parties"
-      ? (await context.supabase.from("parties").select("id, name, name_ar, vat_number, email, phone, type").eq("org_id", data.orgId).limit(1000)).data ?? []
-      : (await context.supabase.from("items").select("id, sku, name, name_ar, barcode").eq("org_id", data.orgId).limit(2000)).data ?? [];
+    let rows: any[] = [];
+    if (data.scope === "parties") {
+      const { data: r } = await context.supabase
+        .from("parties")
+        .select("id, name, name_en, vat_number, email, phone, type")
+        .eq("org_id", data.orgId).limit(1000);
+      rows = (r ?? []) as any[];
+    } else {
+      const { data: r } = await context.supabase
+        .from("items")
+        .select("id, sku, name, name_en")
+        .eq("org_id", data.orgId).limit(2000);
+      rows = (r ?? []) as any[];
+    }
 
-    // cheap prefilter: group by normalized keys
-    const norm = (s: string) => (s || "").toString().trim().toLowerCase().replace(/\s+/g, " ");
+    const norm = (s: any) => (s || "").toString().trim().toLowerCase().replace(/\s+/g, " ");
     const groups: Record<string, any[]> = {};
     for (const r of rows) {
       const keys = data.scope === "parties"
-        ? [norm(r.name), norm(r.name_ar), r.vat_number, r.email, r.phone].filter(Boolean)
-        : [norm(r.name), norm(r.name_ar), r.sku, r.barcode].filter(Boolean);
+        ? [norm(r.name), norm(r.name_en), r.vat_number, r.email, r.phone].filter(Boolean)
+        : [norm(r.name), norm(r.name_en), r.sku].filter(Boolean);
       for (const k of keys) (groups[String(k)] ??= []).push(r);
     }
     const candidates = Object.values(groups).filter((g) => g.length > 1).slice(0, 30);
+    if (!candidates.length) {
+      return { answer: lang === "ar" ? "لم يتم اكتشاف أي تكرارات واضحة." : "No obvious duplicates detected.", groups: [], citations: [] };
+    }
 
-    if (!candidates.length) return { answer: lang === "ar" ? "لم يتم اكتشاف أي تكرارات واضحة." : "No obvious duplicates detected.", groups: [], citations: [] };
-
-    const parsed = await askJSON<{ groups: Array<{ ids: string[]; label: string; confidence: number; reason: string }>; }>(
-      "You are a Finance Copilot. Given candidate duplicate groups, decide which are real duplicates vs coincidental. Return JSON: { groups: [{ids, label, confidence(0-100), reason}] }.",
+    const parsed = await askJSON<{ groups: Array<{ ids: string[]; label: string; confidence: number; reason: string }> }>(
+      "You are a Finance Copilot. Given candidate duplicate groups, decide which are real duplicates vs coincidental matches. Return JSON: { groups: [{ids, label, confidence(0-100), reason}] }.",
       JSON.stringify(candidates.map((g) => g.map((r: any) => ({ id: r.id, ...r })))),
       lang,
     );
-
     const citations: Citation[] = (parsed.groups ?? []).flatMap((g) => g.ids.map((id) => {
       const row: any = rows.find((r) => r.id === id);
       return {
-        kind: data.scope, id, label: row?.name_ar || row?.name || id,
+        kind: data.scope, id,
+        label: row?.name || row?.name_en || id,
         subtitle: row?.vat_number ?? row?.sku ?? null,
       };
     }));
@@ -520,7 +526,7 @@ export const detectDuplicates = createServerFn({ method: "POST" })
     await recordDecision(context, {
       orgId: data.orgId, conversationId: data.conversationId,
       kind: `duplicates_${data.scope}`, module: data.scope,
-      answer, language: lang, evidence: { candidates }, citations,
+      answer, language: lang, evidence: { candidates_count: candidates.length }, citations,
     });
     return { answer, groups: parsed.groups ?? [], citations };
   });
@@ -534,9 +540,9 @@ export const explainCashFlow = createServerFn({ method: "POST" })
     const horizon = data.horizonDays ?? 60;
     const [banks, arOpen, apOpen] = await Promise.all([
       context.supabase.from("cash_bank_accounts").select("name, current_balance, currency").eq("org_id", data.orgId),
-      context.supabase.from("document_open_balances")
+      (context.supabase as any).from("document_open_balances")
         .select("party_name, due_date, open_amount").eq("org_id", data.orgId).eq("kind", "sales_invoice").gt("open_amount", 0),
-      context.supabase.from("document_open_balances")
+      (context.supabase as any).from("document_open_balances")
         .select("party_name, due_date, open_amount").eq("org_id", data.orgId).eq("kind", "purchase_invoice").gt("open_amount", 0),
     ]);
     const evidence = {
@@ -557,6 +563,28 @@ export const explainCashFlow = createServerFn({ method: "POST" })
   });
 
 // ─────────────── ERP chat ("router") ───────────────
+async function erpSearchInternal(context: any, orgId: string, query: string, limit = 6): Promise<Citation[]> {
+  const like = `%${query.trim().toLowerCase()}%`;
+  const sb = context.supabase;
+  const [docs, parties] = await Promise.all([
+    sb.from("documents")
+      .select(sel("id, doc_number, kind, issue_date, grand_total, party_snapshot"))
+      .eq("org_id", orgId).ilike("search_text", like).limit(limit),
+    sb.from("parties")
+      .select(sel("id, name, type, vat_number"))
+      .eq("org_id", orgId).or(`name.ilike.${like},vat_number.ilike.${like}`).limit(limit),
+  ]);
+  const hits: Citation[] = [];
+  for (const d of (docs.data ?? []) as any[]) hits.push({
+    kind: "documents", id: d.id, label: `${d.doc_number} · ${d.kind}`,
+    subtitle: (d.party_snapshot as any)?.name ?? null, amount: Number(d.grand_total) || null,
+  });
+  for (const p of (parties.data ?? []) as any[]) hits.push({
+    kind: "parties", id: p.id, label: p.name, subtitle: p.vat_number ?? p.type,
+  });
+  return hits;
+}
+
 export const erpChat = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: any) => d as {
@@ -569,25 +597,19 @@ export const erpChat = createServerFn({ method: "POST" })
     const lang = data.language ?? "ar";
     const lastUser = [...data.messages].reverse().find((m) => m.role === "user")?.content ?? "";
 
-    // Optionally enrich with a search over ERP records
-    const searchHits = lastUser
-      ? (await erpSearchInternal(context, data.orgId, lastUser, 6))
-      : [];
+    const searchHits = lastUser ? await erpSearchInternal(context, data.orgId, lastUser, 6) : [];
 
     const sys =
-      "You are the ERP-wide Finance Copilot for a KSA/ZATCA accounting system (Haseem). You have access to search results from the user's live ERP: customers, suppliers, invoices, journals, payments, inventory. Answer accountant-level questions grounded in the provided records. Cite the specific record IDs when relevant. Never fabricate numbers. If you need more data, ask a clarifying question or suggest a follow-up.";
-
+      "You are the ERP-wide Finance Copilot for a KSA/ZATCA accounting system (Haseem). You have search results from the user's live ERP: customers, suppliers, invoices, journals, payments, inventory. Answer accountant-level questions grounded in the provided records. Cite record IDs when relevant. Never fabricate numbers. If more data is needed, ask a clarifying question or suggest a follow-up.";
     const enriched = searchHits.length
       ? `\n\nRelevant ERP records (top ${searchHits.length}):\n${JSON.stringify(searchHits)}`
       : "";
-
     const messages: GatewayMessage[] = [
       { role: "system", content: `${sys}\n\n${langInstruction(lang)}${enriched}` },
       ...data.messages.map((m) => ({ role: m.role, content: m.content } as GatewayMessage)),
     ];
     const answer = await callLovableAI({ model: MODEL, messages, temperature: 0.3 });
 
-    // Ask model for follow-ups (best-effort, cheap)
     let follow_ups: string[] = [];
     try {
       const fu = await askJSON<{ follow_ups: string[] }>(
@@ -606,25 +628,3 @@ export const erpChat = createServerFn({ method: "POST" })
     });
     return { answer, citations: searchHits, follow_ups };
   });
-
-async function erpSearchInternal(context: any, orgId: string, query: string, limit = 6): Promise<Citation[]> {
-  const like = `%${query.trim().toLowerCase()}%`;
-  const sb = context.supabase;
-  const [docs, parties] = await Promise.all([
-    sb.from("documents")
-      .select("id, doc_number, kind, issue_date, grand_total, party_snapshot")
-      .eq("org_id", orgId).ilike("search_text", like).limit(limit),
-    sb.from("parties")
-      .select("id, name, type, vat_number")
-      .eq("org_id", orgId).or(`name.ilike.${like},vat_number.ilike.${like}`).limit(limit),
-  ]);
-  const hits: Citation[] = [];
-  for (const d of docs.data ?? []) hits.push({
-    kind: "documents", id: d.id, label: `${d.doc_number} · ${d.kind}`,
-    subtitle: (d.party_snapshot as any)?.name ?? null, amount: Number(d.grand_total) || null,
-  });
-  for (const p of parties.data ?? []) hits.push({
-    kind: "parties", id: p.id, label: p.name, subtitle: p.vat_number ?? p.type,
-  });
-  return hits;
-}
