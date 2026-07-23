@@ -30,6 +30,7 @@ import { Route as SettingsOrganizationRouteImport } from './routes/settings.orga
 import { Route as SettingsNumberingRouteImport } from './routes/settings.numbering'
 import { Route as SettingsIntegrationsRouteImport } from './routes/settings.integrations'
 import { Route as SettingsImportExportRouteImport } from './routes/settings.import-export'
+import { Route as SettingsFinanceHealthRouteImport } from './routes/settings.finance-health'
 import { Route as SettingsDeterminationsRouteImport } from './routes/settings.determinations'
 import { Route as SettingsCurrenciesRouteImport } from './routes/settings.currencies'
 import { Route as SettingsBranchesRouteImport } from './routes/settings.branches'
@@ -93,6 +94,7 @@ import { Route as PurchasesDebitNotesNewRouteImport } from './routes/purchases.d
 import { Route as PurchasesDebitNotesIdRouteImport } from './routes/purchases.debit-notes.$id'
 import { Route as PurchasesBillsNewRouteImport } from './routes/purchases.bills.new'
 import { Route as PurchasesBillsIdRouteImport } from './routes/purchases.bills.$id'
+import { Route as ApiPublicHooksFinanceHealthRouteImport } from './routes/api/public/hooks/finance-health'
 
 const VerifyRoute = VerifyRouteImport.update({
   id: '/verify',
@@ -197,6 +199,11 @@ const SettingsIntegrationsRoute = SettingsIntegrationsRouteImport.update({
 const SettingsImportExportRoute = SettingsImportExportRouteImport.update({
   id: '/settings/import-export',
   path: '/settings/import-export',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SettingsFinanceHealthRoute = SettingsFinanceHealthRouteImport.update({
+  id: '/settings/finance-health',
+  path: '/settings/finance-health',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SettingsDeterminationsRoute = SettingsDeterminationsRouteImport.update({
@@ -522,6 +529,12 @@ const PurchasesBillsIdRoute = PurchasesBillsIdRouteImport.update({
   path: '/$id',
   getParentRoute: () => PurchasesBillsRoute,
 } as any)
+const ApiPublicHooksFinanceHealthRoute =
+  ApiPublicHooksFinanceHealthRouteImport.update({
+    id: '/api/public/hooks/finance-health',
+    path: '/api/public/hooks/finance-health',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -578,6 +591,7 @@ export interface FileRoutesByFullPath {
   '/settings/branches': typeof SettingsBranchesRoute
   '/settings/currencies': typeof SettingsCurrenciesRoute
   '/settings/determinations': typeof SettingsDeterminationsRoute
+  '/settings/finance-health': typeof SettingsFinanceHealthRoute
   '/settings/import-export': typeof SettingsImportExportRoute
   '/settings/integrations': typeof SettingsIntegrationsRoute
   '/settings/numbering': typeof SettingsNumberingRoute
@@ -608,6 +622,7 @@ export interface FileRoutesByFullPath {
   '/sales/credit-notes/': typeof SalesCreditNotesIndexRoute
   '/sales/invoices/': typeof SalesInvoicesIndexRoute
   '/sales/quotations/': typeof SalesQuotationsIndexRoute
+  '/api/public/hooks/finance-health': typeof ApiPublicHooksFinanceHealthRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -658,6 +673,7 @@ export interface FileRoutesByTo {
   '/settings/branches': typeof SettingsBranchesRoute
   '/settings/currencies': typeof SettingsCurrenciesRoute
   '/settings/determinations': typeof SettingsDeterminationsRoute
+  '/settings/finance-health': typeof SettingsFinanceHealthRoute
   '/settings/import-export': typeof SettingsImportExportRoute
   '/settings/integrations': typeof SettingsIntegrationsRoute
   '/settings/numbering': typeof SettingsNumberingRoute
@@ -688,6 +704,7 @@ export interface FileRoutesByTo {
   '/sales/credit-notes': typeof SalesCreditNotesIndexRoute
   '/sales/invoices': typeof SalesInvoicesIndexRoute
   '/sales/quotations': typeof SalesQuotationsIndexRoute
+  '/api/public/hooks/finance-health': typeof ApiPublicHooksFinanceHealthRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -745,6 +762,7 @@ export interface FileRoutesById {
   '/settings/branches': typeof SettingsBranchesRoute
   '/settings/currencies': typeof SettingsCurrenciesRoute
   '/settings/determinations': typeof SettingsDeterminationsRoute
+  '/settings/finance-health': typeof SettingsFinanceHealthRoute
   '/settings/import-export': typeof SettingsImportExportRoute
   '/settings/integrations': typeof SettingsIntegrationsRoute
   '/settings/numbering': typeof SettingsNumberingRoute
@@ -775,6 +793,7 @@ export interface FileRoutesById {
   '/sales/credit-notes/': typeof SalesCreditNotesIndexRoute
   '/sales/invoices/': typeof SalesInvoicesIndexRoute
   '/sales/quotations/': typeof SalesQuotationsIndexRoute
+  '/api/public/hooks/finance-health': typeof ApiPublicHooksFinanceHealthRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -833,6 +852,7 @@ export interface FileRouteTypes {
     | '/settings/branches'
     | '/settings/currencies'
     | '/settings/determinations'
+    | '/settings/finance-health'
     | '/settings/import-export'
     | '/settings/integrations'
     | '/settings/numbering'
@@ -863,6 +883,7 @@ export interface FileRouteTypes {
     | '/sales/credit-notes/'
     | '/sales/invoices/'
     | '/sales/quotations/'
+    | '/api/public/hooks/finance-health'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -913,6 +934,7 @@ export interface FileRouteTypes {
     | '/settings/branches'
     | '/settings/currencies'
     | '/settings/determinations'
+    | '/settings/finance-health'
     | '/settings/import-export'
     | '/settings/integrations'
     | '/settings/numbering'
@@ -943,6 +965,7 @@ export interface FileRouteTypes {
     | '/sales/credit-notes'
     | '/sales/invoices'
     | '/sales/quotations'
+    | '/api/public/hooks/finance-health'
   id:
     | '__root__'
     | '/'
@@ -999,6 +1022,7 @@ export interface FileRouteTypes {
     | '/settings/branches'
     | '/settings/currencies'
     | '/settings/determinations'
+    | '/settings/finance-health'
     | '/settings/import-export'
     | '/settings/integrations'
     | '/settings/numbering'
@@ -1029,6 +1053,7 @@ export interface FileRouteTypes {
     | '/sales/credit-notes/'
     | '/sales/invoices/'
     | '/sales/quotations/'
+    | '/api/public/hooks/finance-health'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -1081,6 +1106,7 @@ export interface RootRouteChildren {
   SettingsBranchesRoute: typeof SettingsBranchesRoute
   SettingsCurrenciesRoute: typeof SettingsCurrenciesRoute
   SettingsDeterminationsRoute: typeof SettingsDeterminationsRoute
+  SettingsFinanceHealthRoute: typeof SettingsFinanceHealthRoute
   SettingsImportExportRoute: typeof SettingsImportExportRoute
   SettingsIntegrationsRoute: typeof SettingsIntegrationsRoute
   SettingsNumberingRoute: typeof SettingsNumberingRoute
@@ -1093,6 +1119,7 @@ export interface RootRouteChildren {
   SettingsTestDataRoute: typeof SettingsTestDataRoute
   SettingsUsersRoute: typeof SettingsUsersRoute
   SettingsWorkflowsRoute: typeof SettingsWorkflowsRoute
+  ApiPublicHooksFinanceHealthRoute: typeof ApiPublicHooksFinanceHealthRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -1242,6 +1269,13 @@ declare module '@tanstack/react-router' {
       path: '/settings/import-export'
       fullPath: '/settings/import-export'
       preLoaderRoute: typeof SettingsImportExportRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/settings/finance-health': {
+      id: '/settings/finance-health'
+      path: '/settings/finance-health'
+      fullPath: '/settings/finance-health'
+      preLoaderRoute: typeof SettingsFinanceHealthRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/settings/determinations': {
@@ -1685,6 +1719,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PurchasesBillsIdRouteImport
       parentRoute: typeof PurchasesBillsRoute
     }
+    '/api/public/hooks/finance-health': {
+      id: '/api/public/hooks/finance-health'
+      path: '/api/public/hooks/finance-health'
+      fullPath: '/api/public/hooks/finance-health'
+      preLoaderRoute: typeof ApiPublicHooksFinanceHealthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -1864,6 +1905,7 @@ const rootRouteChildren: RootRouteChildren = {
   SettingsBranchesRoute: SettingsBranchesRoute,
   SettingsCurrenciesRoute: SettingsCurrenciesRoute,
   SettingsDeterminationsRoute: SettingsDeterminationsRoute,
+  SettingsFinanceHealthRoute: SettingsFinanceHealthRoute,
   SettingsImportExportRoute: SettingsImportExportRoute,
   SettingsIntegrationsRoute: SettingsIntegrationsRoute,
   SettingsNumberingRoute: SettingsNumberingRoute,
@@ -1876,6 +1918,7 @@ const rootRouteChildren: RootRouteChildren = {
   SettingsTestDataRoute: SettingsTestDataRoute,
   SettingsUsersRoute: SettingsUsersRoute,
   SettingsWorkflowsRoute: SettingsWorkflowsRoute,
+  ApiPublicHooksFinanceHealthRoute: ApiPublicHooksFinanceHealthRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
