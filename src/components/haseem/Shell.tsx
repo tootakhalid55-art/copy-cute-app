@@ -10,6 +10,7 @@ import {
 import type { LucideIcon } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
 import { useAuth } from "@/lib/haseem/auth";
+import { useOrg } from "@/lib/db/org";
 import { useKV } from "@/lib/haseem/store";
 
 type NavChild = { label: string; to: string; icon?: LucideIcon };
