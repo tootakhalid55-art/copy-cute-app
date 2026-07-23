@@ -4,17 +4,23 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Bot, Sparkles, Loader2, Send, Plus, Trash2, Edit3,
   Users, Copy as CopyIcon, FileText, BookText, TrendingUp,
-  Calendar, Coins, AlertTriangle, Download, MessageSquare,
+  Calendar, Coins, AlertTriangle, Download, MessageSquare, Zap,
 } from "lucide-react";
 import { Shell } from "@/components/haseem/Shell";
 import { useOrg } from "@/lib/db/org";
 import { ExplainabilityPanel, type ExplainabilityCitation } from "@/components/haseem/ExplainabilityPanel";
+import { ActionProposalCard, type ActionProposal } from "@/components/haseem/ActionProposalCard";
+import { supabase } from "@/integrations/supabase/client";
 import {
   listConversations, createConversation, renameConversation, deleteConversation,
   loadConversationMessages, erpChat,
   recommendCollectionPriorities, recommendPaymentPriorities,
   monthEndChecklist, executiveSummary, detectDuplicates, explainCashFlow,
 } from "@/lib/copilot/erp-copilot.functions";
+import {
+  listProposals, confirmProposal, rejectProposal,
+  proposeCollectionPlan, proposeBulkSupplierPayments,
+} from "@/lib/copilot/actions.functions";
 
 export const Route = createFileRoute("/copilot")({
   head: () => ({ meta: [
@@ -87,13 +93,39 @@ function Page() {
   const dupFn = useServerFn(detectDuplicates);
   const cashFn = useServerFn(explainCashFlow);
 
+  const listProp = useServerFn(listProposals);
+  const confirmProp = useServerFn(confirmProposal);
+  const rejectProp = useServerFn(rejectProposal);
+  const proposeCollectFn = useServerFn(proposeCollectionPlan);
+  const proposeBulkPayFn = useServerFn(proposeBulkSupplierPayments);
+
   const [convs, setConvs] = useState<Conv[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [messages, setMessages] = useState<Msg[]>([]);
+  const [proposals, setProposals] = useState<ActionProposal[]>([]);
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState<string | null>(null);
   const scroller = useRef<HTMLDivElement>(null);
   const transcriptRef = useRef<HTMLDivElement>(null);
+
+  async function refreshProposals() {
+    if (!orgId) return;
+    try {
+      const rows = await listProp({ data: { orgId, limit: 50 } }) as ActionProposal[];
+      setProposals(rows);
+    } catch (e) { console.warn("[proposals]", e); }
+  }
+  useEffect(() => {
+    refreshProposals();
+    if (!orgId) return;
+    const ch = supabase
+      .channel(`proposals-${orgId}`)
+      .on("postgres_changes", { event: "*", schema: "public", table: "copilot_action_proposals", filter: `org_id=eq.${orgId}` },
+        () => refreshProposals())
+      .subscribe();
+    return () => { supabase.removeChannel(ch); };
+    // eslint-disable-next-line
+  }, [orgId]);
 
   async function refreshConvs() {
     if (!orgId) return;
@@ -194,6 +226,40 @@ function Page() {
     } finally { setBusy(null); refreshConvs(); }
   }
 
+  async function onConfirmProposal(id: string, note?: string) {
+    await confirmProp({ data: { proposalId: id, note } });
+    await refreshProposals();
+  }
+  async function onRejectProposal(id: string, note?: string) {
+    await rejectProp({ data: { proposalId: id, note } });
+    await refreshProposals();
+  }
+  async function proposeQuickCollection() {
+    if (!orgId) return;
+    setBusy("propose-collect");
+    try {
+      const p = await proposeCollectFn({ data: { orgId, language: lang, daysOverdue: 30, conversationId: activeId ?? undefined } });
+      setMessages((prev) => [...prev, { role: "assistant", content: (lang === "ar" ? "تم إعداد اقتراح: " : "Proposal created: ") + (p as any).title, kind: "proposal" }]);
+      await refreshProposals();
+    } catch (e: any) {
+      setMessages((prev) => [...prev, { role: "assistant", content: (lang === "ar" ? "تعذر: " : "Failed: ") + (e?.message || String(e)) }]);
+    } finally { setBusy(null); }
+  }
+  async function proposeQuickBulkPay() {
+    if (!orgId) return;
+    const bank = window.prompt(lang === "ar" ? "معرّف حساب البنك (UUID):" : "Bank account id (UUID):");
+    if (!bank) return;
+    setBusy("propose-bulk");
+    try {
+      const dueBefore = new Date().toISOString().slice(0, 10);
+      const p = await proposeBulkPayFn({ data: { orgId, language: lang, cashBankAccountId: bank, dueBefore, conversationId: activeId ?? undefined } });
+      setMessages((prev) => [...prev, { role: "assistant", content: (lang === "ar" ? "تم إعداد اقتراح: " : "Proposal created: ") + (p as any).title, kind: "proposal" }]);
+      await refreshProposals();
+    } catch (e: any) {
+      setMessages((prev) => [...prev, { role: "assistant", content: (lang === "ar" ? "تعذر: " : "Failed: ") + (e?.message || String(e)) }]);
+    } finally { setBusy(null); }
+  }
+
   const today = new Date();
   const period = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}`;
   const from = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-01`;
@@ -208,6 +274,8 @@ function Page() {
     { key: "dupP", icon: CopyIcon, label: t.dupParties, fn: () => dupFn({ data: { orgId, scope: "parties" as const, language: lang, conversationId: activeId ?? undefined } }) },
     { key: "dupI", icon: CopyIcon, label: t.dupItems, fn: () => dupFn({ data: { orgId, scope: "items" as const, language: lang, conversationId: activeId ?? undefined } }) },
   ] : [], [orgId, lang, activeId, t]);
+
+  const pendingProposals = proposals.filter((p) => p.status === "pending");
 
   function exportPDF() {
     const el = transcriptRef.current;
@@ -300,13 +368,34 @@ function Page() {
                   {label}
                 </button>
               ))}
+              <button disabled={!!busy} onClick={proposeQuickCollection}
+                className="inline-flex items-center gap-1.5 text-xs px-2 py-1 rounded-full border border-amber-300 bg-amber-50 text-amber-800 hover:bg-amber-100 disabled:opacity-50">
+                {busy === "propose-collect" ? <Loader2 className="w-3 h-3 animate-spin" /> : <Zap className="w-3 h-3" />}
+                {lang === "ar" ? "اقتراح خطة تحصيل" : "Propose collection plan"}
+              </button>
+              <button disabled={!!busy} onClick={proposeQuickBulkPay}
+                className="inline-flex items-center gap-1.5 text-xs px-2 py-1 rounded-full border border-amber-300 bg-amber-50 text-amber-800 hover:bg-amber-100 disabled:opacity-50">
+                {busy === "propose-bulk" ? <Loader2 className="w-3 h-3 animate-spin" /> : <Zap className="w-3 h-3" />}
+                {lang === "ar" ? "اقتراح دفعات جماعية" : "Propose bulk payments"}
+              </button>
             </div>
           </div>
 
           {/* Transcript */}
           <div ref={scroller} className="flex-1 overflow-y-auto px-4 py-4">
             <div ref={transcriptRef} className="max-w-3xl mx-auto space-y-3">
-              {messages.length === 0 && (
+              {pendingProposals.length > 0 && (
+                <div className="space-y-2 pb-2 border-b border-dashed border-[#eceae2]">
+                  <div className="text-[10px] uppercase text-amber-700 font-semibold flex items-center gap-1">
+                    <Zap className="w-3 h-3" /> {lang === "ar" ? `اقتراحات بانتظار الموافقة (${pendingProposals.length})` : `Pending proposals (${pendingProposals.length})`}
+                  </div>
+                  {pendingProposals.map((p) => (
+                    <ActionProposalCard key={p.id} proposal={{ ...p, language: lang }}
+                      onConfirm={onConfirmProposal} onReject={onRejectProposal} />
+                  ))}
+                </div>
+              )}
+              {messages.length === 0 && pendingProposals.length === 0 && (
                 <div className="text-center text-sm text-[#0f2a1d]/50 py-10">{t.empty}</div>
               )}
               {messages.map((m, i) => (

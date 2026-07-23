@@ -1590,6 +1590,175 @@ export type Database = {
           },
         ]
       }
+      copilot_action_proposals: {
+        Row: {
+          action_kind: string
+          confirmed_by: string | null
+          conversation_id: string | null
+          created_at: string
+          decision_id: string | null
+          error: string | null
+          executed_at: string | null
+          expires_at: string | null
+          id: string
+          language: string
+          module: string | null
+          org_id: string
+          payload: Json
+          preview: Json
+          proposed_by: string | null
+          requires_approval: boolean
+          result_entity_id: string | null
+          result_entity_type: string | null
+          risk_level: string
+          status: Database["public"]["Enums"]["copilot_action_status"]
+          summary: string | null
+          title: string
+          updated_at: string
+          user_note: string | null
+        }
+        Insert: {
+          action_kind: string
+          confirmed_by?: string | null
+          conversation_id?: string | null
+          created_at?: string
+          decision_id?: string | null
+          error?: string | null
+          executed_at?: string | null
+          expires_at?: string | null
+          id?: string
+          language?: string
+          module?: string | null
+          org_id: string
+          payload?: Json
+          preview?: Json
+          proposed_by?: string | null
+          requires_approval?: boolean
+          result_entity_id?: string | null
+          result_entity_type?: string | null
+          risk_level?: string
+          status?: Database["public"]["Enums"]["copilot_action_status"]
+          summary?: string | null
+          title: string
+          updated_at?: string
+          user_note?: string | null
+        }
+        Update: {
+          action_kind?: string
+          confirmed_by?: string | null
+          conversation_id?: string | null
+          created_at?: string
+          decision_id?: string | null
+          error?: string | null
+          executed_at?: string | null
+          expires_at?: string | null
+          id?: string
+          language?: string
+          module?: string | null
+          org_id?: string
+          payload?: Json
+          preview?: Json
+          proposed_by?: string | null
+          requires_approval?: boolean
+          result_entity_id?: string | null
+          result_entity_type?: string | null
+          risk_level?: string
+          status?: Database["public"]["Enums"]["copilot_action_status"]
+          summary?: string | null
+          title?: string
+          updated_at?: string
+          user_note?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "copilot_action_proposals_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "ai_copilot_conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "copilot_action_proposals_decision_id_fkey"
+            columns: ["decision_id"]
+            isOneToOne: false
+            referencedRelation: "ai_copilot_decisions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "copilot_action_proposals_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      copilot_followup_tasks: {
+        Row: {
+          assignee: string | null
+          created_at: string
+          created_by: string | null
+          description: string | null
+          due_date: string | null
+          id: string
+          org_id: string
+          priority: string
+          proposal_id: string | null
+          related_id: string | null
+          related_kind: string | null
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          assignee?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          org_id: string
+          priority?: string
+          proposal_id?: string | null
+          related_id?: string | null
+          related_kind?: string | null
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          assignee?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          org_id?: string
+          priority?: string
+          proposal_id?: string | null
+          related_id?: string | null
+          related_kind?: string | null
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "copilot_followup_tasks_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "copilot_followup_tasks_proposal_id_fkey"
+            columns: ["proposal_id"]
+            isOneToOne: false
+            referencedRelation: "copilot_action_proposals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cost_centers: {
         Row: {
           code: string
@@ -3899,6 +4068,13 @@ export type Database = {
         | "adjustment"
         | "payment_out"
         | "receipt_in"
+      copilot_action_status:
+        | "pending"
+        | "confirmed"
+        | "executed"
+        | "rejected"
+        | "failed"
+        | "cancelled"
       credit_limit_policy:
         | "warn_only"
         | "block"
@@ -4146,6 +4322,14 @@ export const Constants = {
         "adjustment",
         "payment_out",
         "receipt_in",
+      ],
+      copilot_action_status: [
+        "pending",
+        "confirmed",
+        "executed",
+        "rejected",
+        "failed",
+        "cancelled",
       ],
       credit_limit_policy: [
         "warn_only",
