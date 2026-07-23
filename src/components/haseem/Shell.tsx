@@ -12,6 +12,7 @@ import { useEffect, useState, type ReactNode } from "react";
 import { useAuth } from "@/lib/haseem/auth";
 import { useOrg } from "@/lib/db/org";
 import { useKV } from "@/lib/haseem/store";
+import { GlobalSearch } from "./GlobalSearch";
 
 type NavChild = { label: string; to: string; icon?: LucideIcon };
 type NavItem = {
