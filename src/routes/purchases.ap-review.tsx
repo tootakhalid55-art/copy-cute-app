@@ -60,7 +60,7 @@ function fileToDataURL(f: File) {
 }
 
 function ApReviewPage() {
-  const { org } = useOrg();
+  const { currentOrg: org } = useOrg();
   const createIntake = useServerFn(createIntakeFromUpload);
   const runExtraction = useServerFn(runIntakeExtraction);
   const createBill = useServerFn(createBillFromIntake);
