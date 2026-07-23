@@ -144,12 +144,13 @@ export async function postEvent(input: PostEventInput): Promise<PostResult> {
 }
 
 export async function reverseJournal(orgId: string, entryId: string, memo?: string, date?: string) {
-  const { data, error } = await supabase.rpc("reverse_journal", {
+  const args: { _org: string; _entry_id: string; _memo?: string; _date?: string } = {
     _org: orgId,
     _entry_id: entryId,
-    _memo: memo ?? null,
-    _date: date ?? null,
-  });
+  };
+  if (memo) args._memo = memo;
+  if (date) args._date = date;
+  const { data, error } = await supabase.rpc("reverse_journal", args);
   if (error) throw error;
   return data as unknown as string;
 }
