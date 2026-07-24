@@ -1,10 +1,10 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Play, RotateCcw, RefreshCw } from "lucide-react";
+import { Play, RotateCcw, RefreshCw, FlaskConical, ShieldAlert, X } from "lucide-react";
 import { Shell, PageHeader, PrimaryBtn, OutlineBtn, EmptyState, StatCard, Badge, money } from "@/components/haseem/Shell";
 import { useOrg } from "@/lib/db/org";
-import { previewDepreciation, postDepreciationRun, reverseDepreciationRun, listDepreciationRuns, type PreviewRow } from "@/lib/assets/depreciation.functions";
+import { previewDepreciation, postDepreciationRun, reverseDepreciationRun, listDepreciationRuns, simulateDepreciationRun, type PreviewRow } from "@/lib/assets/depreciation.functions";
 import { listCategories } from "@/lib/assets/registry.functions";
 
 export const Route = createFileRoute("/assets/depreciation")({
