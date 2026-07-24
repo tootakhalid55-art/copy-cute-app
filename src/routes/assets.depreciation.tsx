@@ -33,6 +33,7 @@ function Page() {
   const reverseFn = useServerFn(reverseDepreciationRun);
   const runsFn = useServerFn(listDepreciationRuns);
   const catsFn = useServerFn(listCategories);
+  const simulateFn = useServerFn(simulateDepreciationRun);
 
   const today = new Date();
   const defaultPeriod = new Date(today.getFullYear(), today.getMonth(), 0).toISOString().slice(0, 10);
@@ -45,6 +46,8 @@ function Page() {
   const [loading, setLoading] = useState(false);
   const [posting, setPosting] = useState(false);
   const [memo, setMemo] = useState("");
+  const [sim, setSim] = useState<any | null>(null);
+  const [simLoading, setSimLoading] = useState(false);
 
   const load = useCallback(async () => {
     if (!orgId) return;
@@ -136,13 +139,80 @@ function Page() {
               placeholder="اختياري - يظهر على القيد"
               className="w-full border border-[#eceae2] rounded px-3 py-2 text-sm" />
           </div>
-          <div>
+          <div className="flex gap-2">
+            <OutlineBtn onClick={async () => {
+              if (!orgId) return;
+              setSimLoading(true);
+              try {
+                const r = await simulateFn({ data: { orgId, periodEnd: lastDayOfMonth(periodEnd), categoryId: categoryId || undefined } });
+                setSim(r);
+              } catch (e: any) { alert(e.message || "فشل المحاكاة"); }
+              finally { setSimLoading(false); }
+            }} disabled={simLoading}>
+              <FlaskConical className="w-4 h-4" /> محاكاة
+            </OutlineBtn>
             <PrimaryBtn onClick={runPost} disabled={posting || totals.eligible === 0}>
               <Play className="w-4 h-4" /> ترحيل الإهلاك
             </PrimaryBtn>
           </div>
         </div>
       </div>
+
+      {sim && (
+        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4" onClick={() => setSim(null)}>
+          <div className="bg-white rounded-xl w-full max-w-3xl max-h-[85vh] overflow-y-auto p-5" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold">محاكاة الترحيل — {lastDayOfMonth(periodEnd)}</h3>
+              <button onClick={() => setSim(null)} className="p-1 hover:bg-gray-100 rounded"><X className="w-4 h-4" /></button>
+            </div>
+
+            {sim.blocking_errors?.length > 0 && (
+              <div className="mb-4 rounded-lg border border-red-200 bg-red-50 p-3">
+                <div className="flex items-center gap-2 text-sm font-medium text-red-800 mb-1">
+                  <ShieldAlert className="w-4 h-4" /> أخطاء تمنع الترحيل
+                </div>
+                <ul className="text-sm text-red-700 list-disc pr-5 space-y-1">
+                  {sim.blocking_errors.map((e: any, i: number) => <li key={i}><b>{e.code}:</b> {e.message}</li>)}
+                </ul>
+              </div>
+            )}
+
+            <div className="grid grid-cols-3 gap-3 mb-4">
+              <StatCard label="أصول مؤهلة" value={String(sim.summary?.asset_count ?? 0)} />
+              <StatCard label="إجمالي الإهلاك" value={money(Number(sim.summary?.total_depreciation || 0))} />
+              <StatCard label="مستبعدة" value={String(sim.summary?.skipped ?? 0)} />
+            </div>
+
+            <div className="rounded-lg border border-[#eceae2] overflow-hidden mb-4">
+              <div className="p-2 bg-[#faf9f4] text-xs font-medium">قيد اليومية المتوقع (حسب الفئة)</div>
+              <table className="w-full text-sm">
+                <thead className="bg-white text-xs text-[#0f2a1d]/70">
+                  <tr className="text-right"><th className="p-2">الفئة</th><th className="p-2">مدين — مصروف إهلاك</th><th className="p-2">دائن — مجمع إهلاك</th></tr>
+                </thead>
+                <tbody className="divide-y divide-[#eceae2]">
+                  {(sim.journal_lines || []).map((l: any, i: number) => (
+                    <tr key={i} className="text-right">
+                      <td className="p-2">{l.category || "—"}</td>
+                      <td className="p-2 tabular-nums">{money(Number(l.debit_expense || 0))}</td>
+                      <td className="p-2 tabular-nums">{money(Number(l.credit_accum || 0))}</td>
+                    </tr>
+                  ))}
+                  {(!sim.journal_lines || sim.journal_lines.length === 0) && (
+                    <tr><td colSpan={3} className="p-4 text-center text-xs text-[#0f2a1d]/60">لا توجد سطور</td></tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+
+            <div className="flex justify-end gap-2">
+              <OutlineBtn onClick={() => setSim(null)}>إغلاق</OutlineBtn>
+              <PrimaryBtn onClick={async () => { setSim(null); await runPost(); }} disabled={!sim.can_post}>
+                <Play className="w-4 h-4" /> متابعة الترحيل
+              </PrimaryBtn>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="rounded-xl bg-white border border-[#eceae2] overflow-x-auto mb-6">
         <div className="p-3 border-b border-[#eceae2] text-sm font-medium">معاينة الفترة {lastDayOfMonth(periodEnd)}</div>
