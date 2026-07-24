@@ -77,6 +77,8 @@ export type Database = {
           closed_by: string | null
           created_at: string
           end_date: string
+          fa_locked_at: string | null
+          fa_locked_by: string | null
           fiscal_year_id: string
           id: string
           name: string
@@ -93,6 +95,8 @@ export type Database = {
           closed_by?: string | null
           created_at?: string
           end_date: string
+          fa_locked_at?: string | null
+          fa_locked_by?: string | null
           fiscal_year_id: string
           id?: string
           name: string
@@ -109,6 +113,8 @@ export type Database = {
           closed_by?: string | null
           created_at?: string
           end_date?: string
+          fa_locked_at?: string | null
+          fa_locked_by?: string | null
           fiscal_year_id?: string
           id?: string
           name?: string
@@ -2536,6 +2542,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "fixed_asset_components_component_asset_id_fkey"
+            columns: ["component_asset_id"]
+            isOneToOne: false
+            referencedRelation: "v_fixed_asset_exceptions"
+            referencedColumns: ["asset_id"]
+          },
+          {
             foreignKeyName: "fixed_asset_components_org_id_fkey"
             columns: ["org_id"]
             isOneToOne: false
@@ -2555,6 +2568,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "fixed_assets_overview"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fixed_asset_components_parent_asset_id_fkey"
+            columns: ["parent_asset_id"]
+            isOneToOne: false
+            referencedRelation: "v_fixed_asset_exceptions"
+            referencedColumns: ["asset_id"]
           },
         ]
       }
@@ -2655,6 +2675,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "fixed_asset_method_params_asset_id_fkey"
+            columns: ["asset_id"]
+            isOneToOne: true
+            referencedRelation: "v_fixed_asset_exceptions"
+            referencedColumns: ["asset_id"]
+          },
+          {
             foreignKeyName: "fixed_asset_method_params_org_id_fkey"
             columns: ["org_id"]
             isOneToOne: false
@@ -2737,10 +2764,12 @@ export type Database = {
           accumulated: number
           asset_id: string
           closing_nbv: number
+          computation: Json
           created_at: string
           days: number
           depreciation: number
           id: string
+          locked: boolean
           method: Database["public"]["Enums"]["fa_depreciation_method"]
           notes: string | null
           opening_nbv: number
@@ -2755,10 +2784,12 @@ export type Database = {
           accumulated?: number
           asset_id: string
           closing_nbv?: number
+          computation?: Json
           created_at?: string
           days?: number
           depreciation?: number
           id?: string
+          locked?: boolean
           method: Database["public"]["Enums"]["fa_depreciation_method"]
           notes?: string | null
           opening_nbv?: number
@@ -2773,10 +2804,12 @@ export type Database = {
           accumulated?: number
           asset_id?: string
           closing_nbv?: number
+          computation?: Json
           created_at?: string
           days?: number
           depreciation?: number
           id?: string
+          locked?: boolean
           method?: Database["public"]["Enums"]["fa_depreciation_method"]
           notes?: string | null
           opening_nbv?: number
@@ -2801,6 +2834,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "fixed_assets_overview"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fixed_asset_schedules_asset_id_fkey"
+            columns: ["asset_id"]
+            isOneToOne: false
+            referencedRelation: "v_fixed_asset_exceptions"
+            referencedColumns: ["asset_id"]
           },
           {
             foreignKeyName: "fixed_asset_schedules_org_id_fkey"
@@ -3143,6 +3183,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "fixed_assets_parent_asset_id_fkey"
+            columns: ["parent_asset_id"]
+            isOneToOne: false
+            referencedRelation: "v_fixed_asset_exceptions"
+            referencedColumns: ["asset_id"]
+          },
+          {
             foreignKeyName: "fixed_assets_purchase_order_id_fkey"
             columns: ["purchase_order_id"]
             isOneToOne: false
@@ -3407,6 +3454,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "accounting_periods"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "journal_entries_period_id_fkey"
+            columns: ["period_id"]
+            isOneToOne: false
+            referencedRelation: "v_fa_calendar"
+            referencedColumns: ["period_id"]
           },
           {
             foreignKeyName: "journal_entries_reversed_by_entry_id_fkey"
@@ -4488,6 +4542,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "fixed_asset_schedules_asset_id_fkey"
+            columns: ["asset_id"]
+            isOneToOne: false
+            referencedRelation: "v_fixed_asset_exceptions"
+            referencedColumns: ["asset_id"]
+          },
+          {
             foreignKeyName: "fixed_asset_schedules_org_id_fkey"
             columns: ["org_id"]
             isOneToOne: false
@@ -4640,6 +4701,83 @@ export type Database = {
           },
         ]
       }
+      v_fa_calendar: {
+        Row: {
+          end_date: string | null
+          fa_locked: boolean | null
+          org_id: string | null
+          period_id: string | null
+          period_name: string | null
+          period_status: string | null
+          posted_run_id: string | null
+          posted_runs: number | null
+          posted_total: number | null
+          reversed_runs: number | null
+          start_date: string | null
+        }
+        Insert: {
+          end_date?: string | null
+          fa_locked?: never
+          org_id?: string | null
+          period_id?: string | null
+          period_name?: string | null
+          period_status?: never
+          posted_run_id?: never
+          posted_runs?: never
+          posted_total?: never
+          reversed_runs?: never
+          start_date?: string | null
+        }
+        Update: {
+          end_date?: string | null
+          fa_locked?: never
+          org_id?: string | null
+          period_id?: string | null
+          period_name?: string | null
+          period_status?: never
+          posted_run_id?: never
+          posted_runs?: never
+          posted_total?: never
+          reversed_runs?: never
+          start_date?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "accounting_periods_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      v_fixed_asset_exceptions: {
+        Row: {
+          accumulated_depreciation: number | null
+          acquisition_cost: number | null
+          asset_id: string | null
+          code: string | null
+          exception_type: string | null
+          in_service_date: string | null
+          is_cip: boolean | null
+          last_depreciation_date: string | null
+          method: Database["public"]["Enums"]["fa_depreciation_method"] | null
+          name: string | null
+          org_id: string | null
+          residual_value: number | null
+          status: Database["public"]["Enums"]["fa_status"] | null
+          useful_life_months: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fixed_assets_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       _create_settlement_doc: {
@@ -4722,6 +4860,7 @@ export type Database = {
           period_end: string
         }[]
       }
+      fa_explain_schedule: { Args: { _schedule_id: string }; Returns: Json }
       fa_post_depreciation_run: {
         Args: { _memo?: string; _org: string; _period_end: string }
         Returns: string
@@ -4748,9 +4887,17 @@ export type Database = {
           reason: string
         }[]
       }
+      fa_reopen_period: {
+        Args: { _org: string; _period_end: string; _reason: string }
+        Returns: Json
+      }
       fa_reverse_depreciation_run: {
         Args: { _memo?: string; _run_id: string }
         Returns: string
+      }
+      fa_simulate_run: {
+        Args: { _category_id?: string; _org: string; _period_end: string }
+        Returns: Json
       }
       find_open_period: {
         Args: { _date: string; _org: string }

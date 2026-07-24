@@ -80,9 +80,11 @@ import { Route as CashReceiptsRouteImport } from './routes/cash.receipts'
 import { Route as CashPaymentsRouteImport } from './routes/cash.payments'
 import { Route as CashBanksRouteImport } from './routes/cash.banks'
 import { Route as AssetsSettingsRouteImport } from './routes/assets.settings'
+import { Route as AssetsExceptionsRouteImport } from './routes/assets.exceptions'
 import { Route as AssetsDepreciationRouteImport } from './routes/assets.depreciation'
 import { Route as AssetsCipRouteImport } from './routes/assets.cip'
 import { Route as AssetsCategoriesRouteImport } from './routes/assets.categories'
+import { Route as AssetsCalendarRouteImport } from './routes/assets.calendar'
 import { Route as AccountingJournalEntriesRouteImport } from './routes/accounting.journal-entries'
 import { Route as AccountingGeneralLedgerRouteImport } from './routes/accounting.general-ledger'
 import { Route as AccountingChartOfAccountsRouteImport } from './routes/accounting.chart-of-accounts'
@@ -466,6 +468,11 @@ const AssetsSettingsRoute = AssetsSettingsRouteImport.update({
   path: '/settings',
   getParentRoute: () => AssetsRoute,
 } as any)
+const AssetsExceptionsRoute = AssetsExceptionsRouteImport.update({
+  id: '/exceptions',
+  path: '/exceptions',
+  getParentRoute: () => AssetsRoute,
+} as any)
 const AssetsDepreciationRoute = AssetsDepreciationRouteImport.update({
   id: '/depreciation',
   path: '/depreciation',
@@ -479,6 +486,11 @@ const AssetsCipRoute = AssetsCipRouteImport.update({
 const AssetsCategoriesRoute = AssetsCategoriesRouteImport.update({
   id: '/categories',
   path: '/categories',
+  getParentRoute: () => AssetsRoute,
+} as any)
+const AssetsCalendarRoute = AssetsCalendarRouteImport.update({
+  id: '/calendar',
+  path: '/calendar',
   getParentRoute: () => AssetsRoute,
 } as any)
 const AccountingJournalEntriesRoute =
@@ -632,9 +644,11 @@ export interface FileRoutesByFullPath {
   '/accounting/chart-of-accounts': typeof AccountingChartOfAccountsRoute
   '/accounting/general-ledger': typeof AccountingGeneralLedgerRoute
   '/accounting/journal-entries': typeof AccountingJournalEntriesRoute
+  '/assets/calendar': typeof AssetsCalendarRoute
   '/assets/categories': typeof AssetsCategoriesRoute
   '/assets/cip': typeof AssetsCipRoute
   '/assets/depreciation': typeof AssetsDepreciationRoute
+  '/assets/exceptions': typeof AssetsExceptionsRoute
   '/assets/settings': typeof AssetsSettingsRoute
   '/cash/banks': typeof CashBanksRoute
   '/cash/payments': typeof CashPaymentsRoute
@@ -733,9 +747,11 @@ export interface FileRoutesByTo {
   '/accounting/chart-of-accounts': typeof AccountingChartOfAccountsRoute
   '/accounting/general-ledger': typeof AccountingGeneralLedgerRoute
   '/accounting/journal-entries': typeof AccountingJournalEntriesRoute
+  '/assets/calendar': typeof AssetsCalendarRoute
   '/assets/categories': typeof AssetsCategoriesRoute
   '/assets/cip': typeof AssetsCipRoute
   '/assets/depreciation': typeof AssetsDepreciationRoute
+  '/assets/exceptions': typeof AssetsExceptionsRoute
   '/assets/settings': typeof AssetsSettingsRoute
   '/cash/banks': typeof CashBanksRoute
   '/cash/payments': typeof CashPaymentsRoute
@@ -829,9 +845,11 @@ export interface FileRoutesById {
   '/accounting/chart-of-accounts': typeof AccountingChartOfAccountsRoute
   '/accounting/general-ledger': typeof AccountingGeneralLedgerRoute
   '/accounting/journal-entries': typeof AccountingJournalEntriesRoute
+  '/assets/calendar': typeof AssetsCalendarRoute
   '/assets/categories': typeof AssetsCategoriesRoute
   '/assets/cip': typeof AssetsCipRoute
   '/assets/depreciation': typeof AssetsDepreciationRoute
+  '/assets/exceptions': typeof AssetsExceptionsRoute
   '/assets/settings': typeof AssetsSettingsRoute
   '/cash/banks': typeof CashBanksRoute
   '/cash/payments': typeof CashPaymentsRoute
@@ -932,9 +950,11 @@ export interface FileRouteTypes {
     | '/accounting/chart-of-accounts'
     | '/accounting/general-ledger'
     | '/accounting/journal-entries'
+    | '/assets/calendar'
     | '/assets/categories'
     | '/assets/cip'
     | '/assets/depreciation'
+    | '/assets/exceptions'
     | '/assets/settings'
     | '/cash/banks'
     | '/cash/payments'
@@ -1033,9 +1053,11 @@ export interface FileRouteTypes {
     | '/accounting/chart-of-accounts'
     | '/accounting/general-ledger'
     | '/accounting/journal-entries'
+    | '/assets/calendar'
     | '/assets/categories'
     | '/assets/cip'
     | '/assets/depreciation'
+    | '/assets/exceptions'
     | '/assets/settings'
     | '/cash/banks'
     | '/cash/payments'
@@ -1128,9 +1150,11 @@ export interface FileRouteTypes {
     | '/accounting/chart-of-accounts'
     | '/accounting/general-ledger'
     | '/accounting/journal-entries'
+    | '/assets/calendar'
     | '/assets/categories'
     | '/assets/cip'
     | '/assets/depreciation'
+    | '/assets/exceptions'
     | '/assets/settings'
     | '/cash/banks'
     | '/cash/payments'
@@ -1789,6 +1813,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AssetsSettingsRouteImport
       parentRoute: typeof AssetsRoute
     }
+    '/assets/exceptions': {
+      id: '/assets/exceptions'
+      path: '/exceptions'
+      fullPath: '/assets/exceptions'
+      preLoaderRoute: typeof AssetsExceptionsRouteImport
+      parentRoute: typeof AssetsRoute
+    }
     '/assets/depreciation': {
       id: '/assets/depreciation'
       path: '/depreciation'
@@ -1808,6 +1839,13 @@ declare module '@tanstack/react-router' {
       path: '/categories'
       fullPath: '/assets/categories'
       preLoaderRoute: typeof AssetsCategoriesRouteImport
+      parentRoute: typeof AssetsRoute
+    }
+    '/assets/calendar': {
+      id: '/assets/calendar'
+      path: '/calendar'
+      fullPath: '/assets/calendar'
+      preLoaderRoute: typeof AssetsCalendarRouteImport
       parentRoute: typeof AssetsRoute
     }
     '/accounting/journal-entries': {
@@ -2005,16 +2043,20 @@ const AccountingRouteWithChildren = AccountingRoute._addFileChildren(
 )
 
 interface AssetsRouteChildren {
+  AssetsCalendarRoute: typeof AssetsCalendarRoute
   AssetsCategoriesRoute: typeof AssetsCategoriesRoute
   AssetsCipRoute: typeof AssetsCipRoute
   AssetsDepreciationRoute: typeof AssetsDepreciationRoute
+  AssetsExceptionsRoute: typeof AssetsExceptionsRoute
   AssetsSettingsRoute: typeof AssetsSettingsRoute
 }
 
 const AssetsRouteChildren: AssetsRouteChildren = {
+  AssetsCalendarRoute: AssetsCalendarRoute,
   AssetsCategoriesRoute: AssetsCategoriesRoute,
   AssetsCipRoute: AssetsCipRoute,
   AssetsDepreciationRoute: AssetsDepreciationRoute,
+  AssetsExceptionsRoute: AssetsExceptionsRoute,
   AssetsSettingsRoute: AssetsSettingsRoute,
 }
 
@@ -2208,13 +2250,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
