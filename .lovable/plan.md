@@ -1,105 +1,112 @@
+# خطة التنفيذ — C2B Hardening + C2C Lifecycle
 
-# Phase C2B — Depreciation Engine
-
-**Tag:** `v2.2.b-fixed-assets-depreciation`
-
-## 1) Database (single migration)
-
-- `fixed_asset_method_params` — per-asset overrides: `total_units`, `units_this_period`, `ddb_factor`, `daily_prorata` flag, `convention_override`.
-- `fixed_asset_schedules` — `(asset_id, period_start, period_end)` UNIQUE; `days`, `opening_nbv`, `depreciation`, `accumulated`, `closing_nbv`, `posted_journal_id`, `run_id`, `status` (`planned|posted|reversed`).
-- `fixed_asset_runs` — one row per period run: `period_start`, `period_end`, `method_filter`, `category_filter`, `branch_filter`, `total_amount`, `asset_count`, `status` (`preview|posted|reversed`), `journal_id`, `created_by`, `posted_at`, `reversed_at`, `reversed_by`, `notes`.
-- Extend `fixed_assets`: `last_depreciated_period` date, `accumulated_depreciation` numeric cache, `net_book_value` generated column, `depreciation_start_date` date (defaults from convention).
-- Views:
-  - `v_asset_depreciation_forecast` — projects remaining months per asset.
-  - `v_asset_rollforward` — opening cost + additions + disposals + accumulated depr movements between two dates.
-  - `v_cip_aging` — buckets 0-30/31-60/61-90/90+.
-- Grants + RLS via `has_org_role`; audit triggers to `financial_audit_log`.
-
-## 2) SQL RPCs (atomic, security definer)
-
-- `fa_compute_period_depreciation(_asset uuid, _period_start date, _period_end date)` returns numeric — respects method, convention, salvage, catch-up.
-- `fa_preview_depreciation(_org, _period, _filters jsonb)` returns table — never writes.
-- `fa_post_depreciation_run(_org, _period, _filters, _notes)` — creates run, inserts schedule rows, calls `posting_events` with `fa.depreciation_expense` (Dr, by CC/branch) + `fa.accumulated_depreciation` (Cr) grouped by category, links `posted_journal_id`, updates `last_depreciated_period` + accumulated cache.
-- `fa_reverse_depreciation_run(_run_id)` — requires `admin`/`accountant` role; reverses JE, flips schedule status, rolls back caches.
-- `fa_recalculate_asset(_asset_id, _from_period)` — after cost/life/salvage/method change; posts catch-up JE in the current open period.
-- `fa_depreciation_forecast(_asset_id)` — full schedule to end of life (for UI + Copilot).
-- Health check function `fa.depreciation_gap` returning missing months per org.
-
-## 3) Server functions (`src/lib/assets/depreciation.functions.ts`)
-
-`previewRun`, `postRun`, `reverseRun`, `recalculateAsset`, `getSchedule(assetId)`, `getForecast(assetId)`, `listRuns`, `simulateLifeChange(assetId, newMonths)` — pure calculation for Copilot what-if.
-
-## 4) UI
-
-- `/assets/depreciation` — Runs console:
-  - Period picker (defaults to next open month), filters (category / branch / method).
-  - Preview grid: asset, method, days, opening NBV, depreciation, closing NBV, GL preview totals per account.
-  - Buttons: Post (writes JE + run), Reverse (per run, role-gated).
-  - Runs history table with journal link.
-- `/assets/$id` new tabs:
-  - **Schedule**: full posted history + planned rows.
-  - **Forecast**: monthly forecast chart to end of life + NBV curve.
-  - Buttons for "Recalculate" (opens dialog with cost/life/salvage/method fields).
-- Existing `/assets` list shows NBV + `Depreciated through` column.
-
-## 5) Reports (`/reports/assets.*`)
-
-- `assets.register` — Asset Register (all assets snapshot).
-- `assets.schedule` — Depreciation Schedule (per period).
-- `assets.forecast` — Depreciation Forecast (next N months).
-- `assets.rollforward` — Fixed Asset Rollforward between dates.
-- `assets.cip-aging` — CIP Aging.
-- `assets.additions` — Additions in range.
-- `assets.disposals` — Disposals (wired now, populated in C2C).
-- `assets.impairment` — Impairment (wired now, populated in C2C).
-- `assets.revaluation` — Revaluation (wired now, populated in C2C).
-
-Each report is a route under `src/routes/reports.assets.*.tsx`, uses `ReportShell`, exports to CSV/print.
-
-## 6) Copilot integration
-
-Extend `src/lib/copilot/erp-copilot.functions.ts` intents:
-- `explain_depreciation(asset_id, period)` — returns method, days, opening NBV, formula, JE breakdown; renders via `ExplainabilityPanel`.
-- `forecast_depreciation(asset_id)` — pulls `fa_depreciation_forecast`.
-- `simulate_life_change(asset_id, new_months)` — calls `simulateLifeChange`, shows delta vs current schedule.
-- `assets_ready_but_not_depreciating` — flags active assets with no schedule row for the current period.
-
-Registered as ERP search domains + quick-action chips in `/copilot`.
-
-## 7) Feature flag & guardrails
-
-- `fixed_assets.depreciation` flag on `organizations.settings`.
-- Period-close blocks in `accounting_periods` extended: cannot close a month if `fa.depreciation_gap > 0`.
-- All RPCs are savepointed; failure never leaves partial schedule rows.
-
-## 8) Tests & docs
-
-- E2E: acquire asset → post 3 months → change life → verify catch-up JE → reverse last run → confirm balances.
-- Perf: 5k assets × 24 months preview under 3s (uses set-based CTE, not per-row loops).
-- `docs/PHASE_C2B_REPORT.md`, `PHASE_C2_MIGRATION_MANIFEST.md` update, release notes.
+سأنفذها على مرحلتين متتاليتين. C2B Hardening أولاً (يُشحن ويُختبر)، ثم C2C.
 
 ---
 
-# Phase C2C — Lifecycle & Timeline (deferred, kicks off after C2B ships)
+## المرحلة الأولى: C2B Hardening
 
-- `fixed_asset_events` (typed payload) + RPCs: `improve_asset`, `transfer_asset`, `split_asset`, `merge_assets`, `revalue_asset`, `impair_asset`, `dispose_asset`, `retire_asset`, `write_off_asset`.
-- `fixed_asset_maintenance` table + notifications.
-- `asset_timeline` view + `AssetTimeline.tsx` component in `/assets/$id`.
-- Copilot asset actions: classify, propose life/method/GL, duplicates, idle, replacement NPV.
-- Approval workflows wired for disposal / impairment / revaluation.
-- Reports populated: Disposals / Impairment / Revaluation.
-- Release tag `v2.2.c-fixed-assets-lifecycle`.
+### 1) Depreciation Calendar — `/assets/calendar`
+- شبكة سنوية × 12 شهر لكل سنة مالية.
+- حالة كل خلية: `open` / `closed` / `posted` / `partial` / `warning` (من `accounting_periods` + `fixed_asset_runs`).
+- نقر على خلية → قائمة الأصول المؤهلة/المرحّلة/المستثناة في هذا الشهر مع سبب الاستثناء.
+- شارة تحذيرات: فجوات في الإهلاك، فترات مغلقة بدون ترحيل.
+
+### 2) Exception Dashboard — `/assets/exceptions`
+- SQL view `v_fixed_asset_exceptions` تُصنّف كل أصل نشط تحت واحدة من:
+  - `missing_gl_accounts` — لا يوجد `expense_account_id` أو `accumulated_account_id`.
+  - `missing_useful_life` — `useful_life_months` فارغ/صفر.
+  - `invalid_salvage` — `salvage_value >= cost` أو سالبة.
+  - `ready_not_started` — `status='active'` و `depreciation_start_date <= today` وبدون schedule rows.
+  - `fully_depreciated_active` — `accumulated_depreciation >= depreciable_base` و `status='active'`.
+- لكل استثناء: زر "إصلاح" يفتح شاشة تعديل الأصل مع تمييز الحقل.
+
+### 3) Batch Simulation
+- توسيع `fa_preview_depreciation` لإرجاع `simulation_summary`:
+  - `asset_count`, `total_depreciation`, `journal_lines_preview` (Dr/Cr مجمّعة حسب الحساب والمركز)، `blocking_errors[]` (فترة مغلقة/حساب مفقود/فجوة).
+- في `/assets/depreciation` قبل زر "ترحيل": نافذة Simulation تعرض القيود المقترحة سطرًا سطرًا وأي أخطاء مانعة (زر الترحيل معطّل إن وُجدت).
+
+### 4) Audit & Explainability
+- عمود `computation` (jsonb) على `fixed_asset_schedules` يخزّن: `{method, formula, inputs:{opening_nbv, useful_life_months, days_in_period, salvage, ddb_factor, units}, adjustments:[{type, delta, reason}]}`.
+- RPC `fa_explain_schedule(_schedule_id)` يعيد نصًا مقروءًا + JSON بنيوي.
+- Copilot intent جديد `explain_depreciation` يستدعيه ويعرضه في `ExplainabilityPanel`.
+- زر "لماذا؟" على كل صف في `assets.depreciation` وعلى تبويب Schedule في صفحة الأصل.
+
+### 5) Locking
+- حقول جديدة على `accounting_periods`: `fa_locked_at`, `fa_locked_by` (بجانب locks الحالية).
+- Trigger على `fixed_asset_runs`:
+  - عند `status='posted'` يقفل الشهر لِـ FA.
+  - يمنع `INSERT` جديد بنفس `period_end` لنفس المؤسسة (unique partial index حيث `status='posted'`).
+- Trigger على `fixed_assets`: يرفض `UPDATE` للحقول المؤثرة (cost, useful_life, salvage, method, dates) إذا كان `last_depreciated_period >= period` — إلا عن طريق RPC `fa_reopen_period` أو `fa_reverse_depreciation_run`.
+- كل عملية (post/reverse/reopen/override) تُكتب في `financial_audit_log` مع payload كامل.
+
+**ملفات ستُعدّل/تُنشأ في المرحلة الأولى:**
+- migration جديد: schedules.computation + views + triggers + RPCs.
+- `src/lib/assets/depreciation.functions.ts` — إضافة `simulateRun`, `getExceptions`, `getCalendar`, `explainSchedule`, `reopenPeriod`.
+- `src/routes/assets.calendar.tsx` — جديد.
+- `src/routes/assets.exceptions.tsx` — جديد.
+- `src/routes/assets.depreciation.tsx` — نافذة Simulation + زر "لماذا؟".
+- `src/routes/assets.$id.tsx` — تبويب Schedule/Forecast مع Explainability (إن لم يكن موجودًا).
+- `src/lib/copilot/erp-copilot.functions.ts` — intent `explain_depreciation`.
+- `src/components/haseem/Shell.tsx` — روابط Calendar + Exceptions تحت "الأصول الثابتة".
 
 ---
 
-## Delivery order in this turn
+## المرحلة الثانية: Phase C2C — Asset Lifecycle
 
-1. Migration (schema + RPCs + views + grants + RLS).
-2. `depreciation.functions.ts` server layer.
-3. `/assets/depreciation` UI + Schedule/Forecast tabs on asset detail.
-4. Nine `/reports/assets.*` routes wired to the new views (disposals / impairment / revaluation show empty state until C2C).
-5. Copilot intents + quick actions.
-6. Sidebar links + feature flag toggle.
-7. `docs/PHASE_C2B_REPORT.md`.
+### قاعدة البيانات
+- `fixed_asset_events` — سجل موحّد بـ `event_type` من:
+  `revaluation | impairment | improvement | transfer | split | merge | disposal | write_off | cip_finalize`
+  + `payload jsonb` + `journal_id` + `effective_date` + `status(draft|posted|reversed)`.
+- `fixed_asset_maintenance` — مواعيد صيانة + تنبيهات.
+- View `v_asset_timeline` — يوحّد: capitalize, schedules, events, maintenance, docs.
 
-C2C ships in a follow-up turn after you confirm C2B looks right, unless you tell me to bundle both.
+### RPCs (atomic + مقفولة بالفترة + audit)
+- `fa_revalue_asset(_asset, _new_value, _model, _date)` — IFRS Revaluation Model / Cost Model.
+- `fa_impair_asset(_asset, _impairment_amount, _reason, _date)`.
+- `fa_improve_asset(_asset, _bill_line_id, _amount, _extends_life)` — رسملة تحسين على أصل قائم.
+- `fa_transfer_asset(_asset, _to_branch, _to_cc, _date)`.
+- `fa_split_asset(_asset, _splits jsonb[])` — إنشاء أصول أبناء وحفظ النسبة.
+- `fa_merge_assets(_asset_ids[], _target)`.
+- `fa_dispose_asset(_asset, _proceeds, _date, _method)` — Sale / Scrap.
+- `fa_writeoff_asset(_asset, _reason, _date)`.
+- `fa_finalize_cip(_asset, _capitalization_date)` — نقل من CIP إلى Active.
+- كل RPC يُنشئ Journal Entry عبر `post_journal` باستخدام determination keys جديدة:
+  `fa.revaluation_surplus`, `fa.impairment_loss`, `fa.disposal_gain`, `fa.disposal_loss`, `fa.writeoff`.
+
+### الواجهات
+- `src/routes/assets.$id.tsx` — تبويب **Timeline** (chronological) + أزرار الإجراءات (Revalue / Impair / Improve / Transfer / Split / Merge / Dispose / Write-off / Finalize CIP) كل واحد بنافذة مخصصة.
+- `src/routes/assets.disposals.tsx` — قائمة عمليات التخارج.
+- `src/routes/assets.maintenance.tsx` — جدول الصيانة.
+- توسيع `reports.assets.*` — تعبئة تقارير Disposals / Impairment / Revaluation الآن.
+
+### Copilot Integration (C2C)
+- Intents:
+  - `explain_asset_event(event_id)` — يفسّر القيد الناتج عن أي حدث.
+  - `asset_valuation_history(asset_id)` — منحنى القيمة الدفترية عبر الزمن.
+  - `recommend_disposal` — أصول مؤهلة للتخارج (idle, fully depreciated, low utilization).
+  - `impairment_candidates` — أصول عليها مؤشرات انخفاض قيمة.
+- Action Proposals (تحتاج موافقة):
+  - `propose_impairment`, `propose_disposal`, `propose_revaluation`, `propose_cip_finalize`.
+
+### Approvals & Guardrails
+- Disposal / Impairment / Revaluation تمر عبر `approval_workflows` (موجود مسبقًا).
+- كل حدث محفوظ في `financial_audit_log`.
+- Feature flag `fixed_assets.lifecycle` على `organizations.settings`.
+
+---
+
+## Technical Details
+
+- كل الـ RPCs `SECURITY DEFINER` مع `has_org_role` gating (`admin`/`accountant` للأحداث المالية).
+- Locking عبر Postgres advisory locks لضمان عدم تكرار post لنفس المؤسسة+الفترة.
+- Simulation & Explainability تعتمد على set-based SQL (CTE) — لا loops.
+- كل event في C2C = صف في `fixed_asset_events` + قيد في `journal_entries` مربوطان عبر FK.
+- التقارير الجديدة تستخدم views لتفادي حسابات client-side.
+
+## ترتيب الشحن
+
+1. **الآن**: migration + server + UI للمرحلة الأولى (C2B Hardening) بالكامل.
+2. **بعد تأكيدك**: Phase C2C كاملة.
+
+قل "ابدأ" لأنفذ المرحلة الأولى الآن، أو "ابدأ الاثنين" لضمّ C2C في نفس الجولة.
