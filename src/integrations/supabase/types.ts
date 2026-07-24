@@ -2578,6 +2578,113 @@ export type Database = {
           },
         ]
       }
+      fixed_asset_events: {
+        Row: {
+          after_state: Json | null
+          amount: number
+          asset_id: string
+          before_state: Json | null
+          created_at: string
+          created_by: string | null
+          effective_date: string
+          event_type: Database["public"]["Enums"]["fa_event_type"]
+          id: string
+          journal_id: string | null
+          notes: string | null
+          org_id: string
+          payload: Json
+          reversed_by: string | null
+          reverses_event_id: string | null
+          status: Database["public"]["Enums"]["fa_event_status"]
+        }
+        Insert: {
+          after_state?: Json | null
+          amount?: number
+          asset_id: string
+          before_state?: Json | null
+          created_at?: string
+          created_by?: string | null
+          effective_date: string
+          event_type: Database["public"]["Enums"]["fa_event_type"]
+          id?: string
+          journal_id?: string | null
+          notes?: string | null
+          org_id: string
+          payload?: Json
+          reversed_by?: string | null
+          reverses_event_id?: string | null
+          status?: Database["public"]["Enums"]["fa_event_status"]
+        }
+        Update: {
+          after_state?: Json | null
+          amount?: number
+          asset_id?: string
+          before_state?: Json | null
+          created_at?: string
+          created_by?: string | null
+          effective_date?: string
+          event_type?: Database["public"]["Enums"]["fa_event_type"]
+          id?: string
+          journal_id?: string | null
+          notes?: string | null
+          org_id?: string
+          payload?: Json
+          reversed_by?: string | null
+          reverses_event_id?: string | null
+          status?: Database["public"]["Enums"]["fa_event_status"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fixed_asset_events_asset_id_fkey"
+            columns: ["asset_id"]
+            isOneToOne: false
+            referencedRelation: "fixed_assets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fixed_asset_events_asset_id_fkey"
+            columns: ["asset_id"]
+            isOneToOne: false
+            referencedRelation: "fixed_assets_overview"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fixed_asset_events_asset_id_fkey"
+            columns: ["asset_id"]
+            isOneToOne: false
+            referencedRelation: "v_fixed_asset_exceptions"
+            referencedColumns: ["asset_id"]
+          },
+          {
+            foreignKeyName: "fixed_asset_events_journal_id_fkey"
+            columns: ["journal_id"]
+            isOneToOne: false
+            referencedRelation: "journal_entries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fixed_asset_events_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fixed_asset_events_reversed_by_fkey"
+            columns: ["reversed_by"]
+            isOneToOne: false
+            referencedRelation: "fixed_asset_events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fixed_asset_events_reverses_event_id_fkey"
+            columns: ["reverses_event_id"]
+            isOneToOne: false
+            referencedRelation: "fixed_asset_events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       fixed_asset_groups: {
         Row: {
           code: string
@@ -2974,14 +3081,20 @@ export type Database = {
           custom: Json
           department: string | null
           description: string | null
+          disposal_method: string | null
+          disposed_at: string | null
           gps_lat: number | null
           gps_lng: number | null
           group_id: string | null
+          health_score: number | null
+          health_tier: string | null
           id: string
+          impairment_loss: number
           in_service_date: string | null
           is_cip: boolean
           is_component: boolean
           last_depreciation_date: string | null
+          last_used_at: string | null
           location_text: string | null
           manufacturer: string | null
           method: Database["public"]["Enums"]["fa_depreciation_method"]
@@ -2995,6 +3108,7 @@ export type Database = {
           purchase_order_id: string | null
           qr_payload: string | null
           residual_value: number
+          revaluation_surplus: number
           rfid_tag: string | null
           serial_number: string | null
           status: Database["public"]["Enums"]["fa_status"]
@@ -3024,14 +3138,20 @@ export type Database = {
           custom?: Json
           department?: string | null
           description?: string | null
+          disposal_method?: string | null
+          disposed_at?: string | null
           gps_lat?: number | null
           gps_lng?: number | null
           group_id?: string | null
+          health_score?: number | null
+          health_tier?: string | null
           id?: string
+          impairment_loss?: number
           in_service_date?: string | null
           is_cip?: boolean
           is_component?: boolean
           last_depreciation_date?: string | null
+          last_used_at?: string | null
           location_text?: string | null
           manufacturer?: string | null
           method?: Database["public"]["Enums"]["fa_depreciation_method"]
@@ -3045,6 +3165,7 @@ export type Database = {
           purchase_order_id?: string | null
           qr_payload?: string | null
           residual_value?: number
+          revaluation_surplus?: number
           rfid_tag?: string | null
           serial_number?: string | null
           status?: Database["public"]["Enums"]["fa_status"]
@@ -3074,14 +3195,20 @@ export type Database = {
           custom?: Json
           department?: string | null
           description?: string | null
+          disposal_method?: string | null
+          disposed_at?: string | null
           gps_lat?: number | null
           gps_lng?: number | null
           group_id?: string | null
+          health_score?: number | null
+          health_tier?: string | null
           id?: string
+          impairment_loss?: number
           in_service_date?: string | null
           is_cip?: boolean
           is_component?: boolean
           last_depreciation_date?: string | null
+          last_used_at?: string | null
           location_text?: string | null
           manufacturer?: string | null
           method?: Database["public"]["Enums"]["fa_depreciation_method"]
@@ -3095,6 +3222,7 @@ export type Database = {
           purchase_order_id?: string | null
           qr_payload?: string | null
           residual_value?: number
+          revaluation_surplus?: number
           rfid_tag?: string | null
           serial_number?: string | null
           status?: Database["public"]["Enums"]["fa_status"]
@@ -4701,6 +4829,20 @@ export type Database = {
           },
         ]
       }
+      v_asset_timeline: {
+        Row: {
+          amount: number | null
+          asset_id: string | null
+          event_date: string | null
+          event_id: string | null
+          event_kind: string | null
+          journal_id: string | null
+          org_id: string | null
+          payload: Json | null
+          title: string | null
+        }
+        Relationships: []
+      }
       v_fa_calendar: {
         Row: {
           end_date: string | null
@@ -4860,7 +5002,36 @@ export type Database = {
           period_end: string
         }[]
       }
+      fa_dispose: {
+        Args: {
+          _asset_id: string
+          _date: string
+          _method: string
+          _notes?: string
+          _proceeds: number
+        }
+        Returns: Json
+      }
       fa_explain_schedule: { Args: { _schedule_id: string }; Returns: Json }
+      fa_impair: {
+        Args: {
+          _asset_id: string
+          _date: string
+          _reason?: string
+          _recoverable_amount: number
+        }
+        Returns: Json
+      }
+      fa_improve: {
+        Args: {
+          _amount: number
+          _asset_id: string
+          _date: string
+          _extend_life_months: number
+          _notes?: string
+        }
+        Returns: Json
+      }
       fa_post_depreciation_run: {
         Args: { _memo?: string; _org: string; _period_end: string }
         Returns: string
@@ -4887,16 +5058,54 @@ export type Database = {
           reason: string
         }[]
       }
+      fa_reactivate: {
+        Args: { _asset_id: string; _date: string; _notes?: string }
+        Returns: Json
+      }
       fa_reopen_period: {
         Args: { _org: string; _period_end: string; _reason: string }
+        Returns: Json
+      }
+      fa_require_account: {
+        Args: { _branch: string; _key: string; _org: string }
+        Returns: string
+      }
+      fa_retire: {
+        Args: { _asset_id: string; _date: string; _notes?: string }
+        Returns: Json
+      }
+      fa_revalue: {
+        Args: {
+          _asset_id: string
+          _date: string
+          _new_fair_value: number
+          _notes?: string
+        }
         Returns: Json
       }
       fa_reverse_depreciation_run: {
         Args: { _memo?: string; _run_id: string }
         Returns: string
       }
+      fa_reverse_event: {
+        Args: { _event_id: string; _reason: string }
+        Returns: Json
+      }
       fa_simulate_run: {
         Args: { _category_id?: string; _org: string; _period_end: string }
+        Returns: Json
+      }
+      fa_transfer: {
+        Args: {
+          _asset_id: string
+          _custodian_name: string
+          _custodian_user: string
+          _date: string
+          _location: string
+          _notes?: string
+          _to_branch: string
+          _to_cost_center: string
+        }
         Returns: Json
       }
       find_open_period: {
@@ -5204,6 +5413,26 @@ export type Database = {
         | "units_of_production"
         | "manual"
         | "none"
+      fa_event_status: "draft" | "posted" | "reversed"
+      fa_event_type:
+        | "acquisition"
+        | "capitalization"
+        | "improvement_capital"
+        | "improvement_expense"
+        | "partial_disposal"
+        | "full_disposal"
+        | "sale"
+        | "transfer"
+        | "revaluation_up"
+        | "revaluation_down"
+        | "impairment"
+        | "impairment_reversal"
+        | "restoration"
+        | "split"
+        | "merge"
+        | "write_off"
+        | "retirement"
+        | "reactivation"
       fa_revaluation_model: "cost" | "revaluation"
       fa_status:
         | "draft"
@@ -5479,6 +5708,27 @@ export const Constants = {
         "units_of_production",
         "manual",
         "none",
+      ],
+      fa_event_status: ["draft", "posted", "reversed"],
+      fa_event_type: [
+        "acquisition",
+        "capitalization",
+        "improvement_capital",
+        "improvement_expense",
+        "partial_disposal",
+        "full_disposal",
+        "sale",
+        "transfer",
+        "revaluation_up",
+        "revaluation_down",
+        "impairment",
+        "impairment_reversal",
+        "restoration",
+        "split",
+        "merge",
+        "write_off",
+        "retirement",
+        "reactivation",
       ],
       fa_revaluation_model: ["cost", "revaluation"],
       fa_status: [
