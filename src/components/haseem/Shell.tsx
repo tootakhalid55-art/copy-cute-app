@@ -84,6 +84,8 @@ const NAV: NavItem[] = [
     children: [
       { label: "سجل الأصول", to: "/assets" },
       { label: "دورة الإهلاك", to: "/assets/depreciation" },
+      { label: "تقويم الإهلاك", to: "/assets/calendar" },
+      { label: "الاستثناءات", to: "/assets/exceptions" },
       { label: "أصول تحت الإنشاء", to: "/assets/cip" },
       { label: "الفئات", to: "/assets/categories" },
       { label: "الإعدادات", to: "/assets/settings" },
