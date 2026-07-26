@@ -40,6 +40,17 @@ export const impairAsset = createServerFn({ method: "POST" })
     _asset_id: data.assetId, _recoverable_amount: data.recoverableAmount, _date: data.date, _reason: data.reason ?? null,
   }));
 
+export const reverseAssetImpairment = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: { assetId: string; recoverableAmount: number; date: string; reason?: string; idempotencyKey?: string }) => d)
+  .handler(({ data, context }) => callRpc(context, "fa_reverse_impairment", {
+    _asset_id: data.assetId,
+    _recoverable_amount: data.recoverableAmount,
+    _date: data.date,
+    _reason: data.reason ?? null,
+    _idempotency_key: data.idempotencyKey ?? null,
+  }));
+
 export const improveAsset = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: { assetId: string; amount: number; extendLifeMonths?: number; date: string; notes?: string }) => d)
@@ -90,3 +101,17 @@ export const getAssetTimeline = createServerFn({ method: "GET" })
     if (error) throw new Error(error.message);
     return rows ?? [];
   });
+
+export const getAssetHealth = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: { assetId: string }) => d)
+  .handler(({ data, context }) => callRpc(context, "fa_calculate_health_score", {
+    _asset_id: data.assetId,
+  }));
+
+export const refreshAssetHealth = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: { assetId: string }) => d)
+  .handler(({ data, context }) => callRpc(context, "fa_refresh_health_score", {
+    _asset_id: data.assetId,
+  }));

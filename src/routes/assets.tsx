@@ -153,7 +153,9 @@ function Page() {
                   <tr key={r.id} className="text-right hover:bg-[#faf9f4]">
                     <td className="p-3 font-mono text-xs">{r.code}</td>
                     <td className="p-3">
-                      <div className="font-medium">{r.name}</div>
+                      <Link to="/assets/$id" params={{ id: r.id }} className="font-medium text-[#0f5132] hover:underline">
+                        {r.name}
+                      </Link>
                       {r.serial_number && <div className="text-[10px] text-[#0f2a1d]/50 font-mono">SN: {r.serial_number}</div>}
                     </td>
                     <td className="p-3">{r.category_name || "—"}</td>
