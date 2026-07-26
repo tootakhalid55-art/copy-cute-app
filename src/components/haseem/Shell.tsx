@@ -87,6 +87,7 @@ const NAV: NavItem[] = [
       { label: "تقويم الإهلاك", to: "/assets/calendar" },
       { label: "الاستثناءات", to: "/assets/exceptions" },
       { label: "أصول تحت الإنشاء", to: "/assets/cip" },
+      { label: "تقارير الأصول", to: "/assets/reports", icon: BarChart3 },
       { label: "الفئات", to: "/assets/categories" },
       { label: "الإعدادات", to: "/assets/settings" },
     ],

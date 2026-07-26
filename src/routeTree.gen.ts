@@ -29,6 +29,7 @@ import { Route as AssetsCategoriesRouteImport } from './routes/assets.categories
 import { Route as AssetsCipRouteImport } from './routes/assets.cip'
 import { Route as AssetsDepreciationRouteImport } from './routes/assets.depreciation'
 import { Route as AssetsExceptionsRouteImport } from './routes/assets.exceptions'
+import { Route as AssetsReportsRouteImport } from './routes/assets.reports'
 import { Route as AssetsSettingsRouteImport } from './routes/assets.settings'
 import { Route as CashBanksRouteImport } from './routes/cash.banks'
 import { Route as CashPaymentsRouteImport } from './routes/cash.payments'
@@ -212,6 +213,11 @@ const AssetsDepreciationRoute = AssetsDepreciationRouteImport.update({
 const AssetsExceptionsRoute = AssetsExceptionsRouteImport.update({
   id: '/exceptions',
   path: '/exceptions',
+  getParentRoute: () => AssetsRoute,
+} as any)
+const AssetsReportsRoute = AssetsReportsRouteImport.update({
+  id: '/reports',
+  path: '/reports',
   getParentRoute: () => AssetsRoute,
 } as any)
 const AssetsSettingsRoute = AssetsSettingsRouteImport.update({
@@ -656,6 +662,7 @@ export interface FileRoutesByFullPath {
   '/assets/cip': typeof AssetsCipRoute
   '/assets/depreciation': typeof AssetsDepreciationRoute
   '/assets/exceptions': typeof AssetsExceptionsRoute
+  '/assets/reports': typeof AssetsReportsRoute
   '/assets/settings': typeof AssetsSettingsRoute
   '/cash/banks': typeof CashBanksRoute
   '/cash/payments': typeof CashPaymentsRoute
@@ -760,6 +767,7 @@ export interface FileRoutesByTo {
   '/assets/cip': typeof AssetsCipRoute
   '/assets/depreciation': typeof AssetsDepreciationRoute
   '/assets/exceptions': typeof AssetsExceptionsRoute
+  '/assets/reports': typeof AssetsReportsRoute
   '/assets/settings': typeof AssetsSettingsRoute
   '/cash/banks': typeof CashBanksRoute
   '/cash/payments': typeof CashPaymentsRoute
@@ -859,6 +867,7 @@ export interface FileRoutesById {
   '/assets/cip': typeof AssetsCipRoute
   '/assets/depreciation': typeof AssetsDepreciationRoute
   '/assets/exceptions': typeof AssetsExceptionsRoute
+  '/assets/reports': typeof AssetsReportsRoute
   '/assets/settings': typeof AssetsSettingsRoute
   '/cash/banks': typeof CashBanksRoute
   '/cash/payments': typeof CashPaymentsRoute
@@ -965,6 +974,7 @@ export interface FileRouteTypes {
     | '/assets/cip'
     | '/assets/depreciation'
     | '/assets/exceptions'
+    | '/assets/reports'
     | '/assets/settings'
     | '/cash/banks'
     | '/cash/payments'
@@ -1069,6 +1079,7 @@ export interface FileRouteTypes {
     | '/assets/cip'
     | '/assets/depreciation'
     | '/assets/exceptions'
+    | '/assets/reports'
     | '/assets/settings'
     | '/cash/banks'
     | '/cash/payments'
@@ -1167,6 +1178,7 @@ export interface FileRouteTypes {
     | '/assets/cip'
     | '/assets/depreciation'
     | '/assets/exceptions'
+    | '/assets/reports'
     | '/assets/settings'
     | '/cash/banks'
     | '/cash/payments'
@@ -1466,6 +1478,13 @@ declare module '@tanstack/react-router' {
       path: '/exceptions'
       fullPath: '/assets/exceptions'
       preLoaderRoute: typeof AssetsExceptionsRouteImport
+      parentRoute: typeof AssetsRoute
+    }
+    '/assets/reports': {
+      id: '/assets/reports'
+      path: '/reports'
+      fullPath: '/assets/reports'
+      preLoaderRoute: typeof AssetsReportsRouteImport
       parentRoute: typeof AssetsRoute
     }
     '/assets/settings': {
@@ -2068,6 +2087,7 @@ interface AssetsRouteChildren {
   AssetsCipRoute: typeof AssetsCipRoute
   AssetsDepreciationRoute: typeof AssetsDepreciationRoute
   AssetsExceptionsRoute: typeof AssetsExceptionsRoute
+  AssetsReportsRoute: typeof AssetsReportsRoute
   AssetsSettingsRoute: typeof AssetsSettingsRoute
 }
 
@@ -2078,6 +2098,7 @@ const AssetsRouteChildren: AssetsRouteChildren = {
   AssetsCipRoute: AssetsCipRoute,
   AssetsDepreciationRoute: AssetsDepreciationRoute,
   AssetsExceptionsRoute: AssetsExceptionsRoute,
+  AssetsReportsRoute: AssetsReportsRoute,
   AssetsSettingsRoute: AssetsSettingsRoute,
 }
 

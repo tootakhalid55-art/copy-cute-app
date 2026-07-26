@@ -7,6 +7,8 @@ const migrationUrl = new URL(
   import.meta.url,
 );
 const migration = await readFile(migrationUrl, "utf8");
+const reportsFunction = await readFile(new URL("../../src/lib/assets/reports.functions.ts", import.meta.url), "utf8");
+const reportsRoute = await readFile(new URL("../../src/routes/assets.reports.tsx", import.meta.url), "utf8");
 
 test("asset events are idempotent per organization", () => {
   assert.match(migration, /uq_fae_org_idempotency/);
@@ -41,4 +43,14 @@ test("health score exposes the five explainable components", () => {
   for (const tier of ["excellent", "good", "aging", "replace_soon"]) {
     assert.match(migration, new RegExp(`'${tier}'`));
   }
+});
+
+test("asset report center covers the lifecycle reporting scope", () => {
+  for (const report of ["register", "rollforward", "disposal", "revaluation", "impairment", "transfer", "cip", "history", "movement", "nbv_category"]) {
+    assert.match(reportsRoute, new RegExp(`"${report}"`));
+  }
+  assert.match(reportsFunction, /\.from\("fixed_assets"\)/);
+  assert.match(reportsFunction, /\.from\("fixed_asset_events"\)/);
+  assert.match(reportsRoute, /revaluation_surplus/);
+  assert.match(reportsRoute, /impairment_loss/);
 });
