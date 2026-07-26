@@ -8,6 +8,7 @@ import {
   Gauge,
   History,
   RefreshCw,
+  Scissors,
   ShieldAlert,
   Sparkles,
   TrendingUp,
@@ -34,6 +35,7 @@ import {
   retireAsset,
   reverseAssetImpairment,
   revalueAsset,
+  splitAsset,
   transferAsset,
 } from "@/lib/assets/lifecycle.functions";
 
@@ -130,12 +132,14 @@ function AssetLifecyclePage() {
   const transferFn = useServerFn(transferAsset);
   const retireFn = useServerFn(retireAsset);
   const reactivateFn = useServerFn(reactivateAsset);
+  const splitFn = useServerFn(splitAsset);
 
   const [asset, setAsset] = useState<Asset | null>(null);
   const [timeline, setTimeline] = useState<TimelineRow[]>([]);
   const [health, setHealth] = useState<Health | null>(null);
   const [loading, setLoading] = useState(true);
   const [action, setAction] = useState<ActionKind | null>(null);
+  const [showSplit, setShowSplit] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -294,6 +298,9 @@ function AssetLifecyclePage() {
               <ActionButton icon={Wrench} label="تحسين رأسمالي" onClick={() => setAction("improve")} />
               <ActionButton icon={ArrowLeftRight} label="نقل الأصل" onClick={() => setAction("transfer")} />
               <ActionButton icon={CircleDollarSign} label="استبعاد / بيع" onClick={() => setAction("dispose")} />
+              {asset.status === "active" && (
+                <ActionButton icon={Scissors} label="تقسيم الأصل" onClick={() => setShowSplit(true)} />
+              )}
               {asset.status === "retired" ? (
                 <ActionButton icon={Activity} label="إعادة تنشيط" onClick={() => setAction("reactivate")} />
               ) : (
@@ -349,6 +356,24 @@ function AssetLifecyclePage() {
           nbv={nbv}
           onClose={() => setAction(null)}
           onSubmit={(values) => runAction(action, values)}
+        />
+      )}
+      {showSplit && (
+        <SplitWizard
+          asset={asset}
+          nbv={nbv}
+          onClose={() => setShowSplit(false)}
+          onSubmit={async (data) => {
+            await splitFn({
+              data: {
+                assetId: asset.id,
+                ...data,
+                idempotencyKey: crypto.randomUUID(),
+              },
+            });
+            setShowSplit(false);
+            await load();
+          }}
         />
       )}
     </Shell>
@@ -488,4 +513,99 @@ function LifecycleActionDialog({
 
 function Field({ label, children, className = "" }: { label: string; children: React.ReactNode; className?: string }) {
   return <label className={`flex flex-col gap-1 text-xs text-[#0f2a1d]/65 ${className}`}><span>{label}</span>{children}</label>;
+}
+
+type SplitPart = { name: string; code: string; pct: number };
+
+function SplitWizard({
+  asset,
+  nbv,
+  onClose,
+  onSubmit,
+}: {
+  asset: Asset;
+  nbv: number;
+  onClose: () => void;
+  onSubmit: (data: { splits: Array<{ name: string; code?: string; pct: number }>; date: string; notes?: string }) => Promise<void>;
+}) {
+  const [parts, setParts] = useState<SplitPart[]>([
+    { name: "المكوّن 1", code: `${asset.code}-01`, pct: 50 },
+    { name: "المكوّن 2", code: `${asset.code}-02`, pct: 50 },
+  ]);
+  const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
+  const [notes, setNotes] = useState("");
+  const [busy, setBusy] = useState(false);
+  const total = parts.reduce((sum, part) => sum + Number(part.pct || 0), 0);
+  const valid = parts.length >= 2 && parts.every((part) => part.name.trim() && part.pct > 0) && Math.abs(total - 100) < 0.001;
+  const update = (index: number, key: keyof SplitPart, value: string | number) =>
+    setParts((current) => current.map((part, i) => i === index ? { ...part, [key]: value } : part));
+
+  return (
+    <div className="fixed inset-0 z-50 bg-black/40 p-4 flex items-start justify-center overflow-y-auto">
+      <form
+        className="bg-white rounded-xl shadow-xl w-full max-w-3xl mt-8"
+        onSubmit={async (event) => {
+          event.preventDefault();
+          if (!valid) return;
+          setBusy(true);
+          try {
+            await onSubmit({
+              splits: parts.map((part) => ({ name: part.name.trim(), code: part.code.trim() || undefined, pct: Number(part.pct) })),
+              date,
+              notes: notes.trim() || undefined,
+            });
+          } catch (error) {
+            alert(error instanceof Error ? error.message : "تعذر تقسيم الأصل");
+          } finally {
+            setBusy(false);
+          }
+        }}
+      >
+        <div className="p-4 border-b border-[#eceae2] flex items-center justify-between">
+          <div>
+            <div className="font-semibold">معالج تقسيم الأصل</div>
+            <div className="text-xs text-[#0f2a1d]/50">{asset.code} — {asset.name}</div>
+          </div>
+          <button type="button" onClick={onClose}>إغلاق</button>
+        </div>
+        <div className="p-4 space-y-4">
+          <div className="grid grid-cols-3 gap-2 rounded-lg bg-[#faf9f4] p-3 text-sm">
+            <Info label="التكلفة">{money(asset.acquisition_cost)}</Info>
+            <Info label="مجمع الإهلاك">{money(asset.accumulated_depreciation)}</Info>
+            <Info label="القيمة الدفترية">{money(nbv)}</Info>
+          </div>
+          <div className="grid grid-cols-[1fr_1fr_100px_88px] gap-2 text-xs text-[#0f2a1d]/55 px-1">
+            <span>اسم الأصل الناتج</span><span>الكود</span><span>النسبة</span><span />
+          </div>
+          {parts.map((part, index) => (
+            <div key={index} className="grid grid-cols-[1fr_1fr_100px_88px] gap-2 items-center">
+              <input className="life-input" value={part.name} onChange={(e) => update(index, "name", e.target.value)} required />
+              <input className="life-input" value={part.code} onChange={(e) => update(index, "code", e.target.value)} />
+              <input className="life-input" type="number" min="0.01" max="100" step="0.01" value={part.pct} onChange={(e) => update(index, "pct", Number(e.target.value))} required />
+              <button type="button" disabled={parts.length <= 2} onClick={() => setParts((current) => current.filter((_, i) => i !== index))} className="text-xs text-red-700 disabled:opacity-30">إزالة</button>
+              <div className="col-span-4 grid grid-cols-3 gap-2 rounded-lg border border-[#eceae2] px-3 py-2 text-xs">
+                <span>التكلفة: {money(asset.acquisition_cost * part.pct / 100)}</span>
+                <span>الإهلاك: {money(asset.accumulated_depreciation * part.pct / 100)}</span>
+                <span>القيمة الدفترية: {money(nbv * part.pct / 100)}</span>
+              </div>
+            </div>
+          ))}
+          <div className="flex items-center justify-between">
+            <OutlineBtn type="button" onClick={() => setParts((current) => [...current, { name: `المكوّن ${current.length + 1}`, code: `${asset.code}-${String(current.length + 1).padStart(2, "0")}`, pct: 0 }])}>إضافة مكوّن</OutlineBtn>
+            <div className={`text-sm font-semibold ${valid ? "text-emerald-700" : "text-red-700"}`}>إجمالي التوزيع: {total.toFixed(2)}%</div>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="تاريخ التقسيم"><input className="life-input" type="date" value={date} onChange={(e) => setDate(e.target.value)} required /></Field>
+            <Field label="الملاحظات"><input className="life-input" value={notes} onChange={(e) => setNotes(e.target.value)} /></Field>
+          </div>
+          <p className="text-xs text-amber-700">بعد الترحيل سيُحال الأصل الأصلي وتُنشأ الأصول الناتجة بالقيم الموزعة. لا يمكن أن يقل عدد المكونات عن اثنين.</p>
+        </div>
+        <div className="p-4 border-t border-[#eceae2] flex justify-end gap-2">
+          <OutlineBtn type="button" onClick={onClose}>إلغاء</OutlineBtn>
+          <PrimaryBtn type="submit" disabled={busy || !valid}>{busy ? "جاري الترحيل…" : "ترحيل التقسيم"}</PrimaryBtn>
+        </div>
+        <style>{`.life-input{width:100%;border:1px solid #eceae2;border-radius:8px;padding:8px 10px;background:#fff;font-size:13px}`}</style>
+      </form>
+    </div>
+  );
 }

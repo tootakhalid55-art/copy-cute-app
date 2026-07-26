@@ -71,17 +71,19 @@ export const reactivateAsset = createServerFn({ method: "POST" })
 
 export const splitAsset = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: { assetId: string; splits: Array<{ name: string; code?: string; pct: number }>; date: string; notes?: string }) => d)
+  .inputValidator((d: { assetId: string; splits: Array<{ name: string; code?: string; pct: number }>; date: string; notes?: string; idempotencyKey?: string }) => d)
   .handler(({ data, context }) => callRpc(context, "fa_split", {
     _asset_id: data.assetId, _splits: data.splits, _date: data.date, _notes: data.notes ?? null,
+    _idempotency_key: data.idempotencyKey ?? null,
   }));
 
 export const mergeAssets = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: { orgId: string; assetIds: string[]; targetName: string; targetCode: string; date: string; notes?: string }) => d)
+  .inputValidator((d: { orgId: string; assetIds: string[]; targetName: string; targetCode: string; date: string; notes?: string; idempotencyKey?: string }) => d)
   .handler(({ data, context }) => callRpc(context, "fa_merge", {
     _org: data.orgId, _asset_ids: data.assetIds, _target_name: data.targetName, _target_code: data.targetCode,
     _date: data.date, _notes: data.notes ?? null,
+    _idempotency_key: data.idempotencyKey ?? null,
   }));
 
 export const reverseAssetEvent = createServerFn({ method: "POST" })
