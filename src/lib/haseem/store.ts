@@ -86,7 +86,9 @@ export function useKV<T>(key: string, initial: T) {
     try {
       const raw = localStorage.getItem(storageKey);
       if (raw != null) setValue(JSON.parse(raw));
-    } catch {}
+    } catch {
+      // Invalid legacy local data falls back to the supplied initial value.
+    }
   }, [storageKey]);
   const set = useCallback(
     (v: T | ((prev: T) => T)) => {

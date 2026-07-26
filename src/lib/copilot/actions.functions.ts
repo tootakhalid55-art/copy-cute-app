@@ -370,7 +370,9 @@ async function executeProposal(ctx: any, p: any): Promise<{ entityType?: string;
           kind: "collection_reminder", severity: "info",
           related_kind: "parties", related_id: p2.partyId,
         });
-      } catch {}
+      } catch {
+        // Notifications must not roll back an otherwise successful follow-up task.
+      }
       return { entityType: "copilot_followup_tasks", entityId: (task as any)?.id };
     }
 

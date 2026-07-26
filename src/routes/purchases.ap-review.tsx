@@ -116,7 +116,10 @@ function ApReviewPage() {
   }, [rows]);
 
   const toggleCheck = (id: string) => setChecked((s) => {
-    const n = new Set(s); n.has(id) ? n.delete(id) : n.add(id); return n;
+    const n = new Set(s);
+    if (n.has(id)) n.delete(id);
+    else n.add(id);
+    return n;
   });
 
   const bulkApprove = async () => {

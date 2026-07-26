@@ -76,7 +76,7 @@ async function generateResizedBlob(img: HTMLImageElement, maxDim: number, mime =
 }
 
 function storagePathFor(orgId: string, entityId: string, filename: string) {
-  const clean = filename.replace(/[^\w.\-]+/g, "_");
+  const clean = filename.replace(/[^\w.-]+/g, "_");
   return `${orgId}/${entityId}/${Date.now()}_${clean}`;
 }
 

@@ -31,7 +31,9 @@ export function GlobalSearch() {
     const t = setTimeout(async () => {
       try {
         setHits(await globalSearch(currentOrgId, q));
-      } catch {}
+      } catch {
+        // Search is best-effort; keep the previous results when the request fails.
+      }
     }, 200);
     return () => clearTimeout(t);
   }, [q, open, currentOrgId]);

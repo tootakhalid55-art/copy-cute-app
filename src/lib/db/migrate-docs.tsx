@@ -53,7 +53,8 @@ export function DocumentsMigrationButton() {
     if (!currentOrgId) return;
     setBusy(true);
     const details: ReportRow[] = [];
-    let imported = 0, failed = 0, skipped = 0, duplicate = 0;
+    let imported = 0, failed = 0, duplicate = 0;
+    const skipped = 0;
 
     for (const legacy of LEGACY) {
       const rows = readLS(legacy.key);
@@ -144,7 +145,9 @@ export function DocumentsMigrationButton() {
         imported, failed, skipped, duplicate,
         details,
       });
-    } catch {}
+    } catch {
+      // Migration reporting is non-blocking once the records are persisted.
+    }
     setProgress("");
     setBusy(false);
   }, [currentOrgId]);

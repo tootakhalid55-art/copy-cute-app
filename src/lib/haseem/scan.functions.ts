@@ -117,7 +117,7 @@ async function extract(fileDataUrl: string, filename: string): Promise<ScanResul
   const num = (v: any) => {
     if (typeof v === "number") return v;
     if (typeof v !== "string") return 0;
-    const n = Number(v.replace(/[^\d.\-]/g, ""));
+    const n = Number(v.replace(/[^\d.-]/g, ""));
     return Number.isFinite(n) ? n : 0;
   };
   const str = (v: any) => (typeof v === "string" ? v : v == null ? "" : String(v));
