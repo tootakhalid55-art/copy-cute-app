@@ -10,7 +10,8 @@
     "preview": "vite preview",
     "lint": "eslint .",
     "format": "prettier --write .",
-    "test:c2c": "node --test tests/accounting/phase-c2c-contract.mjs"
+    "test:c2c": "node --test tests/accounting/phase-c2c-contract.mjs",
+    "test:platform-admin": "node --test tests/security/platform-admin-contract.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",

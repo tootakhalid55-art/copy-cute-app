@@ -16,6 +16,7 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as CopilotRouteImport } from './routes/copilot'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as ExpensesRouteImport } from './routes/expenses'
+import { Route as PlatformAdminRouteImport } from './routes/platform-admin'
 import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as ProjectsRouteImport } from './routes/projects'
 import { Route as SelectOrganizationRouteImport } from './routes/select-organization'
@@ -146,6 +147,11 @@ const DashboardRoute = DashboardRouteImport.update({
 const ExpensesRoute = ExpensesRouteImport.update({
   id: '/expenses',
   path: '/expenses',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PlatformAdminRoute = PlatformAdminRouteImport.update({
+  id: '/platform-admin',
+  path: '/platform-admin',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ProfileRoute = ProfileRouteImport.update({
@@ -649,6 +655,7 @@ export interface FileRoutesByFullPath {
   '/copilot': typeof CopilotRoute
   '/dashboard': typeof DashboardRouteWithChildren
   '/expenses': typeof ExpensesRoute
+  '/platform-admin': typeof PlatformAdminRoute
   '/profile': typeof ProfileRoute
   '/projects': typeof ProjectsRoute
   '/select-organization': typeof SelectOrganizationRoute
@@ -754,6 +761,7 @@ export interface FileRoutesByTo {
   '/copilot': typeof CopilotRoute
   '/dashboard': typeof DashboardRouteWithChildren
   '/expenses': typeof ExpensesRoute
+  '/platform-admin': typeof PlatformAdminRoute
   '/profile': typeof ProfileRoute
   '/projects': typeof ProjectsRoute
   '/select-organization': typeof SelectOrganizationRoute
@@ -854,6 +862,7 @@ export interface FileRoutesById {
   '/copilot': typeof CopilotRoute
   '/dashboard': typeof DashboardRouteWithChildren
   '/expenses': typeof ExpensesRoute
+  '/platform-admin': typeof PlatformAdminRoute
   '/profile': typeof ProfileRoute
   '/projects': typeof ProjectsRoute
   '/select-organization': typeof SelectOrganizationRoute
@@ -961,6 +970,7 @@ export interface FileRouteTypes {
     | '/copilot'
     | '/dashboard'
     | '/expenses'
+    | '/platform-admin'
     | '/profile'
     | '/projects'
     | '/select-organization'
@@ -1066,6 +1076,7 @@ export interface FileRouteTypes {
     | '/copilot'
     | '/dashboard'
     | '/expenses'
+    | '/platform-admin'
     | '/profile'
     | '/projects'
     | '/select-organization'
@@ -1165,6 +1176,7 @@ export interface FileRouteTypes {
     | '/copilot'
     | '/dashboard'
     | '/expenses'
+    | '/platform-admin'
     | '/profile'
     | '/projects'
     | '/select-organization'
@@ -1271,6 +1283,7 @@ export interface RootRouteChildren {
   CopilotRoute: typeof CopilotRoute
   DashboardRoute: typeof DashboardRouteWithChildren
   ExpensesRoute: typeof ExpensesRoute
+  PlatformAdminRoute: typeof PlatformAdminRoute
   ProfileRoute: typeof ProfileRoute
   ProjectsRoute: typeof ProjectsRoute
   SelectOrganizationRoute: typeof SelectOrganizationRoute
@@ -1387,6 +1400,13 @@ declare module '@tanstack/react-router' {
       path: '/expenses'
       fullPath: '/expenses'
       preLoaderRoute: typeof ExpensesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/platform-admin': {
+      id: '/platform-admin'
+      path: '/platform-admin'
+      fullPath: '/platform-admin'
+      preLoaderRoute: typeof PlatformAdminRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/profile': {
@@ -2223,6 +2243,7 @@ const rootRouteChildren: RootRouteChildren = {
   CopilotRoute: CopilotRoute,
   DashboardRoute: DashboardRouteWithChildren,
   ExpensesRoute: ExpensesRoute,
+  PlatformAdminRoute: PlatformAdminRoute,
   ProfileRoute: ProfileRoute,
   ProjectsRoute: ProjectsRoute,
   SelectOrganizationRoute: SelectOrganizationRoute,

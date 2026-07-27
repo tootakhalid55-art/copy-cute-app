@@ -123,6 +123,7 @@ const NAV: NavItem[] = [
       { label: "الفروع", to: "/settings/branches", icon: Building },
       { label: "المستخدمون", to: "/settings/users", icon: Users },
       { label: "الأدوار", to: "/settings/roles", icon: ShieldCheck },
+      { label: "إدارة المنصة", to: "/platform-admin", icon: ShieldCheck },
       { label: "مناديب المبيعات", to: "/settings/sales-reps", icon: UserCog },
       { label: "الضرائب والربط", to: "/settings/taxes", icon: Receipt },
       { label: "العملات وأسعار الصرف", to: "/settings/currencies", icon: Coins },
