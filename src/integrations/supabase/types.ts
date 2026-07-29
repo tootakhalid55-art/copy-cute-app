@@ -4266,6 +4266,57 @@ export type Database = {
           },
         ]
       }
+      platform_admin_audit_log: {
+        Row: {
+          action: string
+          actor_user_id: string
+          created_at: string
+          id: string
+          metadata: Json
+          target_user_id: string | null
+        }
+        Insert: {
+          action: string
+          actor_user_id: string
+          created_at?: string
+          id?: string
+          metadata?: Json
+          target_user_id?: string | null
+        }
+        Update: {
+          action?: string
+          actor_user_id?: string
+          created_at?: string
+          id?: string
+          metadata?: Json
+          target_user_id?: string | null
+        }
+        Relationships: []
+      }
+      platform_admins: {
+        Row: {
+          active: boolean
+          granted_at: string
+          granted_by: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          active?: boolean
+          granted_at?: string
+          granted_by?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          active?: boolean
+          granted_at?: string
+          granted_by?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       posting_events: {
         Row: {
           created_at: string
@@ -5239,6 +5290,7 @@ export type Database = {
         }[]
       }
       is_org_member: { Args: { _org: string; _user: string }; Returns: boolean }
+      is_platform_admin: { Args: { _user_id?: string }; Returns: boolean }
       next_document_number: {
         Args: { _branch: string; _doc_type: string; _fy: string; _org: string }
         Returns: string
