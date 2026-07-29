@@ -10,6 +10,7 @@ type Ctx = {
   ready: boolean;
   signIn: (email: string, password: string) => Promise<{ error: string | null }>;
   signUp: (email: string, password: string, name?: string) => Promise<{ error: string | null }>;
+  resetPassword: (email: string) => Promise<{ error: string | null }>;
   logout: () => Promise<void>;
   updateName: (name: string) => Promise<void>;
   /** legacy sync alias — returns false immediately, real work in signIn */
@@ -59,6 +60,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
     return { error: error?.message ?? null };
   };
+  const resetPassword = async (email: string) => {
+    const redirectTo = typeof window !== "undefined" ? `${window.location.origin}/auth/reset-password` : undefined;
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo,
+    });
+    return { error: error?.message ?? null };
+  };
   const logout = async () => {
     await supabase.auth.signOut();
   };
@@ -72,7 +80,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AuthCtx.Provider value={{ user, session, ready, signIn, signUp, logout, updateName, login }}>
+    <AuthCtx.Provider value={{ user, session, ready, signIn, signUp, resetPassword, logout, updateName, login }}>
       {children}
     </AuthCtx.Provider>
   );

@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Plus, Search, Package, Layers, Wrench, Settings as SettingsIcon, RefreshCw } from "lucide-react";
+import { Combine, Plus, Search, Package, Layers, Wrench, Settings as SettingsIcon, RefreshCw } from "lucide-react";
 import {
   Shell, PageHeader, PrimaryBtn, OutlineBtn, EmptyState, StatCard, Badge, money,
 } from "@/components/haseem/Shell";
@@ -9,6 +9,7 @@ import { useOrg } from "@/lib/db/org";
 import {
   listAssets, deleteAsset, upsertAsset, listCategories, listCapitalizableBills, capitalizeFromBill,
 } from "@/lib/assets/registry.functions";
+import { mergeAssets } from "@/lib/assets/lifecycle.functions";
 
 export const Route = createFileRoute("/assets")({
   head: () => ({
@@ -46,6 +47,7 @@ function Page() {
   const saveFn = useServerFn(upsertAsset);
   const billsFn = useServerFn(listCapitalizableBills);
   const capFn = useServerFn(capitalizeFromBill);
+  const mergeFn = useServerFn(mergeAssets);
 
   const [rows, setRows] = useState<AssetRow[]>([]);
   const [cats, setCats] = useState<Array<{ id: string; name: string }>>([]);
@@ -54,6 +56,8 @@ function Page() {
   const [status, setStatus] = useState<string>("");
   const [showForm, setShowForm] = useState(false);
   const [showCapitalize, setShowCapitalize] = useState(false);
+  const [showMerge, setShowMerge] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
   const load = useCallback(async () => {
     if (!orgId) return;
@@ -64,6 +68,7 @@ function Page() {
         catFn({ data: { orgId } }) as Promise<any[]>,
       ]);
       setRows(r);
+      setSelectedIds((current) => new Set([...current].filter((id) => r.some((asset) => asset.id === id && asset.status === "active"))));
       setCats(c.map((x) => ({ id: x.id, name: x.name })));
     } finally { setLoading(false); }
   }, [orgId, status, search, listFn, catFn]);
@@ -94,6 +99,9 @@ function Page() {
             <Link to="/assets/categories"><OutlineBtn><Layers className="w-4 h-4" /> الفئات</OutlineBtn></Link>
             <Link to="/assets/settings"><OutlineBtn><SettingsIcon className="w-4 h-4" /> الإعدادات</OutlineBtn></Link>
             <OutlineBtn onClick={() => setShowCapitalize(true)}><Package className="w-4 h-4" /> رسملة من فاتورة</OutlineBtn>
+            {selectedIds.size >= 2 && (
+              <OutlineBtn onClick={() => setShowMerge(true)}><Combine className="w-4 h-4" /> دمج {selectedIds.size} أصول</OutlineBtn>
+            )}
             <PrimaryBtn onClick={() => setShowForm(true)}><Plus className="w-4 h-4" /> أصل جديد</PrimaryBtn>
           </div>
         }
@@ -137,6 +145,14 @@ function Page() {
             <table className="w-full text-sm">
               <thead className="bg-[#faf9f4] text-xs text-[#0f2a1d]/70">
                 <tr className="text-right">
+                  <th className="p-3 w-10">
+                    <input
+                      type="checkbox"
+                      aria-label="تحديد كل الأصول النشطة"
+                      checked={rows.filter((row) => row.status === "active").length > 0 && rows.filter((row) => row.status === "active").every((row) => selectedIds.has(row.id))}
+                      onChange={(event) => setSelectedIds(event.target.checked ? new Set(rows.filter((row) => row.status === "active").map((row) => row.id)) : new Set())}
+                    />
+                  </th>
                   <th className="p-3">الكود</th>
                   <th className="p-3">الاسم</th>
                   <th className="p-3">الفئة</th>
@@ -151,9 +167,25 @@ function Page() {
               <tbody className="divide-y divide-[#eceae2]">
                 {rows.map((r) => (
                   <tr key={r.id} className="text-right hover:bg-[#faf9f4]">
+                    <td className="p-3">
+                      <input
+                        type="checkbox"
+                        aria-label={`تحديد ${r.name}`}
+                        disabled={r.status !== "active"}
+                        checked={selectedIds.has(r.id)}
+                        onChange={(event) => setSelectedIds((current) => {
+                          const next = new Set(current);
+                          if (event.target.checked) next.add(r.id);
+                          else next.delete(r.id);
+                          return next;
+                        })}
+                      />
+                    </td>
                     <td className="p-3 font-mono text-xs">{r.code}</td>
                     <td className="p-3">
-                      <div className="font-medium">{r.name}</div>
+                      <Link to="/assets/$id" params={{ id: r.id }} className="font-medium text-[#0f5132] hover:underline">
+                        {r.name}
+                      </Link>
                       {r.serial_number && <div className="text-[10px] text-[#0f2a1d]/50 font-mono">SN: {r.serial_number}</div>}
                     </td>
                     <td className="p-3">{r.category_name || "—"}</td>
@@ -197,7 +229,104 @@ function Page() {
           onDone={() => { setShowCapitalize(false); load(); }}
         />
       )}
+      {showMerge && orgId && (
+        <MergeWizard
+          assets={rows.filter((row) => selectedIds.has(row.id))}
+          onClose={() => setShowMerge(false)}
+          onSubmit={(data) => mergeFn({
+            data: {
+              orgId,
+              assetIds: [...selectedIds],
+              ...data,
+              idempotencyKey: crypto.randomUUID(),
+            },
+          })}
+          onDone={() => {
+            setShowMerge(false);
+            setSelectedIds(new Set());
+            load();
+          }}
+        />
+      )}
     </Shell>
+  );
+}
+
+function MergeWizard({
+  assets,
+  onClose,
+  onSubmit,
+  onDone,
+}: {
+  assets: AssetRow[];
+  onClose: () => void;
+  onSubmit: (data: { targetName: string; targetCode: string; date: string; notes?: string }) => Promise<unknown>;
+  onDone: () => void;
+}) {
+  const [targetName, setTargetName] = useState("");
+  const [targetCode, setTargetCode] = useState("");
+  const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
+  const [notes, setNotes] = useState("");
+  const [busy, setBusy] = useState(false);
+  const totals = useMemo(() => assets.reduce((sum, asset) => ({
+    cost: sum.cost + Number(asset.acquisition_cost || 0),
+    depreciation: sum.depreciation + Number(asset.accumulated_depreciation || 0),
+    nbv: sum.nbv + Number(asset.net_book_value || 0),
+  }), { cost: 0, depreciation: 0, nbv: 0 }), [assets]);
+
+  return (
+    <div className="fixed inset-0 bg-black/40 z-50 flex items-start justify-center overflow-y-auto p-4">
+      <form
+        className="bg-white rounded-xl w-full max-w-2xl mt-8 shadow-lg"
+        onSubmit={async (event) => {
+          event.preventDefault();
+          if (assets.length < 2) return;
+          setBusy(true);
+          try {
+            await onSubmit({ targetName: targetName.trim(), targetCode: targetCode.trim(), date, notes: notes.trim() || undefined });
+            onDone();
+          } catch (error) {
+            alert(error instanceof Error ? error.message : "تعذر دمج الأصول");
+          } finally {
+            setBusy(false);
+          }
+        }}
+      >
+        <div className="px-4 py-3 border-b border-[#eceae2] flex items-center justify-between">
+          <div>
+            <div className="font-semibold">معالج دمج الأصول</div>
+            <div className="text-xs text-[#0f2a1d]/50">سيُنشأ أصل واحد من {assets.length} أصول نشطة</div>
+          </div>
+          <button type="button" onClick={onClose}>إغلاق</button>
+        </div>
+        <div className="p-4 space-y-4">
+          <div className="max-h-40 overflow-y-auto rounded-lg border border-[#eceae2] divide-y divide-[#eceae2]">
+            {assets.map((asset) => (
+              <div key={asset.id} className="flex justify-between gap-3 p-3 text-sm">
+                <span><span className="font-mono text-xs">{asset.code}</span> — {asset.name}</span>
+                <span className="tabular-nums">{money(asset.net_book_value)}</span>
+              </div>
+            ))}
+          </div>
+          <div className="grid grid-cols-3 gap-2 rounded-lg bg-[#faf9f4] p-3 text-sm">
+            <div><div className="text-xs text-[#0f2a1d]/50">التكلفة المدمجة</div><div className="font-semibold">{money(totals.cost)}</div></div>
+            <div><div className="text-xs text-[#0f2a1d]/50">مجمع الإهلاك</div><div className="font-semibold text-amber-700">{money(totals.depreciation)}</div></div>
+            <div><div className="text-xs text-[#0f2a1d]/50">القيمة الدفترية</div><div className="font-semibold text-emerald-700">{money(totals.nbv)}</div></div>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <FormField label="اسم الأصل الناتج *"><input className="ip" required value={targetName} onChange={(e) => setTargetName(e.target.value)} /></FormField>
+            <FormField label="كود الأصل الناتج *"><input className="ip" required value={targetCode} onChange={(e) => setTargetCode(e.target.value)} /></FormField>
+            <FormField label="تاريخ الدمج *"><input className="ip" type="date" required value={date} onChange={(e) => setDate(e.target.value)} /></FormField>
+            <FormField label="الملاحظات"><input className="ip" value={notes} onChange={(e) => setNotes(e.target.value)} /></FormField>
+          </div>
+          <p className="text-xs text-amber-700">بعد الترحيل ستُحال الأصول المصدر ويُنقل مجموع التكلفة والإهلاك وإعادة التقييم والاضمحلال إلى الأصل الناتج.</p>
+        </div>
+        <div className="p-4 border-t border-[#eceae2] flex justify-end gap-2">
+          <OutlineBtn type="button" onClick={onClose}>إلغاء</OutlineBtn>
+          <PrimaryBtn type="submit" disabled={busy || assets.length < 2}>{busy ? "جاري الترحيل…" : "ترحيل الدمج"}</PrimaryBtn>
+        </div>
+      </form>
+    </div>
   );
 }
 
