@@ -13,6 +13,8 @@ import { useAuth } from "@/lib/haseem/auth";
 import { useOrg } from "@/lib/db/org";
 import { useKV } from "@/lib/haseem/store";
 import { GlobalSearch } from "./GlobalSearch";
+import { useServerFn } from "@tanstack/react-start";
+import { getPlatformAdminStatus } from "@/lib/platform-admin.functions";
 
 type NavChild = { label: string; to: string; icon?: LucideIcon };
 type NavItem = {
@@ -138,16 +140,32 @@ const NAV: NavItem[] = [
   },
 ];
 
+const SUPER_ADMIN_NAV: NavItem[] = [
+  {
+    icon: ShieldCheck,
+    label: "Super Admin",
+    children: [
+      { label: "إدارة المنصة", to: "/platform-admin", icon: ShieldCheck },
+      { label: "المستخدمون", to: "/settings/users", icon: Users },
+      { label: "الأدوار", to: "/settings/roles", icon: ShieldCheck },
+      { label: "سجل التدقيق", to: "/settings/audit-log", icon: History },
+      { label: "الاشتراك والفوترة", to: "/settings/billing", icon: CreditCard },
+    ],
+  },
+];
+
 export function Shell({ children }: { children: ReactNode }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const { user, ready, logout } = useAuth();
   const navigate = useNavigate();
   const { currentOrg, orgs, ready: orgReady } = useOrg();
+  const platformAdminStatusFn = useServerFn(getPlatformAdminStatus);
   const org = {
     name: currentOrg?.name ?? "بدون منشأة",
     taxNumber: currentOrg?.vat_number ?? "",
   };
   const [menuOpen, setMenuOpen] = useState(false);
+  const [isPlatformAdmin, setIsPlatformAdmin] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useKV<boolean>("sidebar-collapsed", false);
 
   useEffect(() => {
@@ -160,11 +178,27 @@ export function Shell({ children }: { children: ReactNode }) {
     }
   }, [ready, user, orgReady, orgs.length, pathname, navigate]);
 
+  useEffect(() => {
+    let active = true;
+    if (!ready || !user) return;
+    platformAdminStatusFn()
+      .then((result) => {
+        if (active) setIsPlatformAdmin(Boolean((result as { isSuperAdmin?: boolean })?.isSuperAdmin));
+      })
+      .catch(() => {
+        if (active) setIsPlatformAdmin(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, [platformAdminStatusFn, ready, user]);
+
   const initialOpen = NAV.reduce<Record<string, boolean>>((acc, s) => {
     if (s.children?.some((c) => pathname.startsWith(c.to))) acc[s.label] = true;
     return acc;
   }, {});
   const [open, setOpen] = useState<Record<string, boolean>>(initialOpen);
+  const navItems = isPlatformAdmin ? [...NAV.slice(0, -1), ...SUPER_ADMIN_NAV, NAV[NAV.length - 1]] : NAV;
 
   if (!ready || !user) {
     return (
@@ -254,7 +288,7 @@ export function Shell({ children }: { children: ReactNode }) {
           } shrink-0 bg-white border-l border-[#eceae2] min-h-[calc(100vh-105px)] p-3 sticky top-[65px] self-start transition-all duration-200`}
         >
           <nav className="space-y-1">
-            {NAV.map((s) => {
+            {navItems.map((s) => {
               const Icon = s.icon;
               const isActive = s.to ? pathname === s.to || pathname.startsWith(s.to + "/") : false;
               const anyChildActive = s.children?.some((c) => pathname === c.to || pathname.startsWith(c.to + "/"));
@@ -324,9 +358,16 @@ export function Shell({ children }: { children: ReactNode }) {
           </nav>
 
           {!sidebarCollapsed && (
-            <div className="mt-6 flex items-center gap-2 text-xs text-[#0f2a1d]/60 px-3">
-              <Globe className="w-4 h-4" />
-              العربية
+            <div className="mt-6 space-y-2 px-3">
+              {isPlatformAdmin && (
+                <div className="rounded-lg border border-[#d9e7dc] bg-[#eef8f0] px-3 py-2 text-xs text-[#0f5132]">
+                  أنت الآن داخل حساب Super Admin
+                </div>
+              )}
+              <div className="flex items-center gap-2 text-xs text-[#0f2a1d]/60">
+                <Globe className="w-4 h-4" />
+                العربية
+              </div>
             </div>
           )}
         </aside>

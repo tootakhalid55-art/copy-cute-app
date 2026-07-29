@@ -3,6 +3,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { Building2, RefreshCw, ShieldCheck, Users } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Badge, OutlineBtn, PageHeader, PrimaryBtn, Shell, StatCard } from "@/components/haseem/Shell";
+import { useAuth } from "@/lib/haseem/auth";
 import { getPlatformAdminOverview, getPlatformAdminStatus, setPlatformAdminRole } from "@/lib/platform-admin.functions";
 
 export const Route = createFileRoute("/platform-admin")({
@@ -21,6 +22,7 @@ type Overview = {
 };
 
 function PlatformAdminPage() {
+  const { user } = useAuth();
   const statusFn = useServerFn(getPlatformAdminStatus);
   const overviewFn = useServerFn(getPlatformAdminOverview);
   const roleFn = useServerFn(setPlatformAdminRole);
@@ -44,10 +46,35 @@ function PlatformAdminPage() {
   if (allowed === null) return <Shell><div className="p-12 text-center text-sm">جاري التحقق من صلاحيات إدارة المنصة…</div></Shell>;
   if (!allowed) return (
     <Shell>
-      <div className="max-w-xl mx-auto mt-16 rounded-xl border border-red-200 bg-white p-8 text-center">
-        <ShieldCheck className="w-12 h-12 text-red-600 mx-auto mb-3" />
-        <h1 className="text-xl font-semibold">هذه الصفحة مخصصة لـ Super Admin</h1>
-        <p className="text-sm text-[#0f2a1d]/60 mt-2">صلاحية مدير المنشأة لا تمنح الوصول إلى إدارة المنصة. يجب تفعيل حسابك أولًا من قاعدة البيانات بواسطة مشغّل موثوق.</p>
+      <div className="max-w-2xl mx-auto mt-16 rounded-xl border border-red-200 bg-white p-8">
+        <div className="flex items-start gap-3">
+          <ShieldCheck className="w-12 h-12 text-red-600 shrink-0 mt-1" />
+          <div className="text-right">
+            <h1 className="text-xl font-semibold">هذه الصفحة مخصصة لـ Super Admin</h1>
+            <p className="text-sm text-[#0f2a1d]/60 mt-2">
+              حسابك الحالي مسجّل دخولًا، لكنه لم يُفعّل كـ Super Admin بعد.
+              يجب إضافة البريد المرتبط بهذا الحساب إلى جدول `platform_admins` من قاعدة البيانات.
+            </p>
+          </div>
+        </div>
+
+        <div className="mt-5 grid gap-3 text-sm">
+          <div className="rounded-lg bg-[#faf9f4] border border-[#eceae2] p-4">
+            <div className="text-xs text-[#0f2a1d]/60 mb-1">البريد الحالي</div>
+            <div className="font-medium" dir="ltr">{user?.email || "—"}</div>
+          </div>
+          <div className="rounded-lg bg-[#faf9f4] border border-[#eceae2] p-4">
+            <div className="text-xs text-[#0f2a1d]/60 mb-1">معرّف الجلسة الحالي</div>
+            <div className="font-medium break-all" dir="ltr">{user?.id || "—"}</div>
+          </div>
+          <div className="rounded-lg bg-[#faf9f4] border border-[#eceae2] p-4">
+            <div className="text-xs text-[#0f2a1d]/60 mb-2">خطوة التفعيل</div>
+            <pre className="text-xs overflow-x-auto whitespace-pre-wrap text-[#0f2a1d] bg-white border border-[#eceae2] rounded-lg p-3" dir="ltr">{`INSERT INTO public.platform_admins (user_id, granted_by)\nSELECT id, id\nFROM auth.users\nWHERE lower(email) = lower('${user?.email || "INFO@CANARMODERN.COM"}');`}</pre>
+          </div>
+          <div className="rounded-lg bg-[#eef8f0] border border-[#cfe7d4] p-4 text-[#0f5132] text-sm text-right">
+            بعد تنفيذ أمر SQL، حدّث الصفحة أو سجّل الخروج ثم ادخل مرة أخرى.
+          </div>
+        </div>
       </div>
     </Shell>
   );

@@ -32,6 +32,7 @@ import { Route as AssetsDepreciationRouteImport } from './routes/assets.deprecia
 import { Route as AssetsExceptionsRouteImport } from './routes/assets.exceptions'
 import { Route as AssetsReportsRouteImport } from './routes/assets.reports'
 import { Route as AssetsSettingsRouteImport } from './routes/assets.settings'
+import { Route as AuthResetPasswordRouteImport } from './routes/auth.reset-password'
 import { Route as CashBanksRouteImport } from './routes/cash.banks'
 import { Route as CashPaymentsRouteImport } from './routes/cash.payments'
 import { Route as CashReceiptsRouteImport } from './routes/cash.receipts'
@@ -230,6 +231,11 @@ const AssetsSettingsRoute = AssetsSettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
   getParentRoute: () => AssetsRoute,
+} as any)
+const AuthResetPasswordRoute = AuthResetPasswordRouteImport.update({
+  id: '/reset-password',
+  path: '/reset-password',
+  getParentRoute: () => AuthRoute,
 } as any)
 const CashBanksRoute = CashBanksRouteImport.update({
   id: '/cash/banks',
@@ -651,7 +657,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/accounting': typeof AccountingRouteWithChildren
   '/assets': typeof AssetsRouteWithChildren
-  '/auth': typeof AuthRoute
+  '/auth': typeof AuthRouteWithChildren
   '/copilot': typeof CopilotRoute
   '/dashboard': typeof DashboardRouteWithChildren
   '/expenses': typeof ExpensesRoute
@@ -671,6 +677,7 @@ export interface FileRoutesByFullPath {
   '/assets/exceptions': typeof AssetsExceptionsRoute
   '/assets/reports': typeof AssetsReportsRoute
   '/assets/settings': typeof AssetsSettingsRoute
+  '/auth/reset-password': typeof AuthResetPasswordRoute
   '/cash/banks': typeof CashBanksRoute
   '/cash/payments': typeof CashPaymentsRoute
   '/cash/receipts': typeof CashReceiptsRoute
@@ -757,7 +764,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/accounting': typeof AccountingRouteWithChildren
   '/assets': typeof AssetsRouteWithChildren
-  '/auth': typeof AuthRoute
+  '/auth': typeof AuthRouteWithChildren
   '/copilot': typeof CopilotRoute
   '/dashboard': typeof DashboardRouteWithChildren
   '/expenses': typeof ExpensesRoute
@@ -777,6 +784,7 @@ export interface FileRoutesByTo {
   '/assets/exceptions': typeof AssetsExceptionsRoute
   '/assets/reports': typeof AssetsReportsRoute
   '/assets/settings': typeof AssetsSettingsRoute
+  '/auth/reset-password': typeof AuthResetPasswordRoute
   '/cash/banks': typeof CashBanksRoute
   '/cash/payments': typeof CashPaymentsRoute
   '/cash/receipts': typeof CashReceiptsRoute
@@ -858,7 +866,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/accounting': typeof AccountingRouteWithChildren
   '/assets': typeof AssetsRouteWithChildren
-  '/auth': typeof AuthRoute
+  '/auth': typeof AuthRouteWithChildren
   '/copilot': typeof CopilotRoute
   '/dashboard': typeof DashboardRouteWithChildren
   '/expenses': typeof ExpensesRoute
@@ -878,6 +886,7 @@ export interface FileRoutesById {
   '/assets/exceptions': typeof AssetsExceptionsRoute
   '/assets/reports': typeof AssetsReportsRoute
   '/assets/settings': typeof AssetsSettingsRoute
+  '/auth/reset-password': typeof AuthResetPasswordRoute
   '/cash/banks': typeof CashBanksRoute
   '/cash/payments': typeof CashPaymentsRoute
   '/cash/receipts': typeof CashReceiptsRoute
@@ -986,6 +995,7 @@ export interface FileRouteTypes {
     | '/assets/exceptions'
     | '/assets/reports'
     | '/assets/settings'
+    | '/auth/reset-password'
     | '/cash/banks'
     | '/cash/payments'
     | '/cash/receipts'
@@ -1092,6 +1102,7 @@ export interface FileRouteTypes {
     | '/assets/exceptions'
     | '/assets/reports'
     | '/assets/settings'
+    | '/auth/reset-password'
     | '/cash/banks'
     | '/cash/payments'
     | '/cash/receipts'
@@ -1192,6 +1203,7 @@ export interface FileRouteTypes {
     | '/assets/exceptions'
     | '/assets/reports'
     | '/assets/settings'
+    | '/auth/reset-password'
     | '/cash/banks'
     | '/cash/payments'
     | '/cash/receipts'
@@ -1279,7 +1291,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AccountingRoute: typeof AccountingRouteWithChildren
   AssetsRoute: typeof AssetsRouteWithChildren
-  AuthRoute: typeof AuthRoute
+  AuthRoute: typeof AuthRouteWithChildren
   CopilotRoute: typeof CopilotRoute
   DashboardRoute: typeof DashboardRouteWithChildren
   ExpensesRoute: typeof ExpensesRoute
@@ -1513,6 +1525,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/assets/settings'
       preLoaderRoute: typeof AssetsSettingsRouteImport
       parentRoute: typeof AssetsRoute
+    }
+    '/auth/reset-password': {
+      id: '/auth/reset-password'
+      path: '/reset-password'
+      fullPath: '/auth/reset-password'
+      preLoaderRoute: typeof AuthResetPasswordRouteImport
+      parentRoute: typeof AuthRoute
     }
     '/cash/banks': {
       id: '/cash/banks'
@@ -2125,6 +2144,16 @@ const AssetsRouteChildren: AssetsRouteChildren = {
 const AssetsRouteWithChildren =
   AssetsRoute._addFileChildren(AssetsRouteChildren)
 
+interface AuthRouteChildren {
+  AuthResetPasswordRoute: typeof AuthResetPasswordRoute
+}
+
+const AuthRouteChildren: AuthRouteChildren = {
+  AuthResetPasswordRoute: AuthResetPasswordRoute,
+}
+
+const AuthRouteWithChildren = AuthRoute._addFileChildren(AuthRouteChildren)
+
 interface DashboardRouteChildren {
   DashboardCashFlowRoute: typeof DashboardCashFlowRoute
   DashboardProfitAndLossRoute: typeof DashboardProfitAndLossRoute
@@ -2239,7 +2268,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AccountingRoute: AccountingRouteWithChildren,
   AssetsRoute: AssetsRouteWithChildren,
-  AuthRoute: AuthRoute,
+  AuthRoute: AuthRouteWithChildren,
   CopilotRoute: CopilotRoute,
   DashboardRoute: DashboardRouteWithChildren,
   ExpensesRoute: ExpensesRoute,

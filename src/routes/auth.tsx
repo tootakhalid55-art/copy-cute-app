@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { Outlet, createFileRoute, useLocation, useNavigate } from "@tanstack/react-router";
 import { useState, useEffect } from "react";
 import { useAuth } from "@/lib/haseem/auth";
 
@@ -8,8 +8,9 @@ export const Route = createFileRoute("/auth")({
 });
 
 function AuthPage() {
-  const { user, ready, signIn, signUp } = useAuth();
+  const { user, ready, signIn, signUp, resetPassword } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [mode, setMode] = useState<"login" | "signup">("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -17,10 +18,15 @@ function AuthPage() {
   const [error, setError] = useState("");
   const [info, setInfo] = useState("");
   const [busy, setBusy] = useState(false);
+  const [forgotBusy, setForgotBusy] = useState(false);
 
   useEffect(() => {
     if (ready && user) navigate({ to: "/dashboard" });
   }, [ready, user, navigate]);
+
+  if (location.pathname !== "/auth") {
+    return <Outlet />;
+  }
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -39,6 +45,23 @@ function AuthPage() {
       }
     } finally {
       setBusy(false);
+    }
+  };
+
+  const requestPasswordReset = async () => {
+    setError("");
+    setInfo("");
+    if (!email.trim()) {
+      setError("أدخل البريد الإلكتروني أولًا حتى نرسل رابط الاستعادة.");
+      return;
+    }
+    setForgotBusy(true);
+    try {
+      const { error } = await resetPassword(email);
+      if (error) setError(error);
+      else setInfo("تم إرسال رابط استعادة كلمة المرور إلى بريدك الإلكتروني.");
+    } finally {
+      setForgotBusy(false);
     }
   };
 
@@ -112,6 +135,16 @@ function AuthPage() {
               dir="ltr"
             />
           </div>
+          {mode === "login" && (
+            <button
+              type="button"
+              onClick={requestPasswordReset}
+              disabled={busy || forgotBusy}
+              className="text-xs text-[#0f6b3a] underline underline-offset-4 text-right disabled:opacity-60"
+            >
+              {forgotBusy ? "جارٍ الإرسال..." : "استعادة كلمة المرور"}
+            </button>
+          )}
           {error && <div className="text-xs text-red-600 bg-red-50 rounded-lg px-3 py-2">{error}</div>}
           {info && <div className="text-xs text-[#0f6b3a] bg-[#eaf6ef] rounded-lg px-3 py-2">{info}</div>}
           <button
