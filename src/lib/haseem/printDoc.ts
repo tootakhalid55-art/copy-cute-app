@@ -1,11 +1,14 @@
 // Self-contained printable document builder.
 // Renders an HTML string with inline styles (no Tailwind dependency),
 // then prints via a hidden iframe so popup blockers can't interfere.
+import { formatTimestamp as formatTs } from "./zatca";
 
-export type PrintLine = { description: string; qty: number; price: number; tax: number };
+
+export type PrintLine = { description: string; qty: number; price: number; tax: number; discount?: number };
 export type PrintLineCalc = { net: number; taxAmt: number; gross: number };
 
 export type PrintTpl = { name: string; accent: string; onAccent: string; soft: string };
+
 
 export function makeZatcaQrPayload(input: {
   sellerName: string;
@@ -34,12 +37,14 @@ export function makeZatcaQrPayload(input: {
 export type PrintDocData = {
   title: string;              // e.g. "فاتورة ضريبية"
   titleEn?: string;           // e.g. "Tax Invoice"
+  variant?: "standard" | "simplified";  // ZATCA invoice type
+  issuedAtIso?: string;       // exact ZATCA timestamp
   ref: string;
   date: string;
   dueDate?: string;
   expiry?: string;
-  org: { name: string; taxNumber: string };
-  party?: { name?: string; taxNumber?: string; phone?: string; email?: string } | null;
+  org: { name: string; taxNumber: string; address?: string };
+  party?: { name?: string; taxNumber?: string; phone?: string; email?: string; address?: string } | null;
   partyLabel: string;
   lines: PrintLine[];
   lineCalcs: PrintLineCalc[];
@@ -59,6 +64,7 @@ export type PrintDocData = {
   bilingual?: boolean;        // show English secondary labels
   verify?: { qrDataUrl: string; url: string; label?: string };
 };
+
 
 const esc = (s: unknown) =>
   String(s ?? "")
@@ -84,14 +90,17 @@ export function buildDocHtml(d: PrintDocData): string {
   const muted = "#6b7469";
   const line = "#ececec";
 
-  const partyBlock = party
+  const simplified = d.variant === "simplified";
+
+  const partyBlock = party && (party.name || party.taxNumber || party.phone)
     ? `<div style="font-size:14px;font-weight:700;color:${ink};margin-bottom:6px;letter-spacing:.01em">${esc(party.name || "—")}</div>
        <div style="display:grid;gap:3px;font-size:11px;color:${muted}">
-         ${party.taxNumber ? `<div><span style="color:${accent};font-weight:600">الرقم الضريبي · </span>${esc(party.taxNumber)}</div>` : ""}
-         ${party.phone ? `<div><span style="color:${accent};font-weight:600">الجوال · </span>${esc(party.phone)}</div>` : ""}
-         ${party.email ? `<div><span style="color:${accent};font-weight:600">البريد · </span>${esc(party.email)}</div>` : ""}
+         ${party.taxNumber ? `<div><span style="color:${accent};font-weight:600">الرقم الضريبي · VAT No. </span>${esc(party.taxNumber)}</div>` : ""}
+         ${!simplified && party.address ? `<div><span style="color:${accent};font-weight:600">العنوان · Address </span>${esc(party.address)}</div>` : ""}
+         ${party.phone ? `<div><span style="color:${accent};font-weight:600">الجوال · Phone </span>${esc(party.phone)}</div>` : ""}
+         ${!simplified && party.email ? `<div><span style="color:${accent};font-weight:600">البريد · Email </span>${esc(party.email)}</div>` : ""}
        </div>`
-    : `<span style="color:#b7bdb2">—</span>`;
+    : `<span style="color:#b7bdb2">${simplified ? "عميل نقدي · Cash customer" : "—"}</span>`;
 
   const rows = lines
     .map((l, i) => {
@@ -104,6 +113,7 @@ export function buildDocHtml(d: PrintDocData): string {
         </td>
         <td style="${bd};padding:12px 8px;text-align:center;font-variant-numeric:tabular-nums;color:${ink}">${esc(l.qty)}</td>
         <td style="${bd};padding:12px 8px;text-align:center;font-variant-numeric:tabular-nums;color:${ink}">${fmt(l.price)}</td>
+        <td style="${bd};padding:12px 8px;text-align:center;font-variant-numeric:tabular-nums;color:${muted}">${fmt(l.discount ?? 0)}</td>
         <td style="${bd};padding:12px 8px;text-align:center;font-variant-numeric:tabular-nums;color:${muted}">${fmt(c.net)}</td>
         <td style="${bd};padding:12px 8px;text-align:center;font-variant-numeric:tabular-nums;color:${muted}">${fmt(c.taxAmt)} <span style="opacity:.55;font-size:9px">(${esc(l.tax)}%)</span></td>
         <td style="${bd};padding:12px 10px;text-align:center;font-variant-numeric:tabular-nums;color:${ink};font-weight:700">${fmt(c.gross)}</td>
@@ -117,13 +127,17 @@ export function buildDocHtml(d: PrintDocData): string {
       <div style="font-size:12px;color:${ink};font-weight:600;font-variant-numeric:tabular-nums;word-break:break-word">${value || "—"}</div>
     </div>`;
 
+  const stamp = d.issuedAtIso ? formatTs(d.issuedAtIso) : "";
+
   const metaGrid = [
     metaCell("التاريخ", "Date", esc(d.date)),
+    stamp ? metaCell("وقت الإصدار", "Timestamp", `<span style="direction:ltr;display:inline-block">${esc(stamp)}</span>`) : "",
     metaCell(d.expiry ? "الصلاحية" : "الاستحقاق", d.expiry ? "Expiry" : "Due", esc(d.expiry || d.dueDate || "—")),
     d.poNumber ? metaCell("أمر الشراء", "PO No.", esc(d.poNumber)) : "",
     d.reference ? metaCell("المرجع", "Reference", esc(d.reference)) : "",
     d.project ? metaCell("المشروع", "Project", esc(d.project)) : "",
   ].filter(Boolean).join("");
+
 
   const totalsRow = (label: string, enLabel: string, value: string, opts?: { strong?: boolean; dashed?: boolean }) => `
     <div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0;${opts?.dashed === false || opts?.strong ? "" : `border-bottom:1px dashed ${line};`}">
@@ -166,8 +180,9 @@ export function buildDocHtml(d: PrintDocData): string {
       <div style="max-width:60%">
         ${logoBlock}
         <div style="font-size:19px;font-weight:800;color:${ink};letter-spacing:-.01em">${esc(org.name)}</div>
-        <div style="font-size:11px;color:${muted};margin-top:4px">الرقم الضريبي · ${esc(org.taxNumber)}</div>
-        <div style="font-size:11px;color:${muted}">المملكة العربية السعودية</div>
+        <div style="font-size:11px;color:${muted};margin-top:4px">الرقم الضريبي · VAT No. ${esc(org.taxNumber)}</div>
+        <div style="font-size:11px;color:${muted}">${esc(org.address || "المملكة العربية السعودية")}</div>
+        ${org.address ? `<div style="font-size:11px;color:${muted}">المملكة العربية السعودية · Kingdom of Saudi Arabia</div>` : ""}
       </div>
       <div style="text-align:left;min-width:220px">
         <div style="display:inline-block;padding:5px 12px;background:${soft};color:${accent};font-size:10.5px;font-weight:700;border-radius:999px;letter-spacing:.06em;text-transform:uppercase;margin-bottom:10px">${esc(d.titleEn || "Document")}</div>
@@ -178,7 +193,7 @@ export function buildDocHtml(d: PrintDocData): string {
 
     <div style="padding:0 32px 20px">
       <div style="border:1px solid ${line};border-radius:12px;padding:16px 18px;background:#fff">
-        <div style="font-size:9.5px;color:${muted};font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-bottom:8px">${esc(d.partyLabel)}${B ? " · Bill To" : ""}</div>
+        <div style="font-size:9.5px;color:${muted};font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-bottom:8px">${esc(d.partyLabel)}${B ? " · Bill To" : ""}${simplified ? ` <span style="font-weight:400;text-transform:none;opacity:.7">(اختياري · optional)</span>` : ""}</div>
         ${partyBlock}
       </div>
     </div>
@@ -193,14 +208,16 @@ export function buildDocHtml(d: PrintDocData): string {
           <tr style="background:${soft}">
             <th style="padding:11px 8px;text-align:center;width:36px;font-size:9.5px;color:${muted};font-weight:700;letter-spacing:.06em;text-transform:uppercase">#</th>
             <th style="padding:11px 10px;text-align:right;font-size:9.5px;color:${muted};font-weight:700;letter-spacing:.06em;text-transform:uppercase">الوصف${en("Description")}</th>
-            <th style="padding:11px 8px;text-align:center;width:60px;font-size:9.5px;color:${muted};font-weight:700;letter-spacing:.06em;text-transform:uppercase">الكمية${en("Qty")}</th>
-            <th style="padding:11px 8px;text-align:center;width:80px;font-size:9.5px;color:${muted};font-weight:700;letter-spacing:.06em;text-transform:uppercase">السعر${en("Price")}</th>
-            <th style="padding:11px 8px;text-align:center;width:90px;font-size:9.5px;color:${muted};font-weight:700;letter-spacing:.06em;text-transform:uppercase">المبلغ${en("Amount")}</th>
+            <th style="padding:11px 8px;text-align:center;width:56px;font-size:9.5px;color:${muted};font-weight:700;letter-spacing:.06em;text-transform:uppercase">الكمية${en("Qty")}</th>
+            <th style="padding:11px 8px;text-align:center;width:78px;font-size:9.5px;color:${muted};font-weight:700;letter-spacing:.06em;text-transform:uppercase">السعر${en("Unit Price")}</th>
+            <th style="padding:11px 8px;text-align:center;width:70px;font-size:9.5px;color:${muted};font-weight:700;letter-spacing:.06em;text-transform:uppercase">الخصم${en("Discount")}</th>
+            <th style="padding:11px 8px;text-align:center;width:86px;font-size:9.5px;color:${muted};font-weight:700;letter-spacing:.06em;text-transform:uppercase">المبلغ${en("Taxable")}</th>
             <th style="padding:11px 8px;text-align:center;width:95px;font-size:9.5px;color:${muted};font-weight:700;letter-spacing:.06em;text-transform:uppercase">الضريبة${en("VAT")}</th>
-            <th style="padding:11px 10px;text-align:center;width:100px;font-size:9.5px;color:${muted};font-weight:700;letter-spacing:.06em;text-transform:uppercase">الإجمالي${en("Total")}</th>
+            <th style="padding:11px 10px;text-align:center;width:98px;font-size:9.5px;color:${muted};font-weight:700;letter-spacing:.06em;text-transform:uppercase">الإجمالي${en("Line Total")}</th>
           </tr>
         </thead>
-        <tbody>${rows || `<tr><td colspan="7" style="padding:24px;text-align:center;color:#b7bdb2;font-size:11px">لا توجد بنود</td></tr>`}</tbody>
+        <tbody>${rows || `<tr><td colspan="8" style="padding:24px;text-align:center;color:#b7bdb2;font-size:11px">لا توجد بنود</td></tr>`}</tbody>
+
       </table>
     </div>
 
