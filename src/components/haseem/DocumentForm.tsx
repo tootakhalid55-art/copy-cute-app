@@ -61,7 +61,7 @@ export function DocumentForm({
   kind?: DocKind;
 }) {
   const navigate = useNavigate();
-  const { items: parties, add: addParty } = useCollection<any>(partyKey);
+  const { items: parties, addAsync: addPartyAsync } = useCollection<any>(partyKey);
   const { items: docs, add, update } = useCollection<any>(storageKey);
   const existing = docId ? docs.find((d) => d.id === docId) : null;
   const [org] = useKV<{ name: string; taxNumber: string }>("org", {
@@ -142,13 +142,21 @@ export function DocumentForm({
   const [newParty, setNewParty] = useState(emptyParty);
   const [partyTab, setPartyTab] = useState<"basic" | "address" | "financial" | "contact">("basic");
 
-  const submitNewParty = () => {
-    if (!newParty.name.trim()) return;
-    const rec = addParty({ ...newParty, name: newParty.name.trim() });
-    setPartyId(rec.id);
-    setPartyModalOpen(false);
-    setPartyTab("basic");
-    setNewParty(emptyParty);
+  const [savingParty, setSavingParty] = useState(false);
+  const submitNewParty = async () => {
+    if (!newParty.name.trim() || savingParty) return;
+    setSavingParty(true);
+    try {
+      const rec = await addPartyAsync({ ...newParty, name: newParty.name.trim() });
+      setPartyId(rec.id);
+      setPartyModalOpen(false);
+      setPartyTab("basic");
+      setNewParty(emptyParty);
+    } catch (e: any) {
+      alert(`تعذّر حفظ السجل: ${e?.message ?? e}`);
+    } finally {
+      setSavingParty(false);
+    }
   };
 
   const party = parties.find((p) => p.id === partyId);
