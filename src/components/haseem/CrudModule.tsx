@@ -49,7 +49,7 @@ export function CrudModule({
   headerExtra?: ReactNode;
   beforeList?: ReactNode;
 }) {
-  const { items, add, update, remove } = useCollection<any>(storageKey);
+  const { items, addAsync, update, remove } = useCollection<any>(storageKey);
   const navigate = useNavigate();
   const [q, setQ] = useState("");
   const [open, setOpen] = useState(false);
