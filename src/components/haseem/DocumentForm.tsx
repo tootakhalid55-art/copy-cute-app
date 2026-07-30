@@ -725,11 +725,13 @@ export function DocumentForm({
                 <thead>
                   <tr style={{ background: tpl.accent, color: tpl.onAccent }}>
                     <th className="p-2 text-right" style={{ border: `1px solid ${tpl.accent}` }}>#</th>
-                    <th className="p-2 text-right" style={{ border: `1px solid ${tpl.accent}` }}>الوصف</th>
-                    <th className="p-2 text-right" style={{ border: `1px solid ${tpl.accent}` }}>الكمية</th>
-                    <th className="p-2 text-right" style={{ border: `1px solid ${tpl.accent}` }}>السعر</th>
-                    <th className="p-2 text-right" style={{ border: `1px solid ${tpl.accent}` }}>الضريبة %</th>
-                    <th className="p-2 text-right" style={{ border: `1px solid ${tpl.accent}` }}>المبلغ</th>
+                    <th className="p-2 text-right" style={{ border: `1px solid ${tpl.accent}` }}>الوصف<span className="opacity-60 font-normal"> · Description</span></th>
+                    <th className="p-2 text-right" style={{ border: `1px solid ${tpl.accent}` }}>الكمية<span className="opacity-60 font-normal"> · Qty</span></th>
+                    <th className="p-2 text-right" style={{ border: `1px solid ${tpl.accent}` }}>السعر<span className="opacity-60 font-normal"> · Unit</span></th>
+                    <th className="p-2 text-right" style={{ border: `1px solid ${tpl.accent}` }}>الخصم<span className="opacity-60 font-normal"> · Disc.</span></th>
+                    <th className="p-2 text-right" style={{ border: `1px solid ${tpl.accent}` }}>الوعاء<span className="opacity-60 font-normal"> · Taxable</span></th>
+                    <th className="p-2 text-right" style={{ border: `1px solid ${tpl.accent}` }}>الضريبة<span className="opacity-60 font-normal"> · VAT</span></th>
+                    <th className="p-2 text-right" style={{ border: `1px solid ${tpl.accent}` }}>الإجمالي<span className="opacity-60 font-normal"> · Total</span></th>
                   </tr>
                 </thead>
                 <tbody>
@@ -739,7 +741,9 @@ export function DocumentForm({
                       <td className="border border-[#d4d0c4] p-2">{l.description || "—"}</td>
                       <td className="border border-[#d4d0c4] p-2">{l.qty}</td>
                       <td className="border border-[#d4d0c4] p-2 tabular-nums">{fmt(l.price)}</td>
-                      <td className="border border-[#d4d0c4] p-2">{l.tax}%</td>
+                      <td className="border border-[#d4d0c4] p-2 tabular-nums">{fmt(Number((l as any).discount ?? 0))}</td>
+                      <td className="border border-[#d4d0c4] p-2 tabular-nums">{fmt(lineCalcs[i].net)}</td>
+                      <td className="border border-[#d4d0c4] p-2 tabular-nums">{fmt(lineCalcs[i].taxAmt)} <span className="opacity-60">({l.tax}%)</span></td>
                       <td className="border border-[#d4d0c4] p-2 tabular-nums">{fmt(lineCalcs[i].gross)}</td>
                     </tr>
                   ))}
@@ -750,7 +754,7 @@ export function DocumentForm({
                   {usesZatcaQr && qrDataUrl && <img src={qrDataUrl} alt="ZATCA QR" className="border border-[#eceae2] p-1.5 rounded bg-white mx-auto" width={140} height={140} />}
                   {usesVerifyQr && verifyQrDataUrl && <img src={verifyQrDataUrl} alt="Document Verify QR" className="border border-[#eceae2] p-1.5 rounded bg-white mx-auto" width={140} height={140} />}
                   <div className="text-[10px] text-[#0f2a1d]/60 mt-1">
-                    {usesZatcaQr ? "رمز الفاتورة (ZATCA)" : "رمز التحقق من المستند"}
+                    {usesZatcaQr ? "رمز الفاتورة (ZATCA) · QR" : "رمز التحقق من المستند"}
                   </div>
                   {branding.stamp && <img src={branding.stamp} alt="stamp" className="max-h-24 mx-auto mt-2 object-contain" />}
                 </div>
@@ -758,19 +762,20 @@ export function DocumentForm({
                   className="text-xs rounded p-3"
                   style={{ background: tpl.soft, borderRight: `3px solid ${tpl.accent}` }}
                 >
-                  {notes ? <><strong>ملاحظات:</strong><br />{notes}</> : <span className="text-[#0f2a1d]/40">لا توجد ملاحظات</span>}
+                  {notes ? <><strong>ملاحظات · Notes:</strong><br />{notes}</> : <span className="text-[#0f2a1d]/40">لا توجد ملاحظات</span>}
                 </div>
                 <div className="text-sm space-y-1">
-                  <div className="flex justify-between py-1.5 border-b border-[#eceae2]"><span>المجموع الفرعي</span><span className="tabular-nums">{fmt(subtotal)} {CUR}</span></div>
-                  <div className="flex justify-between py-1.5 border-b border-[#eceae2]"><span>ضريبة القيمة المضافة (15%)</span><span className="tabular-nums">{fmt(tax)} {CUR}</span></div>
+                  <div className="flex justify-between py-1.5 border-b border-[#eceae2]"><span>المجموع الفرعي <span className="text-[10px] opacity-60">· Subtotal</span></span><span className="tabular-nums">{fmt(subtotal)} {CUR}</span></div>
+                  <div className="flex justify-between py-1.5 border-b border-[#eceae2]"><span>ضريبة القيمة المضافة (15%) <span className="text-[10px] opacity-60">· Total VAT</span></span><span className="tabular-nums">{fmt(tax)} {CUR}</span></div>
                   <div
                     className="flex justify-between px-3 py-2.5 rounded font-bold mt-1"
                     style={{ background: tpl.accent, color: tpl.onAccent }}
                   >
-                    <span>الإجمالي شامل الضريبة</span><span className="tabular-nums">{fmt(total)} {CUR}</span>
+                    <span>الإجمالي شامل الضريبة <span className="text-[10px] opacity-80">· Grand Total</span></span><span className="tabular-nums">{fmt(total)} {CUR}</span>
                   </div>
                 </div>
               </div>
+
               <div className="text-center text-[11px] text-[#0f2a1d]/50 mt-6 pt-3 border-t border-[#eceae2]">شكراً لتعاملكم معنا · {org.name}</div>
             </div>
           </div>
