@@ -6,6 +6,8 @@ import { Shell, PrimaryBtn, OutlineBtn } from "./Shell";
 import { useCollection, useKV } from "@/lib/haseem/store";
 import { useInvoiceTemplates, type DocKind } from "@/lib/haseem/templates";
 import { makeZatcaQrPayload, printDoc } from "@/lib/haseem/printDoc";
+import { resolveDocTitle, docTimestamp, formatTimestamp } from "@/lib/haseem/zatca";
+
 import { DocumentSidePanel } from "./DocumentSidePanel";
 import { useOrg } from "@/lib/db/org";
 import { syncDocumentToCloud, toDocKind } from "@/lib/db/document-bridge";
