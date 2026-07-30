@@ -49,7 +49,7 @@ export function CrudModule({
   headerExtra?: ReactNode;
   beforeList?: ReactNode;
 }) {
-  const { items, add, update, remove } = useCollection<any>(storageKey);
+  const { items, addAsync, update, remove } = useCollection<any>(storageKey);
   const navigate = useNavigate();
   const [q, setQ] = useState("");
   const [open, setOpen] = useState(false);
@@ -191,10 +191,14 @@ export function CrudModule({
           fields={fields}
           initial={editing ?? {}}
           onClose={() => setOpen(false)}
-          onSubmit={(data) => {
-            if (editing) update(editing.id, data);
-            else add(data);
-            setOpen(false);
+          onSubmit={async (data) => {
+            try {
+              if (editing) update(editing.id, data);
+              else await addAsync(data);
+              setOpen(false);
+            } catch (e: any) {
+              alert(`تعذّر الحفظ: ${e?.message ?? e}`);
+            }
           }}
         />
       )}

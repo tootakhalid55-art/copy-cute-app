@@ -258,16 +258,27 @@ export function useCloudCollection<T extends Rec = Rec>(key: string) {
 
   const items = (q.data ?? []) as T[];
 
+  const addAsync = useCallback(
+    async (input: Omit<T, "id">) => {
+      const rec = (await addM.mutateAsync(input)) as T;
+      // Make sure every consumer (dropdowns, search, other tabs) sees the row now.
+      await qc.invalidateQueries({ queryKey: ["coll", key, currentOrgId] });
+      return rec;
+    },
+    [addM, qc, key, currentOrgId],
+  );
+
   const add = useCallback(
     (input: Omit<T, "id">) => {
       const optimistic = { ...(input as any), id: `tmp_${Date.now()}` } as T;
-      addM.mutate(input);
+      void addAsync(input).catch(() => undefined);
       return optimistic;
     },
-    [addM],
+    [addAsync],
   );
   const update = useCallback((id: string, patch: Partial<T>) => updateM.mutate({ id, patch }), [updateM]);
   const remove = useCallback((id: string) => removeM.mutate(id), [removeM]);
 
-  return { items, add, update, remove, loading: q.isLoading, error: q.error, enabled };
+  return { items, add, addAsync, update, remove, loading: q.isLoading, error: q.error, enabled };
 }
+

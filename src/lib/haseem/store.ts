@@ -73,10 +73,17 @@ export function useCollection<T extends Rec = Rec>(key: string) {
   const cloud = useCloudCollection<T>(key);
   const local = useLocalCollection<T>(key);
   if (isCloud && cloud.enabled) {
-    return { items: cloud.items, add: cloud.add, update: cloud.update, remove: cloud.remove };
+    return {
+      items: cloud.items,
+      add: cloud.add,
+      addAsync: cloud.addAsync,
+      update: cloud.update,
+      remove: cloud.remove,
+    };
   }
-  return local;
+  return { ...local, addAsync: async (item: Omit<T, "id">) => local.add(item) };
 }
+
 
 export function useKV<T>(key: string, initial: T) {
   const storageKey = `haseem:kv:${key}`;

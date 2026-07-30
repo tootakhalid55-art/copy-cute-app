@@ -47,7 +47,7 @@ export function QuotationForm({ docId }: { docId?: string }) {
   const docPrefix = "QUO";
   const backTo = "/sales/quotations";
 
-  const { items: parties, add: addParty } = useCollection<any>(partyKey);
+  const { items: parties, addAsync: addPartyAsync } = useCollection<any>(partyKey);
   const { items: products } = useCollection<any>("items");
   const { items: docs, add, update } = useCollection<any>(storageKey);
   const existing = docId ? docs.find((d) => d.id === docId) : null;
@@ -237,12 +237,20 @@ export function QuotationForm({ docId }: { docId?: string }) {
 
   // New party quick-add
   const [newParty, setNewParty] = useState<any>({ name: "", taxNumber: "", email: "", phone: "" });
-  const submitNewParty = () => {
-    if (!newParty.name.trim()) return;
-    const rec = addParty({ ...newParty, name: newParty.name.trim() });
-    setPartyId(rec.id);
-    setPartyModalOpen(false);
-    setNewParty({ name: "", taxNumber: "", email: "", phone: "" });
+  const [savingParty, setSavingParty] = useState(false);
+  const submitNewParty = async () => {
+    if (!newParty.name.trim() || savingParty) return;
+    setSavingParty(true);
+    try {
+      const rec = await addPartyAsync({ ...newParty, name: newParty.name.trim() });
+      setPartyId(rec.id);
+      setPartyModalOpen(false);
+      setNewParty({ name: "", taxNumber: "", email: "", phone: "" });
+    } catch (e: any) {
+      alert(`تعذّر حفظ السجل: ${e?.message ?? e}`);
+    } finally {
+      setSavingParty(false);
+    }
   };
 
   // Printing
