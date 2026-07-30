@@ -64,10 +64,11 @@ export function DocumentForm({
   const { items: parties, addAsync: addPartyAsync } = useCollection<any>(partyKey);
   const { items: docs, add, update } = useCollection<any>(storageKey);
   const existing = docId ? docs.find((d) => d.id === docId) : null;
-  const [org] = useKV<{ name: string; taxNumber: string }>("org", {
+  const [org] = useKV<{ name: string; taxNumber: string; address?: string }>("org", {
     name: "شركة كنار الحديثة للمقاولات",
     taxNumber: "312756062700003",
   });
+
   const [branding, setBranding] = useKV<{ logo: string; stamp: string }>(
     "branding",
     { logo: "", stamp: "" }
