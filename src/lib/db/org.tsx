@@ -1,6 +1,8 @@
 import { createContext, useContext, useEffect, useState, useCallback, type ReactNode } from "react";
+import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/haseem/auth";
+import { getImpersonationContext, logImpersonationOrgSwitch } from "@/lib/platform-admin.functions";
 
 export type Org = {
   id: string;
@@ -21,21 +23,73 @@ type Ctx = {
   setCurrentOrg: (id: string) => void;
   createOrg: (input: { name: string; vat_number?: string; cr_number?: string }) => Promise<Org | null>;
   reload: () => Promise<void>;
+  impersonation: {
+    active: boolean;
+    targetUserId: string | null;
+    targetUserName: string | null;
+    targetUserEmail: string | null;
+  };
 };
 const OrgCtx = createContext<Ctx | null>(null);
 
 const LS_KEY = "haseem:currentOrgId";
+const IMPERSONATION_KEY = "haseem:adminImpersonation";
+
+type ImpersonationStorage = {
+  active: boolean;
+  targetUserId: string;
+  targetUserName?: string;
+  targetUserEmail?: string;
+};
 
 export function OrgProvider({ children }: { children: ReactNode }) {
   const { user, ready: authReady } = useAuth();
+  const impersonationFn = useServerFn(getImpersonationContext);
+  const logSwitchFn = useServerFn(logImpersonationOrgSwitch);
   const [orgs, setOrgs] = useState<Org[]>([]);
   const [currentOrgId, setCurrentOrgIdState] = useState<string | null>(null);
+  const [impersonation, setImpersonation] = useState<Ctx["impersonation"]>({
+    active: false,
+    targetUserId: null,
+    targetUserName: null,
+    targetUserEmail: null,
+  });
   const [ready, setReady] = useState(false);
 
   const load = useCallback(async () => {
     if (!user) {
       setOrgs([]);
       setCurrentOrgIdState(null);
+      setImpersonation({ active: false, targetUserId: null, targetUserName: null, targetUserEmail: null });
+      if (typeof window !== "undefined") localStorage.removeItem(IMPERSONATION_KEY);
+      setReady(true);
+      return;
+    }
+    const impersonationValue = typeof window !== "undefined" ? localStorage.getItem(IMPERSONATION_KEY) : null;
+    let impersonationState: ImpersonationStorage | null = null;
+    if (impersonationValue) {
+      try {
+        impersonationState = JSON.parse(impersonationValue) as ImpersonationStorage;
+      } catch {
+        localStorage.removeItem(IMPERSONATION_KEY);
+      }
+    }
+    if (impersonationState?.targetUserId) {
+      const context = await impersonationFn({ data: { targetUserId: impersonationState.targetUserId } }) as {
+        targetUser: { id: string; email: string; name: string };
+        orgs: Org[];
+      };
+      setImpersonation({
+        active: true,
+        targetUserId: context.targetUser.id,
+        targetUserName: context.targetUser.name,
+        targetUserEmail: context.targetUser.email,
+      });
+      setOrgs(context.orgs ?? []);
+      const saved = typeof window !== "undefined" ? localStorage.getItem(LS_KEY) : null;
+      const pick = saved && context.orgs.find((o) => o.id === saved) ? saved : context.orgs[0]?.id ?? null;
+      setCurrentOrgIdState(pick);
+      if (pick && typeof window !== "undefined") localStorage.setItem(LS_KEY, pick);
       setReady(true);
       return;
     }
@@ -72,8 +126,24 @@ export function OrgProvider({ children }: { children: ReactNode }) {
     const pick = saved && list.find((o) => o.id === saved) ? saved : list[0]?.id ?? null;
     setCurrentOrgIdState(pick);
     if (pick && typeof window !== "undefined") localStorage.setItem(LS_KEY, pick);
+    setImpersonation({ active: false, targetUserId: null, targetUserName: null, targetUserEmail: null });
+    if (typeof window !== "undefined") localStorage.removeItem(IMPERSONATION_KEY);
     setReady(true);
-  }, [user]);
+  }, [impersonationFn, user]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (impersonation.active && impersonation.targetUserId) {
+      localStorage.setItem(IMPERSONATION_KEY, JSON.stringify({
+        active: true,
+        targetUserId: impersonation.targetUserId,
+        targetUserName: impersonation.targetUserName ?? undefined,
+        targetUserEmail: impersonation.targetUserEmail ?? undefined,
+      } satisfies ImpersonationStorage));
+      return;
+    }
+    localStorage.removeItem(IMPERSONATION_KEY);
+  }, [impersonation]);
 
   useEffect(() => {
     if (!authReady) return;
@@ -84,7 +154,10 @@ export function OrgProvider({ children }: { children: ReactNode }) {
   const setCurrentOrg = useCallback((id: string) => {
     setCurrentOrgIdState(id);
     if (typeof window !== "undefined") localStorage.setItem(LS_KEY, id);
-  }, []);
+    if (impersonation.active && impersonation.targetUserId) {
+      void logSwitchFn({ data: { targetUserId: impersonation.targetUserId, orgId: id } });
+    }
+  }, [impersonation.active, impersonation.targetUserId, logSwitchFn]);
 
   const createOrg = useCallback<Ctx["createOrg"]>(
     async (input) => {
@@ -115,7 +188,7 @@ export function OrgProvider({ children }: { children: ReactNode }) {
 
   return (
     <OrgCtx.Provider
-      value={{ ready, orgs, currentOrgId, currentOrg, setCurrentOrg, createOrg, reload: load }}
+      value={{ ready, orgs, currentOrgId, currentOrg, setCurrentOrg, createOrg, reload: load, impersonation }}
     >
       {children}
     </OrgCtx.Provider>

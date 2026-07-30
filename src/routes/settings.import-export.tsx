@@ -4,7 +4,7 @@ import { Shell, PageHeader, PrimaryBtn, OutlineBtn } from "@/components/haseem/S
 import { Download, Upload } from "lucide-react";
 
 export const Route = createFileRoute("/settings/import-export")({
-  head: () => ({ meta: [{ title: "الاستيراد والتصدير — حسيم" }] }),
+  head: () => ({ meta: [{ title: "الاستيراد والتصدير — كنار المحاسبية" }] }),
   component: IEPage,
 });
 
@@ -93,3 +93,4 @@ function IEPage() {
     </Shell>
   );
 }
+

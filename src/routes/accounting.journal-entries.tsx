@@ -5,7 +5,7 @@ import { useCollection } from "@/lib/haseem/store";
 import { Shell, PageHeader, PrimaryBtn, OutlineBtn, EmptyState } from "@/components/haseem/Shell";
 
 export const Route = createFileRoute("/accounting/journal-entries")({
-  head: () => ({ meta: [{ title: "القيود اليومية — حسيم" }] }),
+  head: () => ({ meta: [{ title: "القيود اليومية — كنار المحاسبية" }] }),
   component: JournalPage,
 });
 
@@ -134,3 +134,4 @@ function EntryModal({ accounts, onClose, onSave, nextRef }: { accounts: any[]; o
     </div>
   );
 }
+

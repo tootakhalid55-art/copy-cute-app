@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { CrudModule } from "@/components/haseem/CrudModule";
 
 export const Route = createFileRoute("/settings/branches")({
-  head: () => ({ meta: [{ title: "الفروع — حسيم" }] }),
+  head: () => ({ meta: [{ title: "الفروع — كنار المحاسبية" }] }),
   component: () => (
     <CrudModule
       storageKey="branches"
@@ -28,3 +28,4 @@ export const Route = createFileRoute("/settings/branches")({
     />
   ),
 });
+

@@ -3,7 +3,7 @@ import { CrudModule } from "@/components/haseem/CrudModule";
 import { Badge, money, statusTone } from "@/components/haseem/Shell";
 
 export const Route = createFileRoute("/projects")({
-  head: () => ({ meta: [{ title: "المشاريع — حسيم" }] }),
+  head: () => ({ meta: [{ title: "المشاريع — كنار المحاسبية" }] }),
   component: () => (
     <CrudModule
       storageKey="projects"
@@ -31,3 +31,4 @@ export const Route = createFileRoute("/projects")({
     />
   ),
 });
+

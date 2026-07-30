@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { DocumentForm } from "@/components/haseem/DocumentForm";
 
 export const Route = createFileRoute("/sales/credit-notes/new")({
-  head: () => ({ meta: [{ title: "إنشاء إشعار دائن — حسيم" }] }),
+  head: () => ({ meta: [{ title: "إنشاء إشعار دائن — كنار المحاسبية" }] }),
   component: () => (
     <DocumentForm
       storageKey="credit-notes"
@@ -15,3 +15,4 @@ export const Route = createFileRoute("/sales/credit-notes/new")({
     />
   ),
 });
+

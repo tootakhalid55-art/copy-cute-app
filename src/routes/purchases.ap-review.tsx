@@ -15,7 +15,7 @@ import { CopilotPanel } from "@/components/haseem/CopilotPanel";
 
 export const Route = createFileRoute("/purchases/ap-review")({
   head: () => ({ meta: [
-    { title: "مراجعة فواتير الموردين بالذكاء الاصطناعي — حسيم" },
+    { title: "مراجعة فواتير الموردين بالذكاء الاصطناعي — كنار المحاسبية" },
     { name: "description", content: "استخراج تلقائي ومطابقة الموردين واعتماد الفواتير الواردة" },
   ]}),
   component: ApReviewPage,
@@ -299,11 +299,13 @@ function ReviewDrawer({
   const [comment, setComment] = useState("");
   const conf = ex.confidence || {};
 
-  const preview = useMemo(() => {
-    const raw = intake.raw_payload;
-    if (!raw?.filename) return null;
-    return null; // preview data not stored; upload endpoint keeps only metadata
-  }, [intake]);
+  const originalDataUrl = intake.raw_payload?.fileDataUrl || "";
+  const isPdf = originalDataUrl.startsWith("data:application/pdf");
+  const anchors = Array.isArray(intake.raw_payload?.ocr_anchors) ? intake.raw_payload.ocr_anchors : [];
+  const boxes = Array.isArray(intake.raw_payload?.ocr_boxes) ? intake.raw_payload.ocr_boxes : [];
+  const [activeField, setActiveField] = useState<string | null>(null);
+  const activeAnchor = anchors.find((a: any) => a.key === activeField || a.field === activeField) || null;
+  const activeBoxes = boxes.filter((b: any) => b.field === activeField || b.key === activeField);
 
   useEffect(() => {
     (async () => {
@@ -357,9 +359,73 @@ function ReviewDrawer({
           <button onClick={onClose} className="p-1 hover:bg-gray-100 rounded">✕</button>
         </div>
 
-        <div className="grid md:grid-cols-3 gap-4 p-5">
-          {/* Left: editable extraction with heatmap */}
-          <div className="space-y-3">
+        <div className="grid lg:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)] gap-4 p-5">
+          <div className="rounded-xl border border-[#eceae2] bg-[#faf9f4] overflow-hidden min-h-[640px] flex flex-col shadow-sm">
+            <div className="px-4 py-3 border-b border-[#eceae2] flex items-center justify-between bg-white/80">
+              <div>
+                <div className="text-xs font-semibold text-[#0f2a1d]/60">المستند الأصلي</div>
+                <div className="text-sm font-bold">{intake.raw_payload?.filename || "الملف المرفوع"}</div>
+              </div>
+              {originalDataUrl && (
+                <a
+                  href={originalDataUrl}
+                  download={intake.raw_payload?.filename || "invoice"}
+                  className="text-[11px] px-2 py-1 rounded-md border border-[#eceae2] hover:bg-[#fafaf7]"
+                >
+                  تنزيل
+                </a>
+              )}
+            </div>
+            <div className="flex-1 min-h-0 bg-[#f7f6f0] relative">
+              {activeField && (
+                <div className="border-b border-[#eceae2] bg-[#fffdf5] px-4 py-2 text-xs text-[#0f2a1d]/70 flex items-center justify-between">
+                  <span>
+                    <strong>الخانة المحددة:</strong> {activeField}
+                  </span>
+                  <span>{activeBoxes.length > 0 ? "تم العثور على إحداثيات تظليل" : activeAnchor ? "تم العثور على مرجع نصي للمطابقة" : "لا توجد إحداثيات بعد لهذا الحقل"}</span>
+                </div>
+              )}
+              {originalDataUrl ? (
+                <>
+                  {isPdf ? (
+                    <iframe src={originalDataUrl} title="original-invoice" className="w-full h-full min-h-[580px]" />
+                  ) : (
+                    <div className="h-full overflow-auto bg-white flex items-center justify-center p-3">
+                      <img src={originalDataUrl} alt="" className="max-w-full h-auto shadow-sm rounded" />
+                    </div>
+                  )}
+                  {activeBoxes.length > 0 && (
+                    <div className="absolute inset-0 pointer-events-none">
+                      {activeBoxes.map((box: any, i: number) => {
+                        const left = Number(box.left ?? box.x ?? 0);
+                        const top = Number(box.top ?? box.y ?? 0);
+                        const width = Number(box.width ?? box.w ?? 0);
+                        const height = Number(box.height ?? box.h ?? 0);
+                        const page = Number(box.page ?? 1);
+                        const style = box.units === "percent"
+                          ? { left: `${left}%`, top: `${top}%`, width: `${width}%`, height: `${height}%` }
+                          : { left: `${left}px`, top: `${top}px`, width: `${width}px`, height: `${height}px` };
+                        return (
+                          <div
+                            key={`${activeField}-${i}`}
+                            className="absolute rounded-md border-2 border-amber-500 bg-amber-300/25 shadow-[0_0_0_9999px_rgba(0,0,0,0.03)]"
+                            style={style as React.CSSProperties}
+                            title={`page ${page}`}
+                          />
+                        );
+                      })}
+                    </div>
+                  )}
+                </>
+              ) : (
+                <div className="h-full flex items-center justify-center text-sm text-[#0f2a1d]/60 p-6 text-center">
+                  لا يتوفر معاينة مباشرة لهذا المستند.
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="space-y-4">
             {intake.error_message && (
               <div className="flex gap-2 rounded-lg bg-red-50 text-red-700 p-3 text-sm">
                 <AlertTriangle className="w-4 h-4" /> {intake.error_message}
@@ -370,40 +436,53 @@ function ReviewDrawer({
               <span className="inline-flex items-center gap-1"><span className="w-3 h-3 rounded bg-amber-400" /> 70–85%</span>
               <span className="inline-flex items-center gap-1"><span className="w-3 h-3 rounded bg-red-400" /> &lt;70%</span>
             </div>
-            <div className="grid grid-cols-2 gap-2 text-sm">
-              <EditField label="اسم المورد" conf={conf.supplierName} value={ex.supplierName || ""} onChange={(v) => setF("supplierName", v)} />
-              <EditField label="الرقم الضريبي" value={ex.supplierVatNumber || ""} onChange={(v) => setF("supplierVatNumber", v)} />
-              <EditField label="رقم الفاتورة" conf={conf.invoiceNumber} value={ex.invoiceNumber || ""} onChange={(v) => setF("invoiceNumber", v)} />
-              <EditField label="التاريخ" conf={conf.invoiceDate} value={ex.invoiceDate || ""} onChange={(v) => setF("invoiceDate", v)} type="date" />
-              <EditField label="الصافي" value={ex.subtotal ?? ""} onChange={(v) => setF("subtotal", Number(v))} type="number" />
-              <EditField label="الضريبة" conf={conf.vat} value={ex.vat ?? ""} onChange={(v) => setF("vat", Number(v))} type="number" />
-              <EditField label="الإجمالي" conf={conf.grandTotal} value={ex.grandTotal ?? ""} onChange={(v) => setF("grandTotal", Number(v))} type="number" />
-              <EditField label="العملة" value={ex.currency || "SAR"} onChange={(v) => setF("currency", v)} />
+
+                <div className="rounded-xl border border-[#eceae2] bg-white overflow-hidden shadow-sm">
+                  <div className="px-4 py-3 border-b border-[#eceae2] bg-[#fafaf7]">
+                    <div className="text-xs font-semibold text-[#0f2a1d]/60">البيانات المستخرجة بالذكاء الاصطناعي</div>
+                    <div className="font-bold">السجل الرقمي القابل للتعديل</div>
+                  </div>
+                  <div className="p-4 space-y-3 text-sm">
+                    <div className="grid grid-cols-2 gap-2">
+                      <EditField label="اسم المورد" conf={conf.supplierName} value={ex.supplierName || ""} onChange={(v) => setF("supplierName", v)} onFocus={() => setActiveField("supplierName")} />
+                      <EditField label="الرقم الضريبي" value={ex.supplierVatNumber || ""} onChange={(v) => setF("supplierVatNumber", v)} onFocus={() => setActiveField("supplierVatNumber")} />
+                      <EditField label="رقم الفاتورة" conf={conf.invoiceNumber} value={ex.invoiceNumber || ""} onChange={(v) => setF("invoiceNumber", v)} onFocus={() => setActiveField("invoiceNumber")} />
+                      <EditField label="التاريخ" conf={conf.invoiceDate} value={ex.invoiceDate || ""} onChange={(v) => setF("invoiceDate", v)} type="date" onFocus={() => setActiveField("invoiceDate")} />
+                      <EditField label="الصافي" value={ex.subtotal ?? ""} onChange={(v) => setF("subtotal", Number(v))} type="number" onFocus={() => setActiveField("subtotal")} />
+                      <EditField label="الضريبة" conf={conf.vat} value={ex.vat ?? ""} onChange={(v) => setF("vat", Number(v))} type="number" onFocus={() => setActiveField("vat")} />
+                      <EditField label="الإجمالي" conf={conf.grandTotal} value={ex.grandTotal ?? ""} onChange={(v) => setF("grandTotal", Number(v))} type="number" onFocus={() => setActiveField("grandTotal")} />
+                      <EditField label="العملة" value={ex.currency || "SAR"} onChange={(v) => setF("currency", v)} onFocus={() => setActiveField("currency")} />
+                    </div>
+                    {activeAnchor && (
+                      <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+                        <div className="font-semibold mb-0.5">مرجع مطابق من النص المستخرج</div>
+                        <div className="font-mono break-all">{activeAnchor.text}</div>
+                      </div>
+                    )}
+
+                {Array.isArray(ex.lines) && ex.lines.length > 0 && (
+                  <div>
+                    <div className="text-sm font-semibold mb-2">البنود</div>
+                    <div className={`rounded-lg border ${confClass(conf.lines)} p-2 space-y-1`}>
+                      {ex.lines.map((l: any, i: number) => (
+                        <div key={i} className="grid grid-cols-12 gap-1 text-xs">
+                          <input value={l.description || ""} onChange={(e) => setLine(i, "description", e.target.value)}
+                            className="col-span-6 border border-[#eceae2] rounded px-2 py-1" />
+                          <input type="number" value={l.qty ?? ""} onChange={(e) => setLine(i, "qty", Number(e.target.value))}
+                            className="col-span-2 border border-[#eceae2] rounded px-2 py-1 tabular-nums" />
+                          <input type="number" value={l.price ?? ""} onChange={(e) => setLine(i, "price", Number(e.target.value))}
+                            className="col-span-2 border border-[#eceae2] rounded px-2 py-1 tabular-nums" />
+                          <input type="number" value={l.lineTotal ?? l.total ?? ""} onChange={(e) => setLine(i, "lineTotal", Number(e.target.value))}
+                            className="col-span-2 border border-[#eceae2] rounded px-2 py-1 tabular-nums" />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
 
-            {Array.isArray(ex.lines) && ex.lines.length > 0 && (
-              <div>
-                <div className="text-sm font-semibold mb-2">البنود</div>
-                <div className={`rounded-lg border ${confClass(conf.lines)} p-2 space-y-1`}>
-                  {ex.lines.map((l: any, i: number) => (
-                    <div key={i} className="grid grid-cols-12 gap-1 text-xs">
-                      <input value={l.description || ""} onChange={(e) => setLine(i, "description", e.target.value)}
-                        className="col-span-6 border border-[#eceae2] rounded px-2 py-1" />
-                      <input type="number" value={l.qty ?? ""} onChange={(e) => setLine(i, "qty", Number(e.target.value))}
-                        className="col-span-2 border border-[#eceae2] rounded px-2 py-1 tabular-nums" />
-                      <input type="number" value={l.price ?? ""} onChange={(e) => setLine(i, "price", Number(e.target.value))}
-                        className="col-span-2 border border-[#eceae2] rounded px-2 py-1 tabular-nums" />
-                      <input type="number" value={l.lineTotal ?? l.total ?? ""} onChange={(e) => setLine(i, "lineTotal", Number(e.target.value))}
-                        className="col-span-2 border border-[#eceae2] rounded px-2 py-1 tabular-nums" />
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Right: supplier match, approvals, actions */}
-          <div className="space-y-3">
+            {/* supplier match, approvals, actions */}
             <div className="rounded-lg border border-[#eceae2] p-3">
               <div className="text-sm font-semibold mb-2">المورد</div>
               {!creating ? (
@@ -479,12 +558,6 @@ function ReviewDrawer({
                 </div>
               )}
             </div>
-          </div>
-
-
-
-          {/* Copilot column */}
-          <div className="md:col-span-1">
             <CopilotPanel orgId={orgId} intakeId={intake.id} />
           </div>
         </div>
@@ -494,10 +567,10 @@ function ReviewDrawer({
 }
 
 function EditField({
-  label, value, onChange, conf, type = "text",
+  label, value, onChange, conf, type = "text", onFocus,
 }: {
   label: string; value: any; onChange: (v: any) => void;
-  conf?: number; type?: string;
+  conf?: number; type?: string; onFocus?: () => void;
 }) {
   return (
     <div>
@@ -505,8 +578,9 @@ function EditField({
         <span>{label}</span>
         {conf != null && <span className="tabular-nums">{Math.round(conf)}%</span>}
       </div>
-      <input type={type} value={value ?? ""} onChange={(e) => onChange(e.target.value)}
+      <input type={type} value={value ?? ""} onChange={(e) => onChange(e.target.value)} onFocus={onFocus}
         className={`w-full border rounded-lg px-3 py-2 text-sm ${confClass(conf)}`} />
     </div>
   );
 }
+

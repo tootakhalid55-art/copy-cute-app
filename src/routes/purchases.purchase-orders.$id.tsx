@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { DocumentForm } from "@/components/haseem/DocumentForm";
 
 export const Route = createFileRoute("/purchases/purchase-orders/$id")({
-  head: () => ({ meta: [{ title: "تعديل أمر شراء — حسيم" }] }),
+  head: () => ({ meta: [{ title: "تعديل أمر شراء — كنار المحاسبية" }] }),
   component: EditPurchaseOrderPage,
 });
 
@@ -21,3 +21,4 @@ function EditPurchaseOrderPage() {
     />
   );
 }
+

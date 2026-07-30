@@ -8,7 +8,7 @@ import { getStatement, summarizeStatement, type StatementAccountKind, type State
 export const Route = createFileRoute("/reports/statement")({
   head: () => ({
     meta: [
-      { title: "كشف حساب موحّد — حسيم" },
+      { title: "كشف حساب موحّد — كنار المحاسبية" },
       { name: "description", content: "محرّك كشوف الحسابات الموحّد للعملاء والموردين وحسابات النقدية والبنوك." },
     ],
   }),
@@ -140,3 +140,4 @@ function Stat({ label, value, highlight }: { label: string; value: string; highl
     </div>
   );
 }
+

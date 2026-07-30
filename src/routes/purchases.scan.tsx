@@ -10,7 +10,7 @@ import { useCollection, useKV } from "@/lib/haseem/store";
 import { scanInvoice, type ScanResult, type ScanLine as SLine } from "@/lib/haseem/scan.functions";
 
 export const Route = createFileRoute("/purchases/scan")({
-  head: () => ({ meta: [{ title: "مسح الفواتير بالذكاء الاصطناعي — حسيم" }] }),
+  head: () => ({ meta: [{ title: "مسح الفواتير بالذكاء الاصطناعي — كنار المحاسبية" }] }),
   component: ScanPage,
 });
 
@@ -442,89 +442,109 @@ function ReviewModal({
           </div>
         )}
 
-        <div className="grid md:grid-cols-2 gap-4 p-5">
-          {/* Original */}
-          <div className="rounded-lg border border-[#eceae2] bg-[#faf9f4] overflow-hidden min-h-[480px] flex flex-col">
-            <div className="px-3 py-2 border-b border-[#eceae2] text-xs font-semibold flex items-center justify-between">
-              <span>الملف الأصلي</span>
-              <a href={job.dataUrl} download={job.file.name}
-                className="text-[11px] text-[#0f2a1d]/60 hover:underline">تنزيل</a>
+        <div className="grid lg:grid-cols-[minmax(0,1.08fr)_minmax(0,1.12fr)] gap-4 p-5">
+          <div className="rounded-xl border border-[#eceae2] bg-[#faf9f4] overflow-hidden min-h-[620px] flex flex-col shadow-sm">
+            <div className="px-4 py-3 border-b border-[#eceae2] flex items-center justify-between bg-white/70">
+              <div>
+                <div className="text-xs font-semibold text-[#0f2a1d]/60">الملف الأصلي</div>
+                <div className="text-sm font-bold">{job.file.name}</div>
+              </div>
+              <a
+                href={job.dataUrl}
+                download={job.file.name}
+                className="text-[11px] px-2 py-1 rounded-md border border-[#eceae2] hover:bg-[#fafaf7]"
+              >
+                تنزيل
+              </a>
             </div>
-            {isPdf
-              ? <iframe src={job.dataUrl} title="pdf" className="flex-1 w-full" />
-              : <div className="flex-1 overflow-auto bg-white flex items-center justify-center p-2">
-                  <img src={job.dataUrl} alt="" className="max-w-full h-auto" />
-                </div>}
+            <div className="flex-1 min-h-0 bg-[#f7f6f0]">
+              {isPdf ? (
+                <iframe src={job.dataUrl} title="pdf" className="w-full h-full min-h-[560px]" />
+              ) : (
+                <div className="h-full overflow-auto bg-white flex items-center justify-center p-3">
+                  <img src={job.dataUrl} alt="" className="max-w-full h-auto shadow-sm rounded" />
+                </div>
+              )}
+            </div>
           </div>
 
-          {/* Extracted form */}
-          <div className="space-y-3 text-sm">
-            <div className="grid grid-cols-2 gap-3">
-              <FormField label="اسم المورد" extra={conf("supplierName")}>
-                <input
-                  value={form.supplierName}
-                  onChange={(e) => setForm({ ...form, supplierName: e.target.value })}
-                  list="supplier-list"
-                  className="border border-[#eceae2] rounded-lg px-3 py-2 w-full"
-                />
-                <datalist id="supplier-list">
-                  {suppliers.map((s: any) => <option key={s.id} value={s.name} />)}
-                </datalist>
-              </FormField>
-              <FormField label="الرقم الضريبي" extra={conf("supplierVatNumber")}>
-                <input
-                  value={form.supplierVatNumber}
-                  onChange={(e) => setForm({ ...form, supplierVatNumber: e.target.value })}
-                  className="border border-[#eceae2] rounded-lg px-3 py-2 w-full font-mono"
-                />
-              </FormField>
-              <FormField label="رقم الفاتورة" extra={conf("invoiceNumber")}>
-                <input
-                  value={form.invoiceNumber}
-                  onChange={(e) => setForm({ ...form, invoiceNumber: e.target.value })}
-                  className="border border-[#eceae2] rounded-lg px-3 py-2 w-full font-mono"
-                />
-              </FormField>
-              <FormField label="رقم أمر الشراء" extra={conf("purchaseOrderNumber")}>
-                <input
-                  value={form.purchaseOrderNumber}
-                  onChange={(e) => setForm({ ...form, purchaseOrderNumber: e.target.value })}
-                  className="border border-[#eceae2] rounded-lg px-3 py-2 w-full"
-                />
-              </FormField>
-              <FormField label="تاريخ الفاتورة" extra={conf("invoiceDate")}>
-                <input
-                  type="date"
-                  value={form.invoiceDate}
-                  onChange={(e) => setForm({ ...form, invoiceDate: e.target.value })}
-                  className="border border-[#eceae2] rounded-lg px-3 py-2 w-full"
-                />
-              </FormField>
-              <FormField label="تاريخ الاستحقاق" extra={conf("dueDate")}>
-                <input
-                  type="date"
-                  value={form.dueDate}
-                  onChange={(e) => setForm({ ...form, dueDate: e.target.value })}
-                  className="border border-[#eceae2] rounded-lg px-3 py-2 w-full"
-                />
-              </FormField>
-              <FormField label="العملة" extra={conf("currency")}>
-                <input
-                  value={form.currency}
-                  onChange={(e) => setForm({ ...form, currency: e.target.value })}
-                  className="border border-[#eceae2] rounded-lg px-3 py-2 w-full"
-                />
-              </FormField>
-              <FormField label="اللغة">
-                <input
-                  value={form.language}
-                  readOnly
-                  className="border border-[#eceae2] rounded-lg px-3 py-2 w-full bg-[#f7f6f0]"
-                />
-              </FormField>
+          <div className="space-y-4 text-sm">
+            <div className="rounded-xl border border-[#eceae2] bg-white overflow-hidden shadow-sm">
+              <div className="px-4 py-3 border-b border-[#eceae2] bg-[#fafaf7] flex items-center justify-between">
+                <div>
+                  <div className="text-xs font-semibold text-[#0f2a1d]/60">السجل الرقمي</div>
+                  <div className="font-bold">بيانات الفاتورة داخل النظام</div>
+                </div>
+                <span className="text-[11px] px-2 py-0.5 rounded-full bg-[#eaf5ee] text-[#0f6b3a]">
+                  يطابق المستند الأصلي
+                </span>
+              </div>
+              <div className="p-4 grid grid-cols-2 gap-3">
+                <FormField label="اسم المورد" extra={conf("supplierName")}>
+                  <input
+                    value={form.supplierName}
+                    onChange={(e) => setForm({ ...form, supplierName: e.target.value })}
+                    list="supplier-list"
+                    className="border border-[#eceae2] rounded-lg px-3 py-2 w-full"
+                  />
+                  <datalist id="supplier-list">
+                    {suppliers.map((s: any) => <option key={s.id} value={s.name} />)}
+                  </datalist>
+                </FormField>
+                <FormField label="الرقم الضريبي" extra={conf("supplierVatNumber")}>
+                  <input
+                    value={form.supplierVatNumber}
+                    onChange={(e) => setForm({ ...form, supplierVatNumber: e.target.value })}
+                    className="border border-[#eceae2] rounded-lg px-3 py-2 w-full font-mono"
+                  />
+                </FormField>
+                <FormField label="رقم الفاتورة" extra={conf("invoiceNumber")}>
+                  <input
+                    value={form.invoiceNumber}
+                    onChange={(e) => setForm({ ...form, invoiceNumber: e.target.value })}
+                    className="border border-[#eceae2] rounded-lg px-3 py-2 w-full font-mono"
+                  />
+                </FormField>
+                <FormField label="رقم أمر الشراء" extra={conf("purchaseOrderNumber")}>
+                  <input
+                    value={form.purchaseOrderNumber}
+                    onChange={(e) => setForm({ ...form, purchaseOrderNumber: e.target.value })}
+                    className="border border-[#eceae2] rounded-lg px-3 py-2 w-full"
+                  />
+                </FormField>
+                <FormField label="تاريخ الفاتورة" extra={conf("invoiceDate")}>
+                  <input
+                    type="date"
+                    value={form.invoiceDate}
+                    onChange={(e) => setForm({ ...form, invoiceDate: e.target.value })}
+                    className="border border-[#eceae2] rounded-lg px-3 py-2 w-full"
+                  />
+                </FormField>
+                <FormField label="تاريخ الاستحقاق" extra={conf("dueDate")}>
+                  <input
+                    type="date"
+                    value={form.dueDate}
+                    onChange={(e) => setForm({ ...form, dueDate: e.target.value })}
+                    className="border border-[#eceae2] rounded-lg px-3 py-2 w-full"
+                  />
+                </FormField>
+                <FormField label="العملة" extra={conf("currency")}>
+                  <input
+                    value={form.currency}
+                    onChange={(e) => setForm({ ...form, currency: e.target.value })}
+                    className="border border-[#eceae2] rounded-lg px-3 py-2 w-full"
+                  />
+                </FormField>
+                <FormField label="اللغة">
+                  <input
+                    value={form.language}
+                    readOnly
+                    className="border border-[#eceae2] rounded-lg px-3 py-2 w-full bg-[#f7f6f0]"
+                  />
+                </FormField>
+              </div>
             </div>
 
-            {/* Supplier match indicator */}
             <div className={`text-xs px-3 py-2 rounded-lg border ${
               supplierMatch
                 ? "bg-[#eaf5ee] border-[#c9e6d3] text-[#0f6b3a]"
@@ -544,16 +564,15 @@ function ReviewModal({
                 )}
             </div>
 
-            {/* Lines */}
-            <div className="rounded-lg border border-[#eceae2] overflow-hidden">
-              <div className="flex items-center justify-between px-3 py-2 bg-[#fafaf7] border-b border-[#eceae2]">
-                <span className="text-xs font-semibold">البنود ({form.lines.length})</span>
+            <div className="rounded-xl border border-[#eceae2] bg-white overflow-hidden shadow-sm">
+              <div className="flex items-center justify-between px-4 py-3 bg-[#fafaf7] border-b border-[#eceae2]">
+                <div className="text-xs font-semibold">البنود المستخرجة ({form.lines.length})</div>
                 <button
                   onClick={addLine}
                   className="text-[11px] inline-flex items-center gap-1 px-2 py-1 border border-[#eceae2] rounded hover:bg-white"
                 ><Plus className="w-3 h-3" /> إضافة سطر</button>
               </div>
-              <div className="max-h-[220px] overflow-auto">
+              <div className="max-h-[240px] overflow-auto">
                 <table className="w-full text-xs">
                   <thead className="bg-[#faf9f4]">
                     <tr className="text-right">
@@ -582,7 +601,6 @@ function ReviewModal({
               </div>
             </div>
 
-            {/* Totals */}
             <div className="grid grid-cols-2 gap-2 text-xs">
               <TotalField label="المجموع الفرعي" value={form.subtotal} extra={conf("subtotal")}
                 onChange={(v) => setForm({ ...form, subtotal: v })} />
@@ -596,6 +614,16 @@ function ReviewModal({
                 onChange={(v) => setForm({ ...form, vat: v })} />
               <TotalField label="الإجمالي الكلي" value={form.grandTotal} extra={conf("grandTotal")}
                 onChange={(v) => setForm({ ...form, grandTotal: v })} bold />
+            </div>
+
+            <div className="rounded-lg border border-[#eceae2] bg-[#fafaf7] px-4 py-3 text-xs text-[#0f2a1d]/70">
+              <div className="font-semibold text-[#0f2a1d] mb-1">ملخص السجل الرقمي</div>
+              <div className="grid grid-cols-2 gap-2">
+                <div>المورد: <strong>{form.supplierName || "—"}</strong></div>
+                <div>رقم الفاتورة: <strong>{form.invoiceNumber || "—"}</strong></div>
+                <div>الإجمالي قبل الضريبة: <strong>{Number(form.subtotal || 0).toLocaleString()}</strong></div>
+                <div>VAT 15%: <strong>{Number(form.vat || 0).toLocaleString()}</strong></div>
+              </div>
             </div>
           </div>
         </div>
@@ -647,3 +675,4 @@ function TotalField({
     </label>
   );
 }
+

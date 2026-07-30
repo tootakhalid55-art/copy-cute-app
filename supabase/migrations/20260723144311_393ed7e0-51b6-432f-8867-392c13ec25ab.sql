@@ -238,6 +238,11 @@ DECLARE
   v_date DATE := COALESCE((_payload->>'date')::date, CURRENT_DATE);
   v_memo TEXT := _payload->>'memo';
   v_reference TEXT := _payload->>'reference';
+  v_attachment_bucket TEXT := NULLIF(_payload->'attachment'->>'bucket','');
+  v_attachment_path TEXT := NULLIF(_payload->'attachment'->>'storage_path','');
+  v_attachment_filename TEXT := NULLIF(_payload->'attachment'->>'filename','');
+  v_attachment_mime TEXT := NULLIF(_payload->'attachment'->>'mime_type','');
+  v_attachment_size BIGINT := NULLIF(_payload->'attachment'->>'size_bytes','')::bigint;
   v_fy UUID; v_doc_id UUID; v_doc_number TEXT;
   v_bank_acc RECORD;
   v_ar_code TEXT; v_ap_code TEXT; v_advance_ar TEXT; v_advance_ap TEXT;
@@ -296,9 +301,29 @@ BEGIN
     _org, _kind, v_doc_number, v_party, v_branch, v_fy,
     v_date, v_currency, v_rate, v_amount, v_amount,
     'posted', COALESCE(v_memo, v_kind_label || ' ' || v_doc_number),
-    jsonb_build_object('reference', v_reference, 'cash_bank_account_id', v_bank),
+    jsonb_build_object(
+      'reference', v_reference,
+      'cash_bank_account_id', v_bank,
+      'attachment', CASE WHEN v_attachment_path IS NOT NULL THEN jsonb_build_object(
+        'bucket', COALESCE(v_attachment_bucket, 'attachments'),
+        'storage_path', v_attachment_path,
+        'filename', v_attachment_filename,
+        'mime_type', v_attachment_mime,
+        'size_bytes', v_attachment_size
+      ) ELSE NULL END
+    ),
     v_uid
   ) RETURNING id INTO v_doc_id;
+
+  IF v_attachment_path IS NOT NULL THEN
+    INSERT INTO public.attachments(
+      org_id, entity_type, entity_id, bucket, storage_path, filename, mime_type, size_bytes, meta, uploaded_by
+    ) VALUES (
+      _org, 'document', v_doc_id, COALESCE(v_attachment_bucket, 'attachments'), v_attachment_path,
+      COALESCE(v_attachment_filename, v_doc_number || '.bin'), v_attachment_mime, v_attachment_size,
+      jsonb_build_object('source', 'receipt_voucher', 'doc_number', v_doc_number), v_uid
+    );
+  END IF;
 
   -- Journal entry: DR bank / CR AR (receipt) or DR AP / CR bank (payment)
   IF _kind = 'receipt_voucher' THEN

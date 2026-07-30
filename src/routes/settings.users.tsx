@@ -3,7 +3,7 @@ import { CrudModule } from "@/components/haseem/CrudModule";
 import { Badge } from "@/components/haseem/Shell";
 
 export const Route = createFileRoute("/settings/users")({
-  head: () => ({ meta: [{ title: "المستخدمون — حسيم" }] }),
+  head: () => ({ meta: [{ title: "المستخدمون — كنار المحاسبية" }] }),
   component: () => (
     <CrudModule
       storageKey="users"
@@ -53,3 +53,4 @@ export const Route = createFileRoute("/settings/users")({
     />
   ),
 });
+

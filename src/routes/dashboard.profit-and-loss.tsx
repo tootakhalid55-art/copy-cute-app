@@ -4,7 +4,7 @@ import { useCollection } from "@/lib/haseem/store";
 import { ReportShell, DateRange, ReportTable, money } from "@/components/haseem/ReportShell";
 
 export const Route = createFileRoute("/dashboard/profit-and-loss")({
-  head: () => ({ meta: [{ title: "الأرباح والخسائر — حسيم" }] }),
+  head: () => ({ meta: [{ title: "الأرباح والخسائر — كنار المحاسبية" }] }),
   component: PLPage,
 });
 
@@ -59,3 +59,4 @@ function PLPage() {
     </ReportShell>
   );
 }
+

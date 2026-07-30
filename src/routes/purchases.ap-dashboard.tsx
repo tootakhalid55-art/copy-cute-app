@@ -10,7 +10,7 @@ export const Route = createFileRoute("/purchases/ap-dashboard")({
   component: ApDashboard,
   head: () => ({
     meta: [
-      { title: "لوحة معالجة فواتير الموردين | حسيم" },
+      { title: "لوحة معالجة فواتير الموردين | كنار المحاسبية" },
       { name: "description", content: "مؤشرات جودة استخراج الذكاء الاصطناعي وطابور المعالجة" },
     ],
   }),
@@ -150,3 +150,4 @@ function ApDashboard() {
     </Shell>
   );
 }
+

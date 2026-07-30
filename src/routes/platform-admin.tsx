@@ -1,10 +1,12 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { Building2, RefreshCw, ShieldCheck, Users } from "lucide-react";
+import { Building2, LogIn, LogOut, RefreshCw, ShieldCheck, Users } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Badge, OutlineBtn, PageHeader, PrimaryBtn, Shell, StatCard } from "@/components/haseem/Shell";
+import { useOrg } from "@/lib/db/org";
 import { useAuth } from "@/lib/haseem/auth";
-import { getPlatformAdminOverview, getPlatformAdminStatus, setPlatformAdminRole } from "@/lib/platform-admin.functions";
+import { getPlatformAdminOverview, getPlatformAdminStatus, setPlatformAdminRole, startImpersonation, stopImpersonation } from "@/lib/platform-admin.functions";
 
 export const Route = createFileRoute("/platform-admin")({
   head: () => ({ meta: [{ title: "إدارة المنصة — كنار" }] }),
@@ -23,9 +25,13 @@ type Overview = {
 
 function PlatformAdminPage() {
   const { user } = useAuth();
+  const { impersonation } = useOrg();
+  const navigate = useNavigate();
   const statusFn = useServerFn(getPlatformAdminStatus);
   const overviewFn = useServerFn(getPlatformAdminOverview);
   const roleFn = useServerFn(setPlatformAdminRole);
+  const startImpersonationFn = useServerFn(startImpersonation);
+  const stopImpersonationFn = useServerFn(stopImpersonation);
   const [allowed, setAllowed] = useState<boolean | null>(null);
   const [overview, setOverview] = useState<Overview | null>(null);
   const [query, setQuery] = useState("");
@@ -81,6 +87,28 @@ function PlatformAdminPage() {
 
   return (
     <Shell>
+      {impersonation.active && (
+        <div className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900 flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <strong>وضع impersonation مفعّل</strong>
+            <span className="mr-2">
+              {impersonation.targetUserName || impersonation.targetUserEmail || "حساب محدد"}
+            </span>
+          </div>
+          <button
+            type="button"
+            className="inline-flex items-center gap-2 rounded-lg border border-amber-300 bg-white px-3 py-2 text-xs font-semibold"
+            onClick={async () => {
+              await stopImpersonationFn();
+              localStorage.removeItem("haseem:adminImpersonation");
+              navigate({ to: "/platform-admin", replace: true });
+              location.reload();
+            }}
+          >
+            <LogOut className="w-4 h-4" /> إنهاء impersonation
+          </button>
+        </div>
+      )}
       <PageHeader
         title="إدارة المنصة"
         subtitle="لوحة Super Admin لإدارة المنشآت والمستخدمين وصلاحيات الإدارة العليا."
@@ -108,6 +136,37 @@ function PlatformAdminPage() {
                 <td className="p-3">
                   <div className="flex items-center gap-2">
                     <Badge tone={user.isSuperAdmin ? "green" : "neutral"}>{user.isSuperAdmin ? "Super Admin" : "مستخدم"}</Badge>
+                    <button
+                      type="button"
+                      disabled={busy}
+                      className="text-xs text-[#0f5132] hover:underline inline-flex items-center gap-1"
+                      onClick={async () => {
+                        setBusy(true);
+                        try {
+                          const context = await startImpersonationFn({ data: { targetUserId: user.id } }) as {
+                            targetUser: { id: string; email: string; name: string };
+                            orgs: Array<{ id: string; name: string }>;
+                          };
+                          localStorage.setItem("haseem:adminImpersonation", JSON.stringify({
+                            active: true,
+                            targetUserId: context.targetUser.id,
+                            targetUserName: context.targetUser.name,
+                            targetUserEmail: context.targetUser.email,
+                          }));
+                          if (context.orgs[0]?.id) localStorage.setItem("haseem:currentOrgId", context.orgs[0].id);
+                          else localStorage.removeItem("haseem:currentOrgId");
+                          await load();
+                          navigate({ to: "/dashboard" });
+                          location.reload();
+                        } catch (error) {
+                          alert(error instanceof Error ? error.message : "تعذر بدء impersonation");
+                        } finally {
+                          setBusy(false);
+                        }
+                      }}
+                    >
+                      <LogIn className="w-3.5 h-3.5" /> Impersonate
+                    </button>
                     <button
                       type="button"
                       disabled={busy}

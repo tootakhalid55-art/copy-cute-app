@@ -3,7 +3,7 @@ import { Shell, PageHeader, StatCard, money } from "@/components/haseem/Shell";
 import { useCollection } from "@/lib/haseem/store";
 
 export const Route = createFileRoute("/accounting")({
-  head: () => ({ meta: [{ title: "المحاسبة — حسيم" }] }),
+  head: () => ({ meta: [{ title: "المحاسبة — كنار المحاسبية" }] }),
   component: AccountingPage,
 });
 
@@ -58,3 +58,4 @@ function Row({ label, value, bold, className = "" }: { label: string; value: str
     </div>
   );
 }
+

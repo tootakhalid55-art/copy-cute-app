@@ -7,7 +7,7 @@ import { getAssetReportsData } from "@/lib/assets/reports.functions";
 import { useOrg } from "@/lib/db/org";
 
 export const Route = createFileRoute("/assets/reports")({
-  head: () => ({ meta: [{ title: "تقارير الأصول — حسيم" }] }),
+  head: () => ({ meta: [{ title: "تقارير الأصول — كنار المحاسبية" }] }),
   component: AssetReports,
 });
 
@@ -184,3 +184,4 @@ function NbvByCategory({ assets, nbv }: { assets: Asset[]; nbv: (asset: Asset) =
 function Table({ headers, children }: { headers: string[]; children: React.ReactNode }) {
   return <div className="overflow-x-auto"><table className="w-full text-sm text-right"><thead className="bg-[#faf9f4] text-xs text-[#0f2a1d]/65"><tr>{headers.map((header) => <th key={header} className="p-2 whitespace-nowrap">{header}</th>)}</tr></thead><tbody className="divide-y divide-[#eceae2]">{children}</tbody></table></div>;
 }
+

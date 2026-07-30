@@ -4,7 +4,7 @@ import { useCollection } from "@/lib/haseem/store";
 import { ReportShell, DateRange, ReportTable, money } from "@/components/haseem/ReportShell";
 
 export const Route = createFileRoute("/dashboard/cash-flow")({
-  head: () => ({ meta: [{ title: "التدفق النقدي — حسيم" }] }),
+  head: () => ({ meta: [{ title: "التدفق النقدي — كنار المحاسبية" }] }),
   component: CFPage,
 });
 
@@ -45,3 +45,4 @@ function CFPage() {
     </ReportShell>
   );
 }
+

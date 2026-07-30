@@ -1,9 +1,10 @@
 import { Outlet, createFileRoute, useLocation, useNavigate } from "@tanstack/react-router";
 import { useState, useEffect } from "react";
 import { useAuth } from "@/lib/haseem/auth";
+import { BRAND } from "@/lib/brand";
 
 export const Route = createFileRoute("/auth")({
-  head: () => ({ meta: [{ title: "تسجيل الدخول — حسيم" }] }),
+  head: () => ({ meta: [{ title: `تسجيل الدخول — ${BRAND.nameAr}` }] }),
   component: AuthPage,
 });
 
@@ -68,18 +69,18 @@ function AuthPage() {
   return (
     <div
       dir="rtl"
-      className="min-h-screen bg-[#0f2a1d] flex items-center justify-center p-4 font-[Cairo,system-ui,sans-serif]"
+      className="min-h-screen flex items-center justify-center p-4 font-[Cairo,system-ui,sans-serif] bg-[linear-gradient(135deg,#0d2d49_0%,#113f66_44%,#1b6ea8_100%)]"
     >
-      <div className="bg-white rounded-2xl w-full max-w-md p-8 space-y-5 shadow-2xl">
+      <div className="bg-white/96 backdrop-blur rounded-2xl w-full max-w-md p-8 space-y-5 shadow-2xl border border-white/40">
         <div className="text-center">
-          <div className="w-14 h-14 mx-auto rounded-xl bg-[#0f2a1d] flex items-center justify-center mb-3">
-            <span className="text-[#d4f24a] font-black text-2xl">ح</span>
+          <div className="w-20 h-20 mx-auto rounded-2xl bg-white shadow-sm flex items-center justify-center mb-3 border border-[#d9ecf7] p-2">
+            <img src={BRAND.logoSrc} alt={BRAND.nameEn} className="w-full h-full object-contain" />
           </div>
           <h1 className="text-xl font-bold text-[#0f2a1d]">
             {mode === "login" ? "مرحبا بعودتك" : "إنشاء حساب جديد"}
           </h1>
           <p className="text-xs text-[#0f2a1d]/60 mt-1">
-            {mode === "login" ? "سجّل دخولك للوصول إلى لوحة التحكم" : "ابدأ إدارة أعمالك المالية اليوم"}
+            {mode === "login" ? `سجّل دخولك للوصول إلى ${BRAND.nameAr}` : `ابدأ إدارة أعمالك المالية مع ${BRAND.nameAr}`}
           </p>
         </div>
 
@@ -155,7 +156,7 @@ function AuthPage() {
             {busy ? "..." : mode === "login" ? "تسجيل الدخول" : "إنشاء الحساب"}
           </button>
           <p className="text-[11px] text-[#0f2a1d]/50 text-center">
-            بياناتك محفوظة في السحابة بأمان
+            بياناتك محفوظة في السحابة بأمان داخل Canar Accounting
           </p>
         </form>
       </div>

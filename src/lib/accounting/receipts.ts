@@ -22,6 +22,13 @@ export type CreateReceiptInput = {
   memo?: string;
   auto_fifo?: boolean;
   allocations?: AllocationInput[];
+  attachment?: {
+    bucket: string;
+    storage_path: string;
+    filename: string;
+    mime_type?: string | null;
+    size_bytes?: number | null;
+  } | null;
 };
 
 export type CreatePaymentInput = CreateReceiptInput;

@@ -7,7 +7,7 @@ import { useAuth } from "@/lib/haseem/auth";
 export const Route = createFileRoute("/settings/test-data")({
   head: () => ({
     meta: [
-      { title: "مولّد بيانات الاختبار — حسيم" },
+      { title: "مولّد بيانات الاختبار — كنار المحاسبية" },
       { name: "description", content: "أداة المطور لإنشاء بيانات تجريبية كبيرة الحجم وقياس الأداء" },
     ],
   }),
@@ -389,3 +389,4 @@ function TestDataPage() {
     </div>
   );
 }
+

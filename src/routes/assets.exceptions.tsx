@@ -8,9 +8,9 @@ import { listExceptions } from "@/lib/assets/depreciation.functions";
 
 export const Route = createFileRoute("/assets/exceptions")({
   head: () => ({ meta: [
-    { title: "استثناءات الأصول — حسيم" },
+    { title: "استثناءات الأصول — كنار المحاسبية" },
     { name: "description", content: "لوحة تشخيص الأصول المحتاجة تدخّل قبل ترحيل الإهلاك." },
-    { property: "og:title", content: "استثناءات الأصول — حسيم" },
+    { property: "og:title", content: "استثناءات الأصول — كنار المحاسبية" },
     { property: "og:description", content: "أصول ناقصة الحسابات، بدون عمر إنتاجي، جاهزة ولم تبدأ، أو مستهلكة بالكامل." },
     { property: "og:type", content: "website" },
     { name: "twitter:card", content: "summary" },
@@ -128,3 +128,4 @@ function Page() {
     </Shell>
   );
 }
+

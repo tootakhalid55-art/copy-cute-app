@@ -4,7 +4,7 @@ import { money } from "@/components/haseem/Shell";
 import { useCollection } from "@/lib/haseem/store";
 
 export const Route = createFileRoute("/cash/transfers")({
-  head: () => ({ meta: [{ title: "التحويلات — حسيم" }] }),
+  head: () => ({ meta: [{ title: "التحويلات — كنار المحاسبية" }] }),
   component: TransfersPage,
 });
 
@@ -35,3 +35,4 @@ function TransfersPage() {
     />
   );
 }
+

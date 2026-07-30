@@ -4,7 +4,7 @@ import { useCollection } from "@/lib/haseem/store";
 import { ReportShell, ReportTable, money } from "@/components/haseem/ReportShell";
 
 export const Route = createFileRoute("/reports/aged-receivables")({
-  head: () => ({ meta: [{ title: "أعمار الذمم المدينة — حسيم" }] }),
+  head: () => ({ meta: [{ title: "أعمار الذمم المدينة — كنار المحاسبية" }] }),
   component: Aged,
 });
 
@@ -43,3 +43,4 @@ function Aged() {
     </ReportShell>
   );
 }
+

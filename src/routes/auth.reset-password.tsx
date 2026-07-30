@@ -4,7 +4,7 @@ import { useAuth } from "@/lib/haseem/auth";
 import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/auth/reset-password")({
-  head: () => ({ meta: [{ title: "إعادة تعيين كلمة المرور — حسيم" }] }),
+  head: () => ({ meta: [{ title: "إعادة تعيين كلمة المرور — كنار المحاسبية" }] }),
   component: ResetPasswordPage,
 });
 
@@ -154,3 +154,4 @@ function ResetPasswordPage() {
     </div>
   );
 }
+

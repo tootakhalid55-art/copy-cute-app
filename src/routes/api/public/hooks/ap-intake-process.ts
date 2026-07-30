@@ -55,7 +55,8 @@ export const Route = createFileRoute("/api/public/hooks/ap-intake-process")({
                   "For multi-page PDFs, aggregate all pages. Return STRICT JSON only with keys: " +
                   "supplierName, supplierNameAr, supplierVatNumber, supplierAddress, invoiceNumber, invoiceDate, dueDate, " +
                   "currency (ISO), subtotal, vat, grandTotal, poNumber, lines[] (each: description, descriptionAr, qty, price, discount, tax, lineTotal), " +
-                  "confidence{} (each field 0-100). Compute lineTotal = qty*price - discount if missing.",
+                  "confidence{} (each field 0-100), ocr_boxes[] (field,key,text,page,left,top,width,height,units). Compute lineTotal = qty*price - discount if missing. " +
+                  "For ocr_boxes, return best-effort coordinates as percentages (units=percent) or pixels.",
               },
               isPdf
                 ? { type: "file", file: { filename, file_data: fileDataUrl } }
@@ -73,6 +74,19 @@ export const Route = createFileRoute("/api/public/hooks/ap-intake-process")({
             const cleaned = raw.trim().replace(/^```(?:json)?\s*/i, "").replace(/```\s*$/i, "").trim();
             let extraction: any = {};
             try { extraction = JSON.parse(cleaned); } catch { extraction = {}; }
+            const ocrBoxes = Array.isArray(extraction.ocr_boxes)
+              ? extraction.ocr_boxes.map((b: any) => ({
+                  field: String(b.field || b.key || "").trim(),
+                  key: String(b.key || b.field || "").trim(),
+                  text: String(b.text || ""),
+                  page: Number(b.page || 1),
+                  left: Number(b.left || b.x || 0),
+                  top: Number(b.top || b.y || 0),
+                  width: Number(b.width || b.w || 0),
+                  height: Number(b.height || b.h || 0),
+                  units: b.units === "px" ? "px" : "percent",
+                }))
+              : [];
 
             // Matcher + duplicate
             const { matchSupplier, findDuplicateIntake } = await import("@/lib/ap/matcher.server");
@@ -124,6 +138,10 @@ export const Route = createFileRoute("/api/public/hooks/ap-intake-process")({
                 grn_document_id: grnId,
                 processing_time_ms: elapsed,
                 ocr_language: extraction.supplierNameAr ? "ar+en" : "en",
+                ocr_json: {
+                  ...extraction,
+                  ocr_boxes: ocrBoxes,
+                },
               })
               .eq("id", intake.id);
 

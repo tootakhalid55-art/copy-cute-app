@@ -18,7 +18,7 @@ const INTEGRATIONS: Integration[] = [
 ];
 
 export const Route = createFileRoute("/settings/integrations")({
-  head: () => ({ meta: [{ title: "التكاملات — حسيم" }] }),
+  head: () => ({ meta: [{ title: "التكاملات — كنار المحاسبية" }] }),
   component: IntegrationsPage,
 });
 
@@ -69,3 +69,4 @@ function IntegrationsPage() {
     </Shell>
   );
 }
+

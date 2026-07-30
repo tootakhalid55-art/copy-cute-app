@@ -9,7 +9,7 @@ import { listThresholds, upsertThreshold, deleteThreshold } from "@/lib/ap/thres
 
 export const Route = createFileRoute("/settings/ap-thresholds")({
   head: () => ({ meta: [
-    { title: "حدود اعتماد فواتير الموردين — حسيم" },
+    { title: "حدود اعتماد فواتير الموردين — كنار المحاسبية" },
     { name: "description", content: "إدارة قواعد الاعتماد التلقائية بحسب المبلغ والمورد والفرع" },
   ]}),
   component: Page,
@@ -144,3 +144,4 @@ function Page() {
     </Shell>
   );
 }
+

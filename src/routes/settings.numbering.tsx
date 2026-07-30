@@ -5,7 +5,7 @@ import { useKV } from "@/lib/haseem/store";
 import { Save } from "lucide-react";
 
 export const Route = createFileRoute("/settings/numbering")({
-  head: () => ({ meta: [{ title: "الترقيم التلقائي — حسيم" }] }),
+  head: () => ({ meta: [{ title: "الترقيم التلقائي — كنار المحاسبية" }] }),
   component: NumberingPage,
 });
 
@@ -63,3 +63,4 @@ function NumberingPage() {
     </Shell>
   );
 }
+

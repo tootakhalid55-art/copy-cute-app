@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { CrudModule } from "@/components/haseem/CrudModule";
 
 export const Route = createFileRoute("/settings/payment-methods")({
-  head: () => ({ meta: [{ title: "طرق الدفع — حسيم" }] }),
+  head: () => ({ meta: [{ title: "طرق الدفع — كنار المحاسبية" }] }),
   component: () => (
     <CrudModule
       storageKey="payment-methods"
@@ -28,3 +28,4 @@ export const Route = createFileRoute("/settings/payment-methods")({
     />
   ),
 });
+

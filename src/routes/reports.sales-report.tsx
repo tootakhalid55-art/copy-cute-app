@@ -4,7 +4,7 @@ import { useCollection } from "@/lib/haseem/store";
 import { useMemo, useState } from "react";
 
 export const Route = createFileRoute("/reports/sales-report")({
-  head: () => ({ meta: [{ title: "تقرير المبيعات — حسيم" }] }),
+  head: () => ({ meta: [{ title: "تقرير المبيعات — كنار المحاسبية" }] }),
   component: SalesReport,
 });
 
@@ -58,3 +58,4 @@ function SalesReport() {
     </Shell>
   );
 }
+

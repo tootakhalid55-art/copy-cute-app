@@ -2,9 +2,10 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { useCollection } from "@/lib/haseem/store";
 import { ReportShell, DateRange, ReportTable, money } from "@/components/haseem/ReportShell";
+import { normalizeJournalLines } from "@/lib/accounting/ledger";
 
 export const Route = createFileRoute("/accounting/general-ledger")({
-  head: () => ({ meta: [{ title: "الأستاذ العام — حسيم" }] }),
+  head: () => ({ meta: [{ title: "الأستاذ العام — كنار المحاسبية" }] }),
   component: GLPage,
 });
 
@@ -23,7 +24,7 @@ function GLPage() {
     if (!accountCode) return [];
     const arr: { date: string; ref: string; memo: string; debit: number; credit: number }[] = [];
     entries.filter((e) => inR(e.date)).forEach((e) => {
-      (e.lines || []).forEach((l: any) => {
+      normalizeJournalLines(e).forEach((l) => {
         if (l.accountCode === accountCode) arr.push({ date: e.date, ref: e.ref, memo: l.description || e.memo || "", debit: Number(l.debit || 0), credit: Number(l.credit || 0) });
       });
     });
@@ -61,3 +62,4 @@ function GLPage() {
     </ReportShell>
   );
 }
+

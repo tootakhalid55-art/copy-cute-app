@@ -4,7 +4,7 @@ import { useAuth } from "@/lib/haseem/auth";
 import { useState, useEffect } from "react";
 
 export const Route = createFileRoute("/profile")({
-  head: () => ({ meta: [{ title: "ملفي الشخصي — حسيم" }] }),
+  head: () => ({ meta: [{ title: "ملفي الشخصي — كنار المحاسبية" }] }),
   component: ProfilePage,
 });
 
@@ -49,3 +49,4 @@ function ProfilePage() {
     </Shell>
   );
 }
+

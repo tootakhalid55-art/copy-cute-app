@@ -2,9 +2,10 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useMemo } from "react";
 import { useCollection } from "@/lib/haseem/store";
 import { ReportShell, ReportTable, money } from "@/components/haseem/ReportShell";
+import { normalizeJournalLines } from "@/lib/accounting/ledger";
 
 export const Route = createFileRoute("/reports/trial-balance")({
-  head: () => ({ meta: [{ title: "ميزان المراجعة — حسيم" }] }),
+  head: () => ({ meta: [{ title: "ميزان المراجعة — كنار المحاسبية" }] }),
   component: TB,
 });
 
@@ -14,7 +15,7 @@ function TB() {
   const rows = useMemo(() => {
     return accounts.map((a) => {
       let dr = 0, cr = 0;
-      entries.forEach((e) => (e.lines || []).forEach((l: any) => {
+      entries.forEach((e) => normalizeJournalLines(e).forEach((l) => {
         if (l.accountCode === a.code) { dr += Number(l.debit || 0); cr += Number(l.credit || 0); }
       }));
       const bal = Number(a.openingBalance || 0) + dr - cr;
@@ -32,3 +33,4 @@ function TB() {
     </ReportShell>
   );
 }
+

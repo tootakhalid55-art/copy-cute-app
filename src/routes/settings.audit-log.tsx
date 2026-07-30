@@ -4,7 +4,7 @@ import { Shell, PageHeader } from "@/components/haseem/Shell";
 import { useCollection } from "@/lib/haseem/store";
 
 export const Route = createFileRoute("/settings/audit-log")({
-  head: () => ({ meta: [{ title: "سجل التدقيق — حسيم" }] }),
+  head: () => ({ meta: [{ title: "سجل التدقيق — كنار المحاسبية" }] }),
   component: AuditPage,
 });
 
@@ -57,3 +57,4 @@ function AuditPage() {
     </Shell>
   );
 }
+

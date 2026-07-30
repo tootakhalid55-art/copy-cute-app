@@ -21,8 +21,8 @@ export const Route = createFileRoute("/verify")({
   }),
   head: () => ({
     meta: [
-      { title: "التحقق من صحة المستند — حسيم" },
-      { name: "description", content: "التحقق الآمن من صحة المستندات الصادرة عن نظام حسيم." },
+      { title: "التحقق من صحة المستند — كنار المحاسبية" },
+      { name: "description", content: "التحقق الآمن من صحة المستندات الصادرة عن نظام كنار المحاسبية." },
       { name: "robots", content: "noindex" },
     ],
   }),
@@ -162,3 +162,4 @@ function fmtMoney(n: unknown, currency?: string) {
   const sym = currency === "USD" ? "$" : currency === "EUR" ? "€" : currency === "AED" ? "د.إ" : "ر.س";
   return `${num.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${sym}`;
 }
+

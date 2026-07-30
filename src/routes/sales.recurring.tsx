@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { CrudModule } from "@/components/haseem/CrudModule";
 
 export const Route = createFileRoute("/sales/recurring")({
-  head: () => ({ meta: [{ title: "الفواتير المتكررة — حسيم" }] }),
+  head: () => ({ meta: [{ title: "الفواتير المتكررة — كنار المحاسبية" }] }),
   component: () => (
     <CrudModule
       storageKey="recurring-invoices"
@@ -33,3 +33,4 @@ export const Route = createFileRoute("/sales/recurring")({
     />
   ),
 });
+

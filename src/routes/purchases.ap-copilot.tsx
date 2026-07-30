@@ -8,7 +8,7 @@ import { listCopilotDecisions } from "@/lib/ap/copilot.functions";
 
 export const Route = createFileRoute("/purchases/ap-copilot")({
   head: () => ({ meta: [
-    { title: "سجل قرارات مساعد الذكاء المالي — حسيم" },
+    { title: "سجل قرارات مساعد الذكاء المالي — كنار المحاسبية" },
     { name: "description", content: "كل قرار وشرح وتوصية من مساعد الذكاء المالي على فواتير الموردين." },
   ]}),
   component: Page,
@@ -94,3 +94,4 @@ function Page() {
     </Shell>
   );
 }
+

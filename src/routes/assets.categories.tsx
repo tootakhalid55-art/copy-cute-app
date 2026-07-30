@@ -8,9 +8,9 @@ import { listCategories, upsertCategory, deleteCategory } from "@/lib/assets/reg
 
 export const Route = createFileRoute("/assets/categories")({
   head: () => ({ meta: [
-    { title: "فئات الأصول الثابتة — حسيم" },
+    { title: "فئات الأصول الثابتة — كنار المحاسبية" },
     { name: "description", content: "إدارة تصنيفات الأصول الثابتة وافتراضات الإهلاك ونموذج التقييم." },
-    { property: "og:title", content: "فئات الأصول الثابتة — حسيم" },
+    { property: "og:title", content: "فئات الأصول الثابتة — كنار المحاسبية" },
     { property: "og:description", content: "افتراضات الإهلاك ونموذج التقييم لكل فئة." },
     { property: "og:type", content: "website" },
     { name: "twitter:card", content: "summary" },
@@ -131,3 +131,4 @@ function Page() {
     </Shell>
   );
 }
+

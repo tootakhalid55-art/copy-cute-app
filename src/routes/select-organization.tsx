@@ -5,7 +5,7 @@ import { useOrg } from "@/lib/db/org";
 import { useAuth } from "@/lib/haseem/auth";
 
 export const Route = createFileRoute("/select-organization")({
-  head: () => ({ meta: [{ title: "اختيار المنشأة — حسيم" }] }),
+  head: () => ({ meta: [{ title: "اختيار المنشأة — كنار المحاسبية" }] }),
   component: SelectOrg,
 });
 
@@ -150,3 +150,4 @@ function SelectOrg() {
     </div>
   );
 }
+

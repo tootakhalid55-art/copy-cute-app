@@ -9,9 +9,9 @@ import { listCategories } from "@/lib/assets/registry.functions";
 
 export const Route = createFileRoute("/assets/depreciation")({
   head: () => ({ meta: [
-    { title: "دورة الإهلاك — الأصول الثابتة — حسيم" },
+    { title: "دورة الإهلاك — الأصول الثابتة — كنار المحاسبية" },
     { name: "description", content: "معاينة وترحيل قيد إهلاك الأصول الثابتة الشهري وعكسه عند الحاجة." },
-    { property: "og:title", content: "دورة الإهلاك — حسيم" },
+    { property: "og:title", content: "دورة الإهلاك — كنار المحاسبية" },
     { property: "og:description", content: "محرك إهلاك الأصول الثابتة الشهري." },
     { property: "og:type", content: "website" },
     { name: "twitter:card", content: "summary" },
@@ -295,3 +295,4 @@ function Page() {
     </Shell>
   );
 }
+

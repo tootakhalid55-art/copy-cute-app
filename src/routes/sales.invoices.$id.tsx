@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { DocumentForm } from "@/components/haseem/DocumentForm";
 
 export const Route = createFileRoute("/sales/invoices/$id")({
-  head: () => ({ meta: [{ title: "تعديل فاتورة مبيعات — حسيم" }] }),
+  head: () => ({ meta: [{ title: "تعديل فاتورة مبيعات — كنار المحاسبية" }] }),
   component: EditInvoicePage,
 });
 
@@ -21,3 +21,4 @@ function EditInvoicePage() {
     />
   );
 }
+

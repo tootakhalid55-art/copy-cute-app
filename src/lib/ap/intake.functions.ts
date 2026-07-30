@@ -48,7 +48,11 @@ export const createIntakeFromUpload = createServerFn({ method: "POST" })
         source_ref: `upload:${Date.now()}:${userId}`,
         sender: data.sender, subject: data.subject || data.filename,
         status: "received",
-        raw_payload: { filename: data.filename, size: data.fileDataUrl.length },
+        raw_payload: {
+          filename: data.filename,
+          size: data.fileDataUrl.length,
+          fileDataUrl: data.fileDataUrl,
+        },
       })
       .select("id").single();
     if (error) throw new Error(error.message);
@@ -75,12 +79,16 @@ async function callExtraction(model: string, fileDataUrl: string, filename: stri
   const raw = await callLovableAI({
     model, response_format: { type: "json_object" }, temperature: 0.1,
     messages: [
-      { role: "system", content: "Return JSON with keys: supplierName, supplierNameAr, supplierVatNumber, invoiceNumber, invoiceDate (YYYY-MM-DD), dueDate, currency, subtotal, vat, grandTotal, lines[{description, qty, price, lineTotal, tax}], confidence{supplierName, invoiceNumber, invoiceDate, grandTotal, vat, lines}. Confidence values are 0..100. Support Arabic and English. If a field is unknown, use null and confidence 0." },
+      { role: "system", content: "Return JSON with keys: supplierName, supplierNameAr, supplierVatNumber, invoiceNumber, invoiceDate (YYYY-MM-DD), dueDate, currency, subtotal, vat, grandTotal, lines[{description, qty, price, lineTotal, tax}], confidence{supplierName, invoiceNumber, invoiceDate, grandTotal, vat, lines}, ocr_boxes[{field,key,text,page,left,top,width,height,units}]. Confidence values are 0..100. Support Arabic and English. If a field is unknown, use null and confidence 0. For ocr_boxes, return best-effort coordinates as percentages (units=percent) or pixels." },
       { role: "user", content },
     ],
   });
   const cleaned = raw.trim().replace(/^```(?:json)?\s*/i, "").replace(/```\s*$/i, "").trim();
   return JSON.parse(cleaned);
+}
+
+function normalizeFieldKey(key: string) {
+  return key.replace(/\[(\d+)\]/g, ".$1").replace(/[^a-zA-Z0-9._-]/g, "").toLowerCase();
 }
 
 async function loadLayoutHints(supabase: any, orgId: string, partyId: string | null): Promise<string> {
@@ -173,12 +181,48 @@ export const runIntakeExtraction = createServerFn({ method: "POST" })
         : confidence >= AUTO_POST_THRESHOLD && best && best.score >= 0.9 ? "auto_drafted"
         : confidence >= REVIEW_THRESHOLD ? "review" : "extracted";
 
+      // Best-effort OCR anchor hints for the review UI.
+      // These are text references, not pixel boxes, unless a future OCR engine supplies coordinates.
+      const anchors = [
+        ["supplierName", extraction.supplierName],
+        ["supplierVatNumber", extraction.supplierVatNumber],
+        ["invoiceNumber", extraction.invoiceNumber],
+        ["invoiceDate", extraction.invoiceDate],
+        ["dueDate", extraction.dueDate],
+        ["currency", extraction.currency],
+        ["subtotal", extraction.subtotal],
+        ["vat", extraction.vat],
+        ["grandTotal", extraction.grandTotal],
+      ].filter(([, v]) => v != null && String(v).trim() !== "").map(([field, value]) => ({
+        field,
+        text: String(value),
+        key: normalizeFieldKey(String(field)),
+      }));
+      const ocrBoxes = Array.isArray((extraction as any).ocr_boxes)
+        ? (extraction as any).ocr_boxes.map((b: any) => ({
+            field: String(b.field || b.key || "").trim(),
+            key: normalizeFieldKey(String(b.key || b.field || "")),
+            text: String(b.text || ""),
+            page: Number(b.page || 1),
+            left: Number(b.left || b.x || 0),
+            top: Number(b.top || b.y || 0),
+            width: Number(b.width || b.w || 0),
+            height: Number(b.height || b.h || 0),
+            units: b.units === "px" ? "px" : "percent",
+          }))
+        : [];
+
       await supabase.from("ap_intake_documents").update({
         status: nextStatus, extraction,
         extraction_model: usedModel,
         extraction_completed_at: new Date().toISOString(),
         confidence, matched_party_id: best?.party_id ?? null,
         match_confidence: best?.score ?? null, matched_bill_id: dup,
+        raw_payload: {
+          ...(intake as any).raw_payload || {},
+          ocr_anchors: anchors,
+          ocr_boxes: ocrBoxes,
+        },
       }).eq("id", intake.id);
 
       await supabase.from("ap_intake_events").insert({

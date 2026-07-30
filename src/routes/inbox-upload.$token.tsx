@@ -5,7 +5,7 @@ import { useCollection, useKV } from "@/lib/haseem/store";
 
 export const Route = createFileRoute("/inbox-upload/$token")({
   head: () => ({ meta: [
-    { title: "رفع فاتورة — حسيم" },
+    { title: "رفع فاتورة — كنار المحاسبية" },
     { name: "description", content: "ارفع فاتورتك مباشرة إلى صندوق الوارد" },
   ]}),
   component: PublicUpload,
@@ -116,3 +116,4 @@ function PublicUpload() {
     </div>
   );
 }
+

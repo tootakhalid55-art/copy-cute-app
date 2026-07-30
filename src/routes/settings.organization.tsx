@@ -24,7 +24,7 @@ const DEFAULT: Org = {
 };
 
 export const Route = createFileRoute("/settings/organization")({
-  head: () => ({ meta: [{ title: "إعدادات المنشأة — حسيم" }] }),
+  head: () => ({ meta: [{ title: "إعدادات المنشأة — كنار المحاسبية" }] }),
   component: OrgSettings,
 });
 
@@ -69,3 +69,4 @@ function OrgSettings() {
     </Shell>
   );
 }
+

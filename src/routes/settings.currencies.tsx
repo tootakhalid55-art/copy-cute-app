@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { CrudModule } from "@/components/haseem/CrudModule";
 
 export const Route = createFileRoute("/settings/currencies")({
-  head: () => ({ meta: [{ title: "العملات وأسعار الصرف — حسيم" }] }),
+  head: () => ({ meta: [{ title: "العملات وأسعار الصرف — كنار المحاسبية" }] }),
   component: () => (
     <CrudModule
       storageKey="currencies"
@@ -29,3 +29,4 @@ export const Route = createFileRoute("/settings/currencies")({
     />
   ),
 });
+

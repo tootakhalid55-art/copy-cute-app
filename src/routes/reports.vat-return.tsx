@@ -4,7 +4,7 @@ import { useCollection } from "@/lib/haseem/store";
 import { ReportShell, DateRange, ReportTable, money } from "@/components/haseem/ReportShell";
 
 export const Route = createFileRoute("/reports/vat-return")({
-  head: () => ({ meta: [{ title: "إقرار ضريبة القيمة المضافة — حسيم" }] }),
+  head: () => ({ meta: [{ title: "إقرار ضريبة القيمة المضافة — كنار المحاسبية" }] }),
   component: VAT,
 });
 
@@ -32,3 +32,4 @@ function VAT() {
     </ReportShell>
   );
 }
+

@@ -7,6 +7,30 @@ export type PrintLineCalc = { net: number; taxAmt: number; gross: number };
 
 export type PrintTpl = { name: string; accent: string; onAccent: string; soft: string };
 
+export function makeZatcaQrPayload(input: {
+  sellerName: string;
+  vatNumber: string;
+  issuedAtIso: string;
+  totalWithVat: number;
+  vatAmount: number;
+}) {
+  const enc = new TextEncoder();
+  const encodeField = (tag: number, value: string) => {
+    const bytes = enc.encode(value);
+    return [tag, bytes.length, ...bytes];
+  };
+  const bytes = [
+    ...encodeField(1, input.sellerName),
+    ...encodeField(2, input.vatNumber),
+    ...encodeField(3, input.issuedAtIso),
+    ...encodeField(4, input.totalWithVat.toFixed(2)),
+    ...encodeField(5, input.vatAmount.toFixed(2)),
+  ];
+  let bin = "";
+  for (const byte of bytes) bin += String.fromCharCode(byte);
+  return typeof btoa !== "undefined" ? btoa(bin) : Buffer.from(bin, "binary").toString("base64");
+}
+
 export type PrintDocData = {
   title: string;              // e.g. "فاتورة ضريبية"
   titleEn?: string;           // e.g. "Tax Invoice"
@@ -73,7 +97,7 @@ export function buildDocHtml(d: PrintDocData): string {
     .map((l, i) => {
       const c = lineCalcs[i] || { net: 0, taxAmt: 0, gross: 0 };
       const bd = `border-bottom:1px solid ${line}`;
-      return `<tr>
+      return `<tr class="avoid-break">
         <td style="${bd};padding:12px 8px;text-align:center;color:${muted};font-size:10.5px;font-variant-numeric:tabular-nums">${String(i + 1).padStart(2, "0")}</td>
         <td style="${bd};padding:12px 10px;text-align:right;color:${ink}">
           <div style="font-weight:600;font-size:12px;line-height:1.5">${esc(l.description || "—")}</div>
@@ -163,7 +187,7 @@ export function buildDocHtml(d: PrintDocData): string {
       ${metaGrid}
     </div>
 
-    <div style="padding:0 32px 22px">
+    <div class="avoid-break" style="padding:0 32px 22px">
       <table style="width:100%;border-collapse:collapse;font-size:11px;background:#fff;border:1px solid ${line};border-radius:12px;overflow:hidden">
         <thead>
           <tr style="background:${soft}">
@@ -180,7 +204,7 @@ export function buildDocHtml(d: PrintDocData): string {
       </table>
     </div>
 
-    <div style="padding:0 32px 22px;display:grid;grid-template-columns:170px 1fr 320px;gap:18px;align-items:start">
+    <div class="avoid-break" style="padding:0 32px 22px;display:grid;grid-template-columns:170px 1fr 320px;gap:18px;align-items:start">
       <div>${qrBlock}${stampBlock ? `<div style="margin-top:10px;text-align:center">${stampBlock}</div>` : ""}</div>
       <div style="font-size:11px;color:${muted};padding:14px 16px;background:${soft};border-radius:12px;border-inline-start:3px solid ${accent};line-height:1.7;min-height:90px">
         ${d.notes ? `<div style="font-weight:700;color:${accent};font-size:10px;letter-spacing:.06em;text-transform:uppercase;margin-bottom:6px">ملاحظات · Notes</div>${esc(d.notes).replace(/\n/g, "<br/>")}` : `<span style="color:#b7bdb2">لا توجد ملاحظات</span>`}
@@ -206,6 +230,7 @@ export function buildDocHtml(d: PrintDocData): string {
 
     <div style="padding:16px 32px 22px;border-top:1px solid ${line};display:flex;justify-content:space-between;align-items:center;font-size:10.5px;color:${muted}">
       <span>شكراً لتعاملكم معنا · Thank you for your business</span>
+      <span style="font-weight:700;color:${accent}">Canar Accounting · كنار المحاسبية</span>
       <span style="font-family:ui-monospace,monospace;color:${accent};font-weight:700">${esc(org.name)} · ${esc(d.ref)}</span>
     </div>
   </div>`;
@@ -223,9 +248,17 @@ export function printDoc(d: PrintDocData) {
     <style>
       *{box-sizing:border-box}
       html,body{margin:0;padding:0;background:#fff}
-      body{font-family:Cairo,"Segoe UI",Tahoma,system-ui,sans-serif;padding:24px;color:#0f2a1d;font-size:12px;line-height:1.5}
-      @page { size: A4; margin: 12mm; }
-      @media print { body{padding:0} }
+      body{font-family:Cairo,"Segoe UI",Tahoma,system-ui,sans-serif;padding:18px;color:#0f2a1d;font-size:12px;line-height:1.5;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+      @page { size: A4; margin: 10mm 12mm; }
+      .avoid-break{break-inside:avoid;page-break-inside:avoid}
+      @media print {
+        body{padding:0}
+        .doc{box-shadow:none;border-radius:0;max-width:none}
+        thead{display:table-header-group}
+        tfoot{display:table-footer-group}
+        tr{break-inside:avoid;page-break-inside:avoid}
+        table{break-inside:auto;page-break-inside:auto}
+      }
     </style>
   </head><body>${inner}</body></html>`;
 

@@ -2,25 +2,59 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { useCollection } from "@/lib/haseem/store";
 import { ReportShell, DateRange, ReportTable, money } from "@/components/haseem/ReportShell";
+import { accountCreditDebit, isExpenseAccount, isRevenueAccount, normalizeJournalLines } from "@/lib/accounting/ledger";
 
 export const Route = createFileRoute("/reports/profit-and-loss")({
-  head: () => ({ meta: [{ title: "قائمة الدخل — حسيم" }] }),
+  head: () => ({ meta: [{ title: "قائمة الدخل — كنار المحاسبية" }] }),
   component: PL,
 });
 
 function PL() {
-  const { items: invoices } = useCollection<any>("invoices");
-  const { items: bills } = useCollection<any>("bills");
-  const { items: expenses } = useCollection<any>("expenses");
-  const { items: credits } = useCollection<any>("credit-notes");
+  const { items: entries } = useCollection<any>("journal-entries");
+  const { items: accounts } = useCollection<any>("accounts");
   const today = new Date().toISOString().slice(0, 10);
   const [from, setFrom] = useState(today.slice(0, 4) + "-01-01");
   const [to, setTo] = useState(today);
   const inR = (d: string) => (!from || d >= from) && (!to || d <= to);
-  const rev = invoices.filter((i) => inR(i.date)).reduce((s, i) => s + Number(i.subtotal || 0), 0);
-  const ret = credits.filter((c) => inR(c.date)).reduce((s, c) => s + Number(c.subtotal || 0), 0);
-  const cogs = bills.filter((b) => inR(b.date)).reduce((s, b) => s + Number(b.subtotal || 0), 0);
-  const opex = expenses.filter((e) => inR(e.date)).reduce((s, e) => s + Number(e.amount || 0), 0);
+  const journalLines = useMemo(
+    () =>
+      entries
+        .filter((entry) => inR(String(entry.date ?? "")))
+        .flatMap((entry) => normalizeJournalLines(entry)),
+    [entries, from, to],
+  );
+  const rev = useMemo(() => {
+    return accounts
+      .filter((account) => isRevenueAccount(account))
+      .reduce((sum, account) => {
+        const { debit, credit } = accountCreditDebit(journalLines, String(account.code));
+        return sum + Math.max(0, credit - debit);
+      }, 0);
+  }, [accounts, journalLines]);
+  const ret = useMemo(() => {
+    return accounts
+      .filter((account) => isRevenueAccount(account) && /مردود|returns?|refund/i.test(`${account.name} ${account.subtype ?? ""}`))
+      .reduce((sum, account) => {
+        const { debit, credit } = accountCreditDebit(journalLines, String(account.code));
+        return sum + Math.max(0, debit - credit);
+      }, 0);
+  }, [accounts, journalLines]);
+  const cogs = useMemo(() => {
+    return accounts
+      .filter((account) => isExpenseAccount(account) && /تكلفة المبيعات|cost of sales|cogs/i.test(String(account.subtype ?? "")))
+      .reduce((sum, account) => {
+        const { debit, credit } = accountCreditDebit(journalLines, String(account.code));
+        return sum + Math.max(0, debit - credit);
+      }, 0);
+  }, [accounts, journalLines]);
+  const opex = useMemo(() => {
+    return accounts
+      .filter((account) => isExpenseAccount(account) && !/تكلفة المبيعات|cost of sales|cogs/i.test(String(account.subtype ?? "")))
+      .reduce((sum, account) => {
+        const { debit, credit } = accountCreditDebit(journalLines, String(account.code));
+        return sum + Math.max(0, debit - credit);
+      }, 0);
+  }, [accounts, journalLines]);
   const netRev = rev - ret;
   const net = netRev - cogs - opex;
   return (
@@ -35,3 +69,4 @@ function PL() {
     </ReportShell>
   );
 }
+

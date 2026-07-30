@@ -40,7 +40,7 @@ import {
 } from "@/lib/assets/lifecycle.functions";
 
 export const Route = createFileRoute("/assets/$id")({
-  head: () => ({ meta: [{ title: "دورة حياة الأصل — حسيم" }] }),
+  head: () => ({ meta: [{ title: "دورة حياة الأصل — كنار المحاسبية" }] }),
   component: AssetLifecyclePage,
 });
 
@@ -609,3 +609,4 @@ function SplitWizard({
     </div>
   );
 }
+

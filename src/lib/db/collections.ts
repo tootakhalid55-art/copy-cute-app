@@ -2,13 +2,17 @@
 // Public API matches useCollection: { items, add, update, remove } for keys we've migrated.
 // Currently migrated: "customers", "suppliers", "items".
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useCallback } from "react";
+import { useCallback, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrg } from "./org";
 
 export const CLOUD_KEYS = new Set(["customers", "suppliers", "items"]);
 
 type Rec = { id: string; [k: string]: any };
+
+function isBrowser() {
+  return typeof window !== "undefined";
+}
 
 // ---- mappers ------------------------------------------------------------
 
@@ -192,6 +196,18 @@ export function useCloudCollection<T extends Rec = Rec>(key: string) {
     staleTime: 30_000,
   });
 
+  useEffect(() => {
+    if (!isBrowser() || !enabled) return;
+    const handler = (event: Event) => {
+      const detail = (event as CustomEvent<{ key?: string }>).detail;
+      if (!detail?.key || detail.key === key) {
+        void qc.invalidateQueries({ queryKey });
+      }
+    };
+    window.addEventListener("haseem:collection-changed", handler as EventListener);
+    return () => window.removeEventListener("haseem:collection-changed", handler as EventListener);
+  }, [enabled, key, qc, queryKey]);
+
   const invalidate = () => qc.invalidateQueries({ queryKey: ["coll", key, currentOrgId] });
 
   const addM = useMutation({
@@ -202,6 +218,13 @@ export function useCloudCollection<T extends Rec = Rec>(key: string) {
       const optimistic = { ...(input as any), id: `tmp_${Date.now()}`, createdAt: new Date().toISOString() };
       qc.setQueryData<Rec[]>(queryKey, [optimistic, ...prev]);
       return { prev };
+    },
+    onSuccess: (data) => {
+      qc.setQueryData<Rec[]>(queryKey, (prev = []) => {
+        const filtered = prev.filter((row) => !String(row.id).startsWith("tmp_"));
+        return [data as Rec, ...filtered];
+      });
+      if (isBrowser()) window.dispatchEvent(new CustomEvent("haseem:collection-changed", { detail: { key } }));
     },
     onError: (_err, _v, ctx) => {
       if (ctx?.prev) qc.setQueryData(queryKey, ctx.prev);

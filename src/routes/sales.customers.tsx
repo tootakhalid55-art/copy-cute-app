@@ -3,7 +3,7 @@ import { CrudModule } from "@/components/haseem/CrudModule";
 import { money } from "@/components/haseem/Shell";
 
 export const Route = createFileRoute("/sales/customers")({
-  head: () => ({ meta: [{ title: "العملاء — حسيم" }] }),
+  head: () => ({ meta: [{ title: "العملاء — كنار المحاسبية" }] }),
   component: () => (
     <CrudModule
       storageKey="customers"
@@ -32,3 +32,4 @@ export const Route = createFileRoute("/sales/customers")({
     />
   ),
 });
+

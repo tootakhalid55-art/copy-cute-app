@@ -4,7 +4,7 @@ import { useCollection } from "@/lib/haseem/store";
 import { ReportShell, ReportTable, money } from "@/components/haseem/ReportShell";
 
 export const Route = createFileRoute("/sales/statements")({
-  head: () => ({ meta: [{ title: "كشوف حساب العملاء — حسيم" }] }),
+  head: () => ({ meta: [{ title: "كشوف حساب العملاء — كنار المحاسبية" }] }),
   component: StatementsPage,
 });
 
@@ -69,3 +69,4 @@ function StatementsPage() {
     </ReportShell>
   );
 }
+

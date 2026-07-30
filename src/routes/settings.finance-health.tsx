@@ -7,7 +7,7 @@ import { timed } from "@/lib/obs";
 export const Route = createFileRoute("/settings/finance-health")({
   head: () => ({
     meta: [
-      { title: "الحالة المالية والفحص التلقائي — حسيم" },
+      { title: "الحالة المالية والفحص التلقائي — كنار المحاسبية" },
       { name: "description", content: "لوحة فحص سلامة القيود المحاسبية والتسويات والأرصدة المفتوحة." },
     ],
   }),
@@ -110,3 +110,4 @@ function FinanceHealthPage() {
     </div>
   );
 }
+

@@ -4,7 +4,7 @@ import { useCollection } from "@/lib/haseem/store";
 import { ReportShell, DateRange, ReportTable, money } from "@/components/haseem/ReportShell";
 
 export const Route = createFileRoute("/cash/reconciliation")({
-  head: () => ({ meta: [{ title: "التسويات البنكية — حسيم" }] }),
+  head: () => ({ meta: [{ title: "التسويات البنكية — كنار المحاسبية" }] }),
   component: ReconPage,
 });
 
@@ -88,3 +88,4 @@ function Kpi({ label, value, tone }: { label: string; value: string; tone?: "gre
     </div>
   );
 }
+

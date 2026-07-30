@@ -10,6 +10,7 @@ import {
 import { useEffect, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
+import { BRAND } from "../lib/brand";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { AuthProvider } from "../lib/haseem/auth";
 import { OrgProvider } from "../lib/db/org";
@@ -84,14 +85,14 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "كنار— برنامج محاسبة وفوترة إلكترونية" },
-      { name: "description", content: "لوحة تحكم مالية بسيطة: مبيعات، مشتريات، نقد وبنوك، وتقارير." },
-      { property: "og:title", content: "كنار— برنامج محاسبة وفوترة إلكترونية" },
-      { property: "og:description", content: "لوحة تحكم مالية بسيطة: مبيعات، مشتريات، نقد وبنوك، وتقارير." },
+      { title: `${BRAND.nameEn} — ${BRAND.nameAr}` },
+      { name: "description", content: "لوحة تحكم مالية متكاملة: مبيعات، مشتريات، نقد وبنوك، وتقارير." },
+      { property: "og:title", content: `${BRAND.nameEn} — ${BRAND.nameAr}` },
+      { property: "og:description", content: "لوحة تحكم مالية متكاملة: مبيعات، مشتريات، نقد وبنوك، وتقارير." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:title", content: "كنار— برنامج محاسبة وفوترة إلكترونية" },
-      { name: "twitter:description", content: "لوحة تحكم مالية بسيطة: مبيعات، مشتريات، نقد وبنوك، وتقارير." },
+      { name: "twitter:title", content: `${BRAND.nameEn} — ${BRAND.nameAr}` },
+      { name: "twitter:description", content: "لوحة تحكم مالية متكاملة: مبيعات، مشتريات، نقد وبنوك، وتقارير." },
       { property: "og:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/x4BTQNHTZxR9gKfsfayJSBatZSU2/social-images/social-1784730197069-Gemini_Generated_Image_lzhs27lzhs27lzhs-removebg-preview.webp" },
       { name: "twitter:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/x4BTQNHTZxR9gKfsfayJSBatZSU2/social-images/social-1784730197069-Gemini_Generated_Image_lzhs27lzhs27lzhs-removebg-preview.webp" },
     ],

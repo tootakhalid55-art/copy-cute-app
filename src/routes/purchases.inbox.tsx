@@ -12,7 +12,7 @@ import { scanInvoice, type ScanResult } from "@/lib/haseem/scan.functions";
 
 export const Route = createFileRoute("/purchases/inbox")({
   head: () => ({ meta: [
-    { title: "صندوق المستندات الواردة — حسيم" },
+    { title: "صندوق المستندات الواردة — كنار المحاسبية" },
     { name: "description", content: "استقبال الفواتير من البريد وواتساب والرفع اليدوي ورابط مشترك" },
   ]}),
   component: InboxPage,
@@ -468,7 +468,7 @@ function ReviewModal({
           </div>
           <button onClick={onClose} className="p-1 hover:bg-gray-100 rounded">✕</button>
         </div>
-        <div className="flex-1 overflow-auto grid md:grid-cols-2 gap-0">
+        <div className="flex-1 overflow-auto grid lg:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)] gap-0">
           <div className="bg-[#f7f6f0] p-3 border-e border-[#eceae2] min-h-[300px]">
             {doc.mime.startsWith("image/") ? (
               <img src={doc.dataUrl} alt="" className="w-full rounded" />
@@ -486,6 +486,17 @@ function ReviewModal({
               <div className="text-[#0f2a1d]/60">لا توجد بيانات مستخرجة بعد.</div>
             ) : (
               <>
+                <div className="rounded-lg border border-[#eceae2] bg-[#fafaf7] p-3">
+                  <div className="text-xs font-semibold text-[#0f2a1d]/60 mb-2">السجل الرقمي</div>
+                  <div className="grid grid-cols-2 gap-2 text-xs">
+                    <Row label="المورد" value={r.supplierName} />
+                    <Row label="الرقم الضريبي" value={r.supplierVatNumber} />
+                    <Row label="رقم الفاتورة" value={r.invoiceNumber} />
+                    <Row label="التاريخ" value={r.invoiceDate} />
+                    <Row label="العملة" value={r.currency} />
+                    <Row label="الإجمالي" value={`${r.grandTotal?.toLocaleString()} ر.س`} />
+                  </div>
+                </div>
                 <Row label="المورد" value={r.supplierName} />
                 <Row label="الرقم الضريبي" value={r.supplierVatNumber} />
                 <Row label="رقم الفاتورة" value={r.invoiceNumber} />
@@ -529,3 +540,4 @@ function Row({ label, value }: { label: string; value?: any }) {
     </div>
   );
 }
+

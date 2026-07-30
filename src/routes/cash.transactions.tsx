@@ -4,7 +4,7 @@ import { useCollection } from "@/lib/haseem/store";
 import { useMemo } from "react";
 
 export const Route = createFileRoute("/cash/transactions")({
-  head: () => ({ meta: [{ title: "المعاملات النقدية — حسيم" }] }),
+  head: () => ({ meta: [{ title: "المعاملات النقدية — كنار المحاسبية" }] }),
   component: TransactionsPage,
 });
 
@@ -59,3 +59,4 @@ function TransactionsPage() {
     </Shell>
   );
 }
+

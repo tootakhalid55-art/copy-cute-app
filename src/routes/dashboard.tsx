@@ -5,7 +5,7 @@ import { useAuth } from "@/lib/haseem/auth";
 import { Plus, TrendingUp, FileText, Receipt } from "lucide-react";
 
 export const Route = createFileRoute("/dashboard")({
-  head: () => ({ meta: [{ title: "لوحة المعلومات — حسيم" }] }),
+  head: () => ({ meta: [{ title: "لوحة المعلومات — كنار المحاسبية" }] }),
   component: DashboardPage,
 });
 
@@ -114,3 +114,4 @@ function KPI({ label, value, tone = "" }: { label: string; value: string; tone?:
     </div>
   );
 }
+

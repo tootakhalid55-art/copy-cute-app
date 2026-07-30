@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { DocumentForm } from "@/components/haseem/DocumentForm";
 
 export const Route = createFileRoute("/purchases/debit-notes/$id")({
-  head: () => ({ meta: [{ title: "تعديل إشعار مدين — حسيم" }] }),
+  head: () => ({ meta: [{ title: "تعديل إشعار مدين — كنار المحاسبية" }] }),
   component: EditDebitNotePage,
 });
 
@@ -20,3 +20,4 @@ function EditDebitNotePage() {
     />
   );
 }
+

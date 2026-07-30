@@ -11,6 +11,7 @@ import type { LucideIcon } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
 import { useAuth } from "@/lib/haseem/auth";
 import { useOrg } from "@/lib/db/org";
+import { BRAND } from "@/lib/brand";
 import { useKV } from "@/lib/haseem/store";
 import { GlobalSearch } from "./GlobalSearch";
 import { useServerFn } from "@tanstack/react-start";
@@ -158,7 +159,7 @@ export function Shell({ children }: { children: ReactNode }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const { user, ready, logout } = useAuth();
   const navigate = useNavigate();
-  const { currentOrg, orgs, ready: orgReady } = useOrg();
+  const { currentOrg, orgs, ready: orgReady, impersonation } = useOrg();
   const platformAdminStatusFn = useServerFn(getPlatformAdminStatus);
   const org = {
     name: currentOrg?.name ?? "بدون منشأة",
@@ -217,6 +218,15 @@ export function Shell({ children }: { children: ReactNode }) {
 
   return (
     <div dir="rtl" lang="ar" className="min-h-screen bg-[#fafaf7] text-[#0f2a1d] font-[Cairo,system-ui,sans-serif]">
+      {impersonation.active && (
+        <div className="bg-[#7c2d12] text-white text-center text-sm py-2 px-4 font-semibold flex items-center justify-center gap-2 flex-wrap">
+          <ShieldCheck className="w-4 h-4" />
+          <span>وضع Super Admin impersonation مفعّل</span>
+          <span className="opacity-90">
+            الحساب المستهدف: {impersonation.targetUserName || impersonation.targetUserEmail || "غير محدد"}
+          </span>
+        </div>
+      )}
       <div className="bg-[#f5a524] text-[#0f2a1d] text-center text-sm py-2 px-4 font-medium">
         14 يوم متبقي · <Link to="/settings/billing" className="underline mx-1">اشترك الآن</Link> وحلّ أمورك المالية تحت السيطرة.
       </div>
@@ -224,12 +234,12 @@ export function Shell({ children }: { children: ReactNode }) {
       <header className="flex items-center justify-between px-6 py-3 bg-white border-b border-[#eceae2] sticky top-0 z-30">
         <div className="flex items-center gap-3">
           <Link to="/dashboard" className="w-10 h-10 rounded-lg bg-[#0f2a1d] flex items-center justify-center">
-            <span className="text-[#d4f24a] font-black text-lg">ح</span>
+            <img src={BRAND.logoSrc} alt={BRAND.nameEn} className="h-9 w-9 object-contain rounded-md bg-white p-1" />
           </Link>
           <Link to="/select-organization" className="hidden md:flex items-center gap-2 border border-[#eceae2] rounded-lg px-3 py-1.5 hover:bg-[#f7f6f0]">
             <Building2 className="w-4 h-4 text-[#0f2a1d]" />
             <div className="text-right leading-tight">
-              <div className="text-sm font-semibold">{org.name}</div>
+              <div className="text-sm font-semibold">{BRAND.nameAr}</div>
               <div className="text-[11px] text-[#0f2a1d]/60">الرقم الضريبي: {org.taxNumber}</div>
             </div>
             <ChevronDown className="w-4 h-4 text-[#0f2a1d]/60" />
@@ -361,7 +371,12 @@ export function Shell({ children }: { children: ReactNode }) {
             <div className="mt-6 space-y-2 px-3">
               {isPlatformAdmin && (
                 <div className="rounded-lg border border-[#d9e7dc] bg-[#eef8f0] px-3 py-2 text-xs text-[#0f5132]">
-                  أنت الآن داخل حساب Super Admin
+                  أنت الآن داخل حساب Canar Accounting Super Admin
+                </div>
+              )}
+              {impersonation.active && (
+                <div className="rounded-lg border border-[#f3c08a] bg-[#fff7ed] px-3 py-2 text-xs text-[#9a3412]">
+                  تعمل الآن داخل حساب آخر عبر impersonation
                 </div>
               )}
               <div className="flex items-center gap-2 text-xs text-[#0f2a1d]/60">

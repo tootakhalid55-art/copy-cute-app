@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { CrudModule } from "@/components/haseem/CrudModule";
 
 export const Route = createFileRoute("/settings/roles")({
-  head: () => ({ meta: [{ title: "الأدوار — حسيم" }] }),
+  head: () => ({ meta: [{ title: "الأدوار — كنار المحاسبية" }] }),
   component: () => (
     <CrudModule
       storageKey="roles"
@@ -28,3 +28,4 @@ export const Route = createFileRoute("/settings/roles")({
     />
   ),
 });
+

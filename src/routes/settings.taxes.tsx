@@ -394,7 +394,7 @@ function EInvoicingLink() {
 }
 
 export const Route = createFileRoute("/settings/taxes")({
-  head: () => ({ meta: [{ title: "الضرائب والربط — حسيم" }] }),
+  head: () => ({ meta: [{ title: "الضرائب والربط — كنار المحاسبية" }] }),
   component: () => (
     <CrudModule
       storageKey="taxes"
@@ -433,3 +433,4 @@ export const Route = createFileRoute("/settings/taxes")({
     />
   ),
 });
+

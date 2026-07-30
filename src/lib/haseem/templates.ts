@@ -23,15 +23,15 @@ export type InvoiceTemplate = {
 
 export const BUILTIN_TEMPLATES: InvoiceTemplate[] = [
   // قوالب مشتركة لجميع المستندات
-  { id: "classic", name: "كلاسيكي", desc: "ترويسة داكنة، بنود منظمة، مناسب لمعظم المنشآت.", accent: "#0f2a1d", onAccent: "#ffffff", soft: "#fafaf7", builtin: true },
-  { id: "modern",  name: "عصري",   desc: "تصميم بألوان هادئة وحدود دقيقة.", accent: "#1e40af", onAccent: "#ffffff", soft: "#f5f7ff", builtin: true },
-  { id: "minimal", name: "بسيط",   desc: "أقل حبر، مثالي للطباعة السريعة.", accent: "#525252", onAccent: "#ffffff", soft: "#fafafa", builtin: true },
+  { id: "classic", name: "كلاسيكي", desc: "ترويسة رسمية داكنة مع تنظيم واضح للنصوص والحقول.", accent: "#0f2a1d", onAccent: "#ffffff", soft: "#fafaf7", builtin: true },
+  { id: "modern",  name: "عصري",   desc: "تصميم أزرق حديث بطابع Canar، مناسب للفواتير والعروض.", accent: "#1b6ea8", onAccent: "#ffffff", soft: "#f3f9fe", builtin: true },
+  { id: "minimal", name: "بسيط",   desc: "أقل حبر، مثالي للطباعة السريعة والنسخ الداخلية.", accent: "#425466", onAccent: "#ffffff", soft: "#f8fafc", builtin: true },
 
   // قوالب خاصة بالفواتير
-  { id: "inv-colored", name: "فاتورة ملوّنة", desc: "لمسة برتقالية بارزة لفواتير البيع.", accent: "#c65b3c", onAccent: "#ffffff", soft: "#fff7f2", kinds: ["invoice"], builtin: true },
-  { id: "inv-wafeq-default", name: "وافِق — فاتورة", desc: "قالب وافِق الرسمي للفواتير الضريبية.", accent: "#1f2937", onAccent: "#ffffff", soft: "#f9fafb", kinds: ["invoice"], builtin: true },
-  { id: "inv-wafeq-bilingual", name: "وافِق — ثنائي اللغة", desc: "فاتورة ضريبية ثنائية اللغة (عربي/إنجليزي).", accent: "#1f2a44", onAccent: "#ffffff", soft: "#f6f7f9", kinds: ["invoice"], builtin: true },
-  { id: "inv-midnight", name: "منتصف الليل", desc: "أسود مزرق فاخر بتباين عالٍ للفواتير.", accent: "#0b1220", onAccent: "#ffffff", soft: "#f3f4f6", kinds: ["invoice"], builtin: true },
+  { id: "inv-colored", name: "فاتورة ملوّنة", desc: "لمسة هادئة زرقاء مع إبراز إجمالي الضريبة وحقول ZATCA.", accent: "#1b6ea8", onAccent: "#ffffff", soft: "#eef7fd", kinds: ["invoice"], builtin: true },
+  { id: "inv-zatca-clean", name: "ZATCA نظيف", desc: "فاتورة عربية متوافقة مع ZATCA مع QR واضح وتخطيط متوازن.", accent: "#124e78", onAccent: "#ffffff", soft: "#f2f8fc", kinds: ["invoice"], builtin: true },
+  { id: "inv-zatca-premium", name: "ZATCA فاخر", desc: "تدرج أزرق فاخر مع ترويسة قوية للمستندات الرسمية.", accent: "#0d3b66", onAccent: "#ffffff", soft: "#eef5fb", kinds: ["invoice"], builtin: true },
+  { id: "inv-zatca-bilingual", name: "ZATCA ثنائي اللغة", desc: "فاتورة عربية/إنجليزية مع حقول ضريبة وقارئ QR.", accent: "#1f2a44", onAccent: "#ffffff", soft: "#f6f8fb", kinds: ["invoice"], builtin: true },
 
   // قوالب خاصة بعروض الأسعار
   { id: "qt-elegant", name: "عرض سعر — أنيق", desc: "قالب راقٍ لعروض الأسعار مع صلاحية العرض ومدة التنفيذ.", accent: "#0d9488", onAccent: "#ffffff", soft: "#f0fdfa", kinds: ["quotation"], builtin: true },

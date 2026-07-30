@@ -10,7 +10,7 @@ import {
 } from "@/lib/haseem/templates";
 
 export const Route = createFileRoute("/settings/templates")({
-  head: () => ({ meta: [{ title: "قوالب المستندات — حسيم" }] }),
+  head: () => ({ meta: [{ title: "قوالب المستندات — كنار المحاسبية" }] }),
   component: TemplatesPage,
 });
 
@@ -417,4 +417,5 @@ function FullPreview({ tpl }: { tpl: InvoiceTemplate }) {
     </div>
   );
 }
+
 

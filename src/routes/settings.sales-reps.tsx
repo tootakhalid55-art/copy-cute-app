@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { CrudModule } from "@/components/haseem/CrudModule";
 
 export const Route = createFileRoute("/settings/sales-reps")({
-  head: () => ({ meta: [{ title: "مناديب المبيعات — حسيم" }] }),
+  head: () => ({ meta: [{ title: "مناديب المبيعات — كنار المحاسبية" }] }),
   component: () => (
     <CrudModule
       storageKey="sales-reps"
@@ -34,3 +34,4 @@ export const Route = createFileRoute("/settings/sales-reps")({
     />
   ),
 });
+

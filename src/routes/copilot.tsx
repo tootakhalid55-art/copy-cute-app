@@ -24,7 +24,7 @@ import {
 
 export const Route = createFileRoute("/copilot")({
   head: () => ({ meta: [
-    { title: "مساعد الذكاء المالي — حسيم" },
+    { title: "مساعد الذكاء المالي — كنار المحاسبية" },
     { name: "description", content: "مساعد ذكاء اصطناعي شامل لجميع وحدات النظام المحاسبي." },
   ]}),
   component: Page,
@@ -466,3 +466,4 @@ function Page() {
 // Silence unused imports for icons kept for future use.
 void AlertTriangle;
 void BookText;
+

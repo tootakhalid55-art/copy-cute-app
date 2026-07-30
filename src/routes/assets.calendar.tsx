@@ -8,9 +8,9 @@ import { listCalendar, reopenPeriod } from "@/lib/assets/depreciation.functions"
 
 export const Route = createFileRoute("/assets/calendar")({
   head: () => ({ meta: [
-    { title: "تقويم الإهلاك — الأصول الثابتة — حسيم" },
+    { title: "تقويم الإهلاك — الأصول الثابتة — كنار المحاسبية" },
     { name: "description", content: "حالة ترحيل الإهلاك لكل شهر خلال السنة المالية." },
-    { property: "og:title", content: "تقويم الإهلاك — حسيم" },
+    { property: "og:title", content: "تقويم الإهلاك — كنار المحاسبية" },
     { property: "og:description", content: "متابعة الفترات المرحّلة والمقفلة والمفتوحة." },
     { property: "og:type", content: "website" },
     { name: "twitter:card", content: "summary" },
@@ -120,3 +120,4 @@ function Page() {
     </Shell>
   );
 }
+

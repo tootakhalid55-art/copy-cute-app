@@ -11,7 +11,7 @@ const PLANS: { id: Plan; name: string; price: string; features: string[] }[] = [
 ];
 
 export const Route = createFileRoute("/settings/billing")({
-  head: () => ({ meta: [{ title: "الاشتراك — حسيم" }] }),
+  head: () => ({ meta: [{ title: "الاشتراك — كنار المحاسبية" }] }),
   component: BillingPage,
 });
 
@@ -51,3 +51,4 @@ function BillingPage() {
     </Shell>
   );
 }
+

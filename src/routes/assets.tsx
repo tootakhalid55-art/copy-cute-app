@@ -14,9 +14,9 @@ import { mergeAssets } from "@/lib/assets/lifecycle.functions";
 export const Route = createFileRoute("/assets")({
   head: () => ({
     meta: [
-      { title: "الأصول الثابتة — حسيم" },
+      { title: "الأصول الثابتة — كنار المحاسبية" },
       { name: "description", content: "سجل الأصول الثابتة: تسجيل، تصنيف، رسملة من الفواتير، وربط بالمحاسبة." },
-      { property: "og:title", content: "الأصول الثابتة — حسيم" },
+      { property: "og:title", content: "الأصول الثابتة — كنار المحاسبية" },
       { property: "og:description", content: "إدارة الأصول الثابتة وربطها بالمحاسبة والمشتريات." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
@@ -529,3 +529,4 @@ function CapitalizeModal({
     </div>
   );
 }
+

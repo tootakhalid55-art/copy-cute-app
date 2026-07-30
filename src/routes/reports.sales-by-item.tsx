@@ -4,7 +4,7 @@ import { useCollection } from "@/lib/haseem/store";
 import { ReportShell, DateRange, ReportTable, money } from "@/components/haseem/ReportShell";
 
 export const Route = createFileRoute("/reports/sales-by-item")({
-  head: () => ({ meta: [{ title: "المبيعات حسب الصنف — حسيم" }] }),
+  head: () => ({ meta: [{ title: "المبيعات حسب الصنف — كنار المحاسبية" }] }),
   component: R,
 });
 
@@ -37,3 +37,4 @@ function R() {
     </ReportShell>
   );
 }
+

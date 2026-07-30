@@ -10,7 +10,7 @@ import { toast } from "sonner";
 export const Route = createFileRoute("/cash/payments")({
   head: () => ({
     meta: [
-      { title: "سندات الصرف — حسيم" },
+      { title: "سندات الصرف — كنار المحاسبية" },
       { name: "description", content: "إنشاء سندات صرف للموردين مع تخصيص تلقائي على الفواتير المفتوحة." },
     ],
   }),
@@ -166,3 +166,4 @@ function NewPaymentDialog(props: { orgId: string; parties: Party[]; accounts: Ac
     </div>
   );
 }
+

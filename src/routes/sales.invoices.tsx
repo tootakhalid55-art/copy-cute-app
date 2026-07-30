@@ -1,6 +1,7 @@
 import { Outlet, createFileRoute } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/sales/invoices")({
-  head: () => ({ meta: [{ title: "فواتير المبيعات — حسيم" }] }),
+  head: () => ({ meta: [{ title: "فواتير المبيعات — كنار المحاسبية" }] }),
   component: () => <Outlet />,
 });
+

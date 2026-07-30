@@ -5,10 +5,11 @@ import QRCode from "qrcode";
 import { Shell, PrimaryBtn, OutlineBtn } from "./Shell";
 import { useCollection, useKV } from "@/lib/haseem/store";
 import { useInvoiceTemplates, type DocKind } from "@/lib/haseem/templates";
-import { printDoc } from "@/lib/haseem/printDoc";
+import { makeZatcaQrPayload, printDoc } from "@/lib/haseem/printDoc";
 import { DocumentSidePanel } from "./DocumentSidePanel";
 import { useOrg } from "@/lib/db/org";
 import { syncDocumentToCloud, toDocKind } from "@/lib/db/document-bridge";
+import { buildVerifyUrl, signDoc } from "@/lib/haseem/docSignature";
 
 // Read a File as base64 data URL
 function fileToDataURL(f: File): Promise<string> {
@@ -99,6 +100,8 @@ export function DocumentForm({
   const [previewOpen, setPreviewOpen] = useState(false);
   const [partyModalOpen, setPartyModalOpen] = useState(false);
   const [qrDataUrl, setQrDataUrl] = useState<string>("");
+  const [verifyQrDataUrl, setVerifyQrDataUrl] = useState<string>("");
+  const [verifyToken, setVerifyToken] = useState<string>("");
   const printRef = useRef<HTMLDivElement>(null);
   const emptyParty = {
     // Basic
@@ -151,8 +154,12 @@ export function DocumentForm({
   const party = parties.find((p) => p.id === partyId);
   const partyName = party?.name ?? "—";
 
+  const { currentOrgId } = useOrg();
+  const cloudKind = useMemo(() => toDocKind(kind ?? storageKey), [kind, storageKey]);
   // Selected invoice template — drives accent color & style variant in preview/print
   const { all: allTemplates, selected: tpl, selectedId, setSelectedId } = useInvoiceTemplates(kind);
+  const usesZatcaQr = useMemo(() => ["invoice", "credit-note", "debit-note"].includes(cloudKind), [cloudKind]);
+  const usesVerifyQr = useMemo(() => ["quotation", "purchase-order", "payment_voucher", "receipt_voucher", "journal_voucher", "expense_voucher"].includes(cloudKind), [cloudKind]);
 
   // Round half-up to 2 decimals (matches ZATCA / Qoyod invoice math)
   const r2 = (n: number) => Math.round((n + Number.EPSILON) * 100) / 100;
@@ -173,11 +180,35 @@ export function DocumentForm({
 
   useEffect(() => {
     const iso = new Date(`${date}T00:00:00`).toISOString();
-    const payload = zatcaTLV(org.name, org.taxNumber, iso, total.toFixed(2), tax.toFixed(2));
-    QRCode.toDataURL(payload, { margin: 1, width: 180 })
-      .then(setQrDataUrl)
-      .catch(() => setQrDataUrl(""));
-  }, [org.name, org.taxNumber, date, total, tax]);
+    if (usesZatcaQr) {
+      const payload = makeZatcaQrPayload({
+        sellerName: org.name,
+        vatNumber: org.taxNumber,
+        issuedAtIso: iso,
+        totalWithVat: total,
+        vatAmount: tax,
+      });
+      QRCode.toDataURL(payload, { margin: 1, width: 180 })
+        .then(setQrDataUrl)
+        .catch(() => setQrDataUrl(""));
+      setVerifyQrDataUrl("");
+      return;
+    }
+    setQrDataUrl("");
+    if (!usesVerifyQr) {
+      setVerifyQrDataUrl("");
+      setVerifyToken("");
+      return;
+    }
+    signDoc({ kind: cloudKind, ref, total })
+      .then((token) => {
+        setVerifyToken(token);
+        return buildVerifyUrl(cloudKind, ref, token);
+      })
+      .then((verifyUrl) => QRCode.toDataURL(verifyUrl, { margin: 1, width: 180 }))
+      .then(setVerifyQrDataUrl)
+      .catch(() => setVerifyQrDataUrl(""));
+  }, [org.name, org.taxNumber, date, total, tax, usesZatcaQr, usesVerifyQr, cloudKind, ref]);
 
   const handlePrint = () => {
     printDoc({
@@ -188,9 +219,12 @@ export function DocumentForm({
       subtotal, tax, total,
       notes,
       currency: CUR,
-      qrDataUrl,
+      qrDataUrl: usesZatcaQr ? qrDataUrl : undefined,
       branding,
       tpl,
+      verify: usesVerifyQr && verifyQrDataUrl && verifyToken
+        ? { qrDataUrl: verifyQrDataUrl, url: buildVerifyUrl(cloudKind, ref, verifyToken), label: "التحقق من المستند · Verify Document" }
+        : undefined,
     });
   };
 
@@ -199,8 +233,6 @@ export function DocumentForm({
   const updateLine = (i: number, patch: Partial<Line>) =>
     setLines((ls) => ls.map((l, idx) => (idx === i ? { ...l, ...patch } : l)));
 
-  const { currentOrgId } = useOrg();
-  const cloudKind = useMemo(() => toDocKind(kind ?? storageKey), [kind, storageKey]);
   const [dbId, setDbId] = useState<string | null>(existing?.dbId ?? null);
   useEffect(() => {
     setDbId(existing?.dbId ?? null);
@@ -570,7 +602,9 @@ export function DocumentForm({
           <div className="bottom">
             <div className="qr">
               {qrDataUrl && <img src={qrDataUrl} alt="ZATCA QR" width={150} height={150} />}
-              <div className="cap">رمز الفاتورة (ZATCA)</div>
+              <div className="cap">
+                {usesZatcaQr ? "رمز الفاتورة (ZATCA)" : "رمز التحقق من المستند"}
+              </div>
               {branding.stamp && <img src={branding.stamp} alt="stamp" style={{maxHeight:100,marginTop:8}} />}
             </div>
             <div className="notes">
@@ -669,8 +703,11 @@ export function DocumentForm({
               </table>
               <div className="grid grid-cols-[160px_1fr_240px] gap-4 items-start">
                 <div className="text-center">
-                  {qrDataUrl && <img src={qrDataUrl} alt="ZATCA QR" className="border border-[#eceae2] p-1.5 rounded bg-white mx-auto" width={140} height={140} />}
-                  <div className="text-[10px] text-[#0f2a1d]/60 mt-1">رمز الفاتورة (ZATCA)</div>
+                  {usesZatcaQr && qrDataUrl && <img src={qrDataUrl} alt="ZATCA QR" className="border border-[#eceae2] p-1.5 rounded bg-white mx-auto" width={140} height={140} />}
+                  {usesVerifyQr && verifyQrDataUrl && <img src={verifyQrDataUrl} alt="Document Verify QR" className="border border-[#eceae2] p-1.5 rounded bg-white mx-auto" width={140} height={140} />}
+                  <div className="text-[10px] text-[#0f2a1d]/60 mt-1">
+                    {usesZatcaQr ? "رمز الفاتورة (ZATCA)" : "رمز التحقق من المستند"}
+                  </div>
                   {branding.stamp && <img src={branding.stamp} alt="stamp" className="max-h-24 mx-auto mt-2 object-contain" />}
                 </div>
                 <div

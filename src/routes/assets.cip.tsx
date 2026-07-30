@@ -8,9 +8,9 @@ import { listAssets, upsertAsset } from "@/lib/assets/registry.functions";
 
 export const Route = createFileRoute("/assets/cip")({
   head: () => ({ meta: [
-    { title: "أصول تحت الإنشاء (CIP) — حسيم" },
+    { title: "أصول تحت الإنشاء (CIP) — كنار المحاسبية" },
     { name: "description", content: "متابعة الأصول تحت الإنشاء وترقيتها إلى أصول نشطة عند التشغيل." },
-    { property: "og:title", content: "أصول تحت الإنشاء — حسيم" },
+    { property: "og:title", content: "أصول تحت الإنشاء — كنار المحاسبية" },
     { property: "og:description", content: "متابعة الأصول تحت الإنشاء (CIP)." },
     { property: "og:type", content: "website" },
     { name: "twitter:card", content: "summary" },
@@ -105,3 +105,4 @@ function Page() {
     </Shell>
   );
 }
+

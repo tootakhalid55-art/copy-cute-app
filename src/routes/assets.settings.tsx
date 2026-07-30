@@ -8,9 +8,9 @@ import { getAssetSettings, updateAssetSettings } from "@/lib/assets/registry.fun
 
 export const Route = createFileRoute("/assets/settings")({
   head: () => ({ meta: [
-    { title: "إعدادات الأصول الثابتة — حسيم" },
+    { title: "إعدادات الأصول الثابتة — كنار المحاسبية" },
     { name: "description", content: "حد الرسملة، اتفاقية الإهلاك، والافتراضات على مستوى المنشأة." },
-    { property: "og:title", content: "إعدادات الأصول الثابتة — حسيم" },
+    { property: "og:title", content: "إعدادات الأصول الثابتة — كنار المحاسبية" },
     { property: "og:description", content: "حد الرسملة والافتراضات." },
     { property: "og:type", content: "website" },
     { name: "twitter:card", content: "summary" },
@@ -100,3 +100,4 @@ function Page() {
     </Shell>
   );
 }
+
