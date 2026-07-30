@@ -1,6 +1,8 @@
 // Self-contained printable document builder.
 // Renders an HTML string with inline styles (no Tailwind dependency),
 // then prints via a hidden iframe so popup blockers can't interfere.
+import { formatTimestamp as formatTs } from "./zatca";
+
 
 export type PrintLine = { description: string; qty: number; price: number; tax: number; discount?: number };
 export type PrintLineCalc = { net: number; taxAmt: number; gross: number };
