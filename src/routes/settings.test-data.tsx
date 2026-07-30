@@ -67,6 +67,107 @@ const CLOSED_BETA_ITEMS = [
   meta: { category: item.kind === "service" ? "service" : "standard_good", vat_compliant: true, seed: "closed-beta" },
 }));
 
+const CLOSED_BETA_DOCS = {
+  salesInvoices: [
+    {
+      doc_number: "SI-CB-001",
+      kind: "sales_invoice",
+      partyCode: "CB-CUST-001",
+      party_name: "Closed Beta Customer 1",
+      issue_date: "2026-07-01",
+      lines: [
+        { sku: "SRV-CONS-001", description: "Professional Consulting Service", qty: 4, price: 450, tax_rate: 15 },
+        { sku: "PRD-LAP-001", description: "Business Laptop 14-inch", qty: 2, price: 3200, tax_rate: 15 },
+      ],
+    },
+    {
+      doc_number: "SI-CB-002",
+      kind: "sales_invoice",
+      partyCode: "CB-CUST-002",
+      party_name: "Closed Beta Customer 2",
+      issue_date: "2026-07-03",
+      lines: [
+        { sku: "SRV-SW-001", description: "Accounting Software License", qty: 5, price: 1200, tax_rate: 15 },
+        { sku: "PRD-MON-001", description: "24-inch Monitor", qty: 4, price: 850, tax_rate: 15 },
+      ],
+    },
+  ],
+  purchaseBills: [
+    {
+      doc_number: "PB-CB-001",
+      kind: "purchase_invoice",
+      partyCode: "CB-SUP-001",
+      party_name: "Closed Beta Supplier 1",
+      issue_date: "2026-07-02",
+      lines: [
+        { sku: "PRD-PAPR-001", description: "Premium A4 Paper Box", qty: 20, price: 48, tax_rate: 15 },
+        { sku: "PRD-INK-001", description: "Printer Ink Cartridge", qty: 10, price: 165, tax_rate: 15 },
+      ],
+    },
+    {
+      doc_number: "PB-CB-002",
+      kind: "purchase_invoice",
+      partyCode: "CB-SUP-002",
+      party_name: "Closed Beta Supplier 2",
+      issue_date: "2026-07-04",
+      lines: [
+        { sku: "SRV-MNT-001", description: "Annual Maintenance Support", qty: 1, price: 1800, tax_rate: 15 },
+        { sku: "PRD-CHAIR-001", description: "Office Chair", qty: 3, price: 725, tax_rate: 15 },
+      ],
+    },
+  ],
+  receiptVouchers: [
+    {
+      doc_number: "CR-CB-001",
+      kind: "receipt_voucher",
+      partyCode: "CB-CUST-001",
+      party_name: "Closed Beta Customer 1",
+      issue_date: "2026-07-05",
+      grand_total: 5175,
+      memo: "Receipt against invoice SI-CB-001",
+    },
+  ],
+  paymentVouchers: [
+    {
+      doc_number: "CP-CB-001",
+      kind: "payment_voucher",
+      partyCode: "CB-SUP-001",
+      party_name: "Closed Beta Supplier 1",
+      issue_date: "2026-07-06",
+      grand_total: 2070,
+      memo: "Payment against bill PB-CB-001",
+    },
+  ],
+  journalEntries: [
+    {
+      ref: "JV-CB-001",
+      entry_date: "2026-07-07",
+      memo: "Sales invoice posting",
+      lines: [
+        { accountCode: "1201", description: "Accounts Receivable", debit: 5175, credit: 0 },
+        { accountCode: "4101", description: "Sales Revenue", debit: 0, credit: 4500 },
+        { accountCode: "2201", description: "VAT Payable", debit: 0, credit: 675 },
+      ],
+    },
+    {
+      ref: "JV-CB-002",
+      entry_date: "2026-07-08",
+      memo: "Purchase bill posting",
+      lines: [
+        { accountCode: "5101", description: "Cost of Sales", debit: 3350, credit: 0 },
+        { accountCode: "2201", description: "VAT Payable", debit: 503, credit: 0 },
+        { accountCode: "2101", description: "Accounts Payable", debit: 0, credit: 3853 },
+      ],
+    },
+  ],
+};
+
+function sumInvoice(lines: Array<{ qty: number; price: number; tax_rate: number }>) {
+  const subtotal = lines.reduce((sum, l) => sum + (l.qty * l.price), 0);
+  const vat = Math.round(subtotal * 0.15 * 100) / 100;
+  return { subtotal, vat, grand_total: subtotal + vat };
+}
+
 function TestDataPage() {
   const { currentOrgId } = useOrg();
   const { user } = useAuth();
@@ -214,6 +315,32 @@ function TestDataPage() {
 
       if (cancelRef.current) return;
 
+      const itemMap = new Map<string, string>();
+      CLOSED_BETA_ITEMS.forEach((item) => {
+        // Rebuild the map after the upsert so document lines can reference stable SKUs.
+        itemMap.set(item.sku, item.sku);
+      });
+
+      const { error: cbItemErr } = await supabase.from("items").upsert(
+        CLOSED_BETA_ITEMS.map((item) => ({
+          org_id: currentOrgId,
+          sku: item.sku,
+          name: item.name,
+          kind: item.kind,
+          unit: item.unit,
+          price: item.price,
+          cost: item.cost,
+          stock: item.stock,
+          tax_rate: item.tax_rate,
+          meta: { ...item.meta, seed: tag },
+        })) as any,
+        { onConflict: "org_id,sku" },
+      );
+      if (cbItemErr) throw cbItemErr;
+      push("تم تجهيز الأصناف والخدمات والبضائع التجريبية");
+
+      if (cancelRef.current) return;
+
       // Helper to build docs of a kind
       const buildDocs = async (
         kind: string,
@@ -299,6 +426,208 @@ function TestDataPage() {
       if (counts.journalDocs > 0) {
         await buildDocs("journal_voucher", counts.journalDocs, [], "JV");
       }
+
+      if (cancelRef.current) return;
+
+      const resolvePartyId = async (code: string) => {
+        const { data } = await supabase.from("parties").select("id").eq("org_id", currentOrgId).eq("code", code).maybeSingle();
+        return (data as any)?.id ?? null;
+      };
+      const resolveItemId = async (sku: string) => {
+        const { data } = await supabase.from("items").select("id").eq("org_id", currentOrgId).eq("sku", sku).maybeSingle();
+        return (data as any)?.id ?? null;
+      };
+
+      const salesInvoiceRows = [];
+      for (const doc of CLOSED_BETA_DOCS.salesInvoices) {
+        const partyId = await resolvePartyId(doc.partyCode);
+        const { subtotal, vat, grand_total } = sumInvoice(doc.lines);
+        salesInvoiceRows.push({
+          org_id: currentOrgId,
+          kind: doc.kind,
+          doc_number: doc.doc_number,
+          party_id: partyId,
+          party_snapshot: { code: doc.partyCode, name: doc.party_name },
+          issue_date: doc.issue_date,
+          currency: "SAR",
+          subtotal,
+          vat_total: vat,
+          grand_total,
+          financial_state: "posted",
+          status: "posted",
+          open_amount: grand_total,
+          source_module: "seed",
+          meta: { seed: tag, vat_rate: 15, document_class: "B2B" },
+        });
+      }
+      const { data: salesDocs, error: salesErr } = await (supabase.from("documents") as any).insert(salesInvoiceRows).select("id, doc_number");
+      if (salesErr) throw salesErr;
+      for (const doc of CLOSED_BETA_DOCS.salesInvoices) {
+        const saved = (salesDocs || []).find((r: any) => r.doc_number === doc.doc_number);
+        if (!saved) continue;
+        const lines = [];
+        for (let i = 0; i < doc.lines.length; i++) {
+          const line = doc.lines[i];
+          lines.push({
+            document_id: saved.id,
+            item_id: await resolveItemId(line.sku),
+            position: i + 1,
+            description: line.description,
+            qty: line.qty,
+            price: line.price,
+            tax_rate: line.tax_rate,
+            line_total: line.qty * line.price,
+          });
+        }
+        const { error: lineErr } = await (supabase.from("document_lines") as any).insert(lines);
+        if (lineErr) throw lineErr;
+      }
+      push("تم تجهيز فواتير المبيعات");
+
+      const purchaseRows = [];
+      for (const doc of CLOSED_BETA_DOCS.purchaseBills) {
+        const partyId = await resolvePartyId(doc.partyCode);
+        const { subtotal, vat, grand_total } = sumInvoice(doc.lines);
+        purchaseRows.push({
+          org_id: currentOrgId,
+          kind: doc.kind,
+          doc_number: doc.doc_number,
+          party_id: partyId,
+          party_snapshot: { code: doc.partyCode, name: doc.party_name },
+          issue_date: doc.issue_date,
+          currency: "SAR",
+          subtotal,
+          vat_total: vat,
+          grand_total,
+          financial_state: "posted",
+          status: "posted",
+          open_amount: grand_total,
+          source_module: "seed",
+          meta: { seed: tag, vat_rate: 15, document_class: "AP" },
+        });
+      }
+      const { data: billDocs, error: billErr } = await (supabase.from("documents") as any).insert(purchaseRows).select("id, doc_number");
+      if (billErr) throw billErr;
+      for (const doc of CLOSED_BETA_DOCS.purchaseBills) {
+        const saved = (billDocs || []).find((r: any) => r.doc_number === doc.doc_number);
+        if (!saved) continue;
+        const lines = [];
+        for (let i = 0; i < doc.lines.length; i++) {
+          const line = doc.lines[i];
+          lines.push({
+            document_id: saved.id,
+            item_id: await resolveItemId(line.sku),
+            position: i + 1,
+            description: line.description,
+            qty: line.qty,
+            price: line.price,
+            tax_rate: line.tax_rate,
+            line_total: line.qty * line.price,
+          });
+        }
+        const { error: lineErr } = await (supabase.from("document_lines") as any).insert(lines);
+        if (lineErr) throw lineErr;
+      }
+      push("تم تجهيز فواتير المشتريات");
+
+      const cashRows = [
+        ...CLOSED_BETA_DOCS.receiptVouchers.map((doc) => ({ ...doc, org_id: currentOrgId, party_id: null, party_snapshot: { code: doc.partyCode, name: doc.party_name }, currency: "SAR", status: "posted", financial_state: "posted", open_amount: 0, source_module: "seed", meta: { seed: tag, source: "cash_receipt" } })),
+        ...CLOSED_BETA_DOCS.paymentVouchers.map((doc) => ({ ...doc, org_id: currentOrgId, party_id: null, party_snapshot: { code: doc.partyCode, name: doc.party_name }, currency: "SAR", status: "posted", financial_state: "posted", open_amount: 0, source_module: "seed", meta: { seed: tag, source: "cash_payment" } })),
+      ].map((doc) => ({
+        org_id: doc.org_id,
+        kind: doc.kind,
+        doc_number: doc.doc_number,
+        party_id: doc.party_id,
+        party_snapshot: doc.party_snapshot,
+        issue_date: doc.issue_date,
+        currency: doc.currency,
+        grand_total: doc.grand_total,
+        subtotal: doc.grand_total,
+        vat_total: Math.round(doc.grand_total * 0.15 / 1.15 * 100) / 100,
+        financial_state: doc.financial_state,
+        status: doc.status,
+        open_amount: doc.open_amount,
+        memo: doc.memo ?? null,
+        source_module: doc.source_module,
+        meta: doc.meta,
+      }));
+      for (const doc of CLOSED_BETA_DOCS.receiptVouchers) {
+        const partyId = await resolvePartyId(doc.partyCode);
+        cashRows.push({
+          org_id: currentOrgId,
+          kind: "receipt_voucher",
+          doc_number: doc.doc_number,
+          party_id: partyId,
+          party_snapshot: { code: doc.partyCode, name: doc.party_name },
+          issue_date: doc.issue_date,
+          currency: "SAR",
+          grand_total: doc.grand_total,
+          subtotal: doc.grand_total,
+          vat_total: Math.round(doc.grand_total * 0.15 / 1.15 * 100) / 100,
+          financial_state: "posted",
+          status: "posted",
+          open_amount: 0,
+          memo: doc.memo,
+          source_module: "seed",
+          meta: { seed: tag, source: "cash_receipt" },
+        });
+      }
+      for (const doc of CLOSED_BETA_DOCS.paymentVouchers) {
+        const partyId = await resolvePartyId(doc.partyCode);
+        cashRows.push({
+          org_id: currentOrgId,
+          kind: "payment_voucher",
+          doc_number: doc.doc_number,
+          party_id: partyId,
+          party_snapshot: { code: doc.partyCode, name: doc.party_name },
+          issue_date: doc.issue_date,
+          currency: "SAR",
+          grand_total: doc.grand_total,
+          subtotal: doc.grand_total,
+          vat_total: Math.round(doc.grand_total * 0.15 / 1.15 * 100) / 100,
+          financial_state: "posted",
+          status: "posted",
+          open_amount: 0,
+          memo: doc.memo,
+          source_module: "seed",
+          meta: { seed: tag, source: "cash_payment" },
+        });
+      }
+      const { error: cashErr } = await (supabase.from("documents") as any).upsert(cashRows, { onConflict: "org_id,doc_number" });
+      if (cashErr) throw cashErr;
+      push("تم تجهيز سندات القبض والصرف");
+
+      const journalRows = CLOSED_BETA_DOCS.journalEntries.map((entry) => ({
+        org_id: currentOrgId,
+        ref: entry.ref,
+        entry_date: entry.entry_date,
+        memo: entry.memo,
+        status: "posted",
+        source_module: "seed",
+        meta: { seed: tag },
+      }));
+      const { data: journals, error: journalErr } = await (supabase.from("journal_entries") as any).insert(journalRows).select("id, ref");
+      if (journalErr) throw journalErr;
+      for (const entry of CLOSED_BETA_DOCS.journalEntries) {
+        const saved = (journals || []).find((r: any) => r.ref === entry.ref);
+        if (!saved) continue;
+        const { error } = await (supabase.from("journal_lines") as any).insert(
+          entry.lines.map((line, idx) => ({
+            entry_id: saved.id,
+            org_id: currentOrgId,
+            line_no: idx + 1,
+            account_code: line.accountCode,
+            description: line.description,
+            debit: line.debit,
+            credit: line.credit,
+            currency: "SAR",
+            exchange_rate: 1,
+            meta: { seed: tag },
+          }))
+        );
+        if (error) throw error;
+      }
+      push("تم تجهيز القيود اليومية والدفتر العام");
 
       // 4) Attachment stubs (rows only, no file upload)
       if (counts.attachments > 0 && !cancelRef.current) {

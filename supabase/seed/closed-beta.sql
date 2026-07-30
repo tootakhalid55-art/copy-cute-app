@@ -62,3 +62,86 @@ set
   stock = excluded.stock,
   tax_rate = excluded.tax_rate,
   meta = excluded.meta;
+
+-- Sample sales, purchase, cash, and journal activity
+insert into public.documents (
+  org_id, kind, doc_number, party_id, party_snapshot, issue_date, currency,
+  subtotal, vat_total, grand_total, financial_state, status, open_amount, source_module, meta
+) values
+  ('00000000-0000-0000-0000-000000000000', 'sales_invoice', 'SI-CB-001', null, '{"code":"CB-CUST-001","name":"Closed Beta Customer 1"}'::jsonb, '2026-07-01', 'SAR', 4500, 675, 5175, 'posted', 'posted', 5175, 'seed', '{"seed":"closed-beta","vat_rate":15,"document_class":"B2B"}'::jsonb),
+  ('00000000-0000-0000-0000-000000000000', 'sales_invoice', 'SI-CB-002', null, '{"code":"CB-CUST-002","name":"Closed Beta Customer 2"}'::jsonb, '2026-07-03', 'SAR', 7200, 1080, 8280, 'posted', 'posted', 8280, 'seed', '{"seed":"closed-beta","vat_rate":15,"document_class":"B2B"}'::jsonb),
+  ('00000000-0000-0000-0000-000000000000', 'purchase_invoice', 'PB-CB-001', null, '{"code":"CB-SUP-001","name":"Closed Beta Supplier 1"}'::jsonb, '2026-07-02', 'SAR', 1960, 294, 2254, 'posted', 'posted', 2254, 'seed', '{"seed":"closed-beta","vat_rate":15,"document_class":"AP"}'::jsonb),
+  ('00000000-0000-0000-0000-000000000000', 'purchase_invoice', 'PB-CB-002', null, '{"code":"CB-SUP-002","name":"Closed Beta Supplier 2"}'::jsonb, '2026-07-04', 'SAR', 3975, 596.25, 4571.25, 'posted', 'posted', 4571.25, 'seed', '{"seed":"closed-beta","vat_rate":15,"document_class":"AP"}'::jsonb),
+  ('00000000-0000-0000-0000-000000000000', 'receipt_voucher', 'CR-CB-001', null, '{"code":"CB-CUST-001","name":"Closed Beta Customer 1"}'::jsonb, '2026-07-05', 'SAR', 5175, 675, 5175, 'posted', 'posted', 0, 'seed', '{"seed":"closed-beta","source":"cash_receipt"}'::jsonb),
+  ('00000000-0000-0000-0000-000000000000', 'payment_voucher', 'CP-CB-001', null, '{"code":"CB-SUP-001","name":"Closed Beta Supplier 1"}'::jsonb, '2026-07-06', 'SAR', 2070, 270, 2070, 'posted', 'posted', 0, 'seed', '{"seed":"closed-beta","source":"cash_payment"}'::jsonb),
+  ('00000000-0000-0000-0000-000000000000', 'journal_voucher', 'JV-CB-001', null, '{}'::jsonb, '2026-07-07', 'SAR', 0, 0, 0, 'posted', 'posted', 0, 'seed', '{"seed":"closed-beta"}'::jsonb),
+  ('00000000-0000-0000-0000-000000000000', 'journal_voucher', 'JV-CB-002', null, '{}'::jsonb, '2026-07-08', 'SAR', 0, 0, 0, 'posted', 'posted', 0, 'seed', '{"seed":"closed-beta"}'::jsonb)
+on conflict (org_id, doc_number) do update
+set
+  kind = excluded.kind,
+  party_snapshot = excluded.party_snapshot,
+  issue_date = excluded.issue_date,
+  currency = excluded.currency,
+  subtotal = excluded.subtotal,
+  vat_total = excluded.vat_total,
+  grand_total = excluded.grand_total,
+  financial_state = excluded.financial_state,
+  status = excluded.status,
+  open_amount = excluded.open_amount,
+  source_module = excluded.source_module,
+  meta = excluded.meta;
+
+insert into public.document_lines (
+  document_id, item_id, position, description, qty, price, tax_rate, line_total
+) select
+  d.id,
+  null,
+  1,
+  'Seed line',
+  1,
+  0,
+  15,
+  0
+from public.documents d
+where d.org_id = '00000000-0000-0000-0000-000000000000'
+  and d.doc_number in ('SI-CB-001', 'SI-CB-002', 'PB-CB-001', 'PB-CB-002')
+on conflict do nothing;
+
+insert into public.journal_entries (
+  org_id, ref, entry_date, memo, status, source_module, meta
+) values
+  ('00000000-0000-0000-0000-000000000000', 'JV-CB-001', '2026-07-07', 'Sales invoice posting', 'posted', 'seed', '{"seed":"closed-beta"}'::jsonb),
+  ('00000000-0000-0000-0000-000000000000', 'JV-CB-002', '2026-07-08', 'Purchase bill posting', 'posted', 'seed', '{"seed":"closed-beta"}'::jsonb)
+on conflict (org_id, ref) do update
+set
+  entry_date = excluded.entry_date,
+  memo = excluded.memo,
+  status = excluded.status,
+  source_module = excluded.source_module,
+  meta = excluded.meta;
+
+insert into public.journal_lines (
+  entry_id, org_id, line_no, account_code, description, debit, credit, currency, exchange_rate, meta
+) select
+  j.id,
+  '00000000-0000-0000-0000-000000000000',
+  v.line_no,
+  v.account_code,
+  v.description,
+  v.debit,
+  v.credit,
+  'SAR',
+  1,
+  '{"seed":"closed-beta"}'::jsonb
+from public.journal_entries j
+join (
+  values
+    ('JV-CB-001', 1, '1201', 'Accounts Receivable', 5175::numeric, 0::numeric),
+    ('JV-CB-001', 2, '4101', 'Sales Revenue', 0::numeric, 4500::numeric),
+    ('JV-CB-001', 3, '2201', 'VAT Payable', 0::numeric, 675::numeric),
+    ('JV-CB-002', 1, '5101', 'Cost of Sales', 3350::numeric, 0::numeric),
+    ('JV-CB-002', 2, '2201', 'VAT Payable', 503::numeric, 0::numeric),
+    ('JV-CB-002', 3, '2101', 'Accounts Payable', 0::numeric, 3853::numeric)
+) as v(ref, line_no, account_code, description, debit, credit)
+on j.ref = v.ref
+on conflict do nothing;
