@@ -328,8 +328,7 @@ function ReviewDrawer({
   useCollectionChangedListener(["suppliers"], () => {
     if (!orgId) return;
     supabase.from("parties").select("id, name, vat_number").eq("org_id", orgId).eq("type", "supplier").order("name").limit(200)
-      .then(({ data }) => setSuppliers((data as any) || []))
-      .catch(() => {});
+      .then(({ data }) => setSuppliers((data as any) || []), () => {});
   });
 
   const submit = async (decision: "approved" | "rejected" | "commented") => {

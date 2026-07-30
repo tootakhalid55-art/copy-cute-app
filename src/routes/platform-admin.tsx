@@ -143,7 +143,7 @@ function PlatformAdminPage() {
                       onClick={async () => {
                         setBusy(true);
                         try {
-                          const context = await startImpersonationFn({ data: { targetUserId: user.id } }) as {
+                          const context = await startImpersonationFn({ data: { targetUserId: user.id } }) as unknown as {
                             targetUser: { id: string; email: string; name: string };
                             orgs: Array<{ id: string; name: string }>;
                           };

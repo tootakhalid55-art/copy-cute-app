@@ -84,7 +84,7 @@ function TestDataPage() {
         { code: "4101", name: "Sales Revenue", type: "إيرادات", subtype: "إيرادات تشغيلية", opening_balance: 0 },
         { code: "5101", name: "Cost of Sales", type: "مصروفات", subtype: "تكلفة المبيعات", opening_balance: 0 },
         { code: "6401", name: "General Expenses", type: "مصروفات", subtype: "مصروفات تشغيلية", opening_balance: 0 },
-      ].map((r) => ({ org_id: currentOrgId, currency: "SAR", is_active: true, ...r }));
+      ].map((r) => ({ org_id: currentOrgId, currency: "SAR", is_active: true, ...r })) as any[];
       const { error: coaErr } = await supabase.from("chart_of_accounts").upsert(coaRows, { onConflict: "org_id,code" });
       if (coaErr) throw coaErr;
       push("تم تجهيز دليل الحسابات الأساسي");
@@ -101,7 +101,7 @@ function TestDataPage() {
         notes: "Closed Beta seed",
         meta: { seed: tag, closed_beta: true },
         ...r,
-      }));
+      })) as any[];
       const suppliers = [
         { name: "Closed Beta Supplier 1", code: `CB-SUP-001`, email: "supplier1@example.test", phone: "0550000001" },
         { name: "Closed Beta Supplier 2", code: `CB-SUP-002`, email: "supplier2@example.test", phone: "0550000002" },
@@ -114,7 +114,7 @@ function TestDataPage() {
         notes: "Closed Beta seed",
         meta: { seed: tag, closed_beta: true },
         ...r,
-      }));
+      })) as any[];
       const { error: partyErr } = await supabase.from("parties").upsert([...customers, ...suppliers], { onConflict: "org_id,code" });
       if (partyErr) throw partyErr;
       push("تم تجهيز العملاء والموردين التجريبيين");
