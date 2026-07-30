@@ -256,30 +256,55 @@ export function QuotationForm({ docId }: { docId?: string }) {
   // Printing
   const printRef = useRef<HTMLDivElement>(null);
   const handlePrint = async () => {
-    const token = await signDoc({ kind: "quotation", ref, total });
-    const verifyUrl = buildVerifyUrl("quotation", ref, token);
-    const verifyQr = await QRCode.toDataURL(verifyUrl, { margin: 1, width: 220 });
-    printDoc({
-      kind: "quotation",
-      title: "عرض سعر",
-      titleEn: "Quotation",
-      ref, date, expiry,
-      org, party, partyLabel: "العميل",
-      lines, lineCalcs,
-      subtotal, tax, total,
-      discAmt, shipAmt,
-      notes,
-      terms: notes,
-      partyRole: "العميل",
-      currency: CUR,
-      branding,
-      tpl,
-      poNumber: optCols.poNumber ? poNumber : undefined,
-      reference: optCols.reference ? reference : undefined,
-      project: optCols.project ? project : undefined,
-      bilingual: true,
-      verify: { qrDataUrl: verifyQr, url: verifyUrl, label: "التوقيع الرقمي — Digital Signature" },
-    });
+    try {
+      const token = await signDoc({ kind: "quotation", ref, total });
+      const verifyUrl = buildVerifyUrl("quotation", ref, token);
+      const verifyQr = await QRCode.toDataURL(verifyUrl, { margin: 1, width: 220 });
+      printDoc({
+        kind: "quotation",
+        title: "عرض سعر",
+        titleEn: "Quotation",
+        ref, date, expiry,
+        org, party, partyLabel: "العميل",
+        lines, lineCalcs,
+        subtotal, tax, total,
+        discAmt, shipAmt,
+        notes,
+        terms: notes,
+        partyRole: "العميل",
+        currency: CUR,
+        branding,
+        tpl,
+        poNumber: optCols.poNumber ? poNumber : undefined,
+        reference: optCols.reference ? reference : undefined,
+        project: optCols.project ? project : undefined,
+        bilingual: true,
+        verify: { qrDataUrl: verifyQr, url: verifyUrl, label: "التوقيع الرقمي — Digital Signature" },
+      });
+    } catch (error) {
+      console.warn("quotation print verification failed, printing fallback", error);
+      printDoc({
+        kind: "quotation",
+        title: "عرض سعر",
+        titleEn: "Quotation",
+        ref, date, expiry,
+        org, party, partyLabel: "العميل",
+        lines, lineCalcs,
+        subtotal, tax, total,
+        discAmt: 0,
+        shipAmt: 0,
+        notes,
+        terms: notes,
+        partyRole: "العميل",
+        currency: CUR,
+        branding,
+        tpl,
+        poNumber: optCols.poNumber ? poNumber : undefined,
+        reference: optCols.reference ? reference : undefined,
+        project: optCols.project ? project : undefined,
+        bilingual: true,
+      });
+    }
   };
 
 

@@ -87,7 +87,14 @@ const fmt = (n: number) =>
   });
 
 export function buildDocHtml(d: PrintDocData): string {
-  const { tpl, org, party, lines, lineCalcs, currency, branding, bilingual } = d;
+  const tpl = d.tpl ?? { name: "Default", accent: "#0f2a1d", onAccent: "#ffffff", soft: "#fafaf7" };
+  const org = d.org ?? { name: "", taxNumber: "", address: "" };
+  const party = d.party ?? null;
+  const lines = Array.isArray(d.lines) ? d.lines : [];
+  const lineCalcs = Array.isArray(d.lineCalcs) ? d.lineCalcs : [];
+  const currency = d.currency ?? "SAR";
+  const branding = d.branding ?? {};
+  const bilingual = d.bilingual;
   const B = bilingual !== false;
   const en = (t: string) => (B ? `<span style="font-size:9px;opacity:.55;font-weight:400;margin-inline-start:6px">${esc(t)}</span>` : "");
 
@@ -330,10 +337,29 @@ export function buildDocHtml(d: PrintDocData): string {
 
 export function printDoc(d: PrintDocData) {
   if (typeof window === "undefined") return;
-  const inner = buildDocHtml(d);
+  const safeDoc: PrintDocData = {
+    ...d,
+    title: d.title || "Document",
+    titleEn: d.titleEn || "Document",
+    ref: d.ref || "",
+    date: d.date || "",
+    dueDate: d.dueDate || "",
+    expiry: d.expiry || "",
+    org: d.org ?? { name: "", taxNumber: "", address: "" },
+    party: d.party ?? null,
+    partyLabel: d.partyLabel || "الطرف",
+    lines: Array.isArray(d.lines) ? d.lines : [],
+    lineCalcs: Array.isArray(d.lineCalcs) ? d.lineCalcs : [],
+    subtotal: Number.isFinite(Number(d.subtotal)) ? Number(d.subtotal) : 0,
+    tax: Number.isFinite(Number(d.tax)) ? Number(d.tax) : 0,
+    total: Number.isFinite(Number(d.total)) ? Number(d.total) : 0,
+    currency: d.currency || "SAR",
+    tpl: d.tpl ?? { name: "Default", accent: "#0f2a1d", onAccent: "#ffffff", soft: "#fafaf7" },
+  };
+  const inner = buildDocHtml(safeDoc);
   const doc = `<!doctype html><html dir="rtl" lang="ar"><head>
     <meta charset="utf-8" />
-    <title>${esc(d.title)} ${esc(d.ref)}</title>
+    <title>${esc(safeDoc.title)} ${esc(safeDoc.ref)}</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet" />
