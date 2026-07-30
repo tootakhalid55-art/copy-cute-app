@@ -35,12 +35,14 @@ export function makeZatcaQrPayload(input: {
 export type PrintDocData = {
   title: string;              // e.g. "فاتورة ضريبية"
   titleEn?: string;           // e.g. "Tax Invoice"
+  variant?: "standard" | "simplified";  // ZATCA invoice type
+  issuedAtIso?: string;       // exact ZATCA timestamp
   ref: string;
   date: string;
   dueDate?: string;
   expiry?: string;
-  org: { name: string; taxNumber: string };
-  party?: { name?: string; taxNumber?: string; phone?: string; email?: string } | null;
+  org: { name: string; taxNumber: string; address?: string };
+  party?: { name?: string; taxNumber?: string; phone?: string; email?: string; address?: string } | null;
   partyLabel: string;
   lines: PrintLine[];
   lineCalcs: PrintLineCalc[];
@@ -60,6 +62,7 @@ export type PrintDocData = {
   bilingual?: boolean;        // show English secondary labels
   verify?: { qrDataUrl: string; url: string; label?: string };
 };
+
 
 const esc = (s: unknown) =>
   String(s ?? "")
