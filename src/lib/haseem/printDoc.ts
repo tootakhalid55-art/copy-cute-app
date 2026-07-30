@@ -35,6 +35,7 @@ export function makeZatcaQrPayload(input: {
 }
 
 export type PrintDocData = {
+  kind?: "invoice" | "quotation" | "credit-note" | "purchase-order" | "bill";
   title: string;              // e.g. "فاتورة ضريبية"
   titleEn?: string;           // e.g. "Tax Invoice"
   variant?: "standard" | "simplified";  // ZATCA invoice type
@@ -54,6 +55,9 @@ export type PrintDocData = {
   discAmt?: number;
   shipAmt?: number;
   notes?: string;
+  terms?: string;
+  reason?: string;
+  originalRef?: string;
   currency: string;           // "ر.س" | "$" | ...
   qrDataUrl?: string;
   branding?: { logo?: string; stamp?: string };
@@ -61,6 +65,9 @@ export type PrintDocData = {
   poNumber?: string;
   reference?: string;
   project?: string;
+  statusLabel?: string;
+  approvalLabel?: string;
+  partyRole?: string;
   bilingual?: boolean;        // show English secondary labels
   verify?: { qrDataUrl: string; url: string; label?: string };
 };
@@ -91,6 +98,30 @@ export function buildDocHtml(d: PrintDocData): string {
   const line = "#ececec";
 
   const simplified = d.variant === "simplified";
+  const kind = d.kind ?? "invoice";
+  const isInvoice = kind === "invoice";
+  const isCreditNote = kind === "credit-note";
+  const isQuotation = kind === "quotation";
+  const isPurchase = kind === "purchase-order" || kind === "bill";
+
+  const vatRate = 15;
+  const lineTaxRows = lines.map((l, i) => {
+    const c = lineCalcs[i] || { net: 0, taxAmt: 0, gross: 0 };
+    const rate = Number.isFinite(Number(l.tax)) ? Number(l.tax) : vatRate;
+    return { line: l, calc: c, rate };
+  });
+  const taxSummaryRows = isInvoice
+    ? lineTaxRows.map((row, i) => `
+        <tr>
+          <td style="padding:8px 10px;border-bottom:1px solid ${line};text-align:center;color:${muted};font-variant-numeric:tabular-nums">${String(i + 1).padStart(2, "0")}</td>
+          <td style="padding:8px 10px;border-bottom:1px solid ${line};text-align:right;color:${ink}">${esc(row.line.description || "—")}</td>
+          <td style="padding:8px 10px;border-bottom:1px solid ${line};text-align:center;font-variant-numeric:tabular-nums">${fmt(row.calc.net)}</td>
+          <td style="padding:8px 10px;border-bottom:1px solid ${line};text-align:center;font-variant-numeric:tabular-nums">${row.rate.toFixed(0)}%</td>
+          <td style="padding:8px 10px;border-bottom:1px solid ${line};text-align:center;font-variant-numeric:tabular-nums">${fmt(row.calc.taxAmt)}</td>
+          <td style="padding:8px 10px;border-bottom:1px solid ${line};text-align:center;font-variant-numeric:tabular-nums;font-weight:700">${fmt(row.calc.gross)}</td>
+        </tr>`)
+    .join("")
+    : "";
 
   const partyBlock = party && (party.name || party.taxNumber || party.phone)
     ? `<div style="font-size:14px;font-weight:700;color:${ink};margin-bottom:6px;letter-spacing:.01em">${esc(party.name || "—")}</div>
@@ -101,6 +132,12 @@ export function buildDocHtml(d: PrintDocData): string {
          ${!simplified && party.email ? `<div><span style="color:${accent};font-weight:600">البريد · Email </span>${esc(party.email)}</div>` : ""}
        </div>`
     : `<span style="color:#b7bdb2">${simplified ? "عميل نقدي · Cash customer" : "—"}</span>`;
+
+  const partyRole = d.partyRole || (isPurchase ? "المورد" : "الطرف");
+  const headerBadges = [
+    d.statusLabel ? `<span style="display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:999px;background:${soft};color:${accent};font-size:10px;font-weight:700;border:1px solid ${accent}33">${esc(d.statusLabel)}</span>` : "",
+    d.approvalLabel ? `<span style="display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:999px;background:#fff;color:${ink};font-size:10px;font-weight:700;border:1px solid ${line}">${esc(d.approvalLabel)}</span>` : "",
+  ].filter(Boolean).join(" ");
 
   const rows = lines
     .map((l, i) => {
@@ -188,12 +225,13 @@ export function buildDocHtml(d: PrintDocData): string {
         <div style="display:inline-block;padding:5px 12px;background:${soft};color:${accent};font-size:10.5px;font-weight:700;border-radius:999px;letter-spacing:.06em;text-transform:uppercase;margin-bottom:10px">${esc(d.titleEn || "Document")}</div>
         <div style="font-size:22px;font-weight:800;color:${ink};margin-bottom:6px;letter-spacing:-.01em">${esc(d.title)}</div>
         <div style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:13px;color:${accent};font-weight:700;letter-spacing:.02em">${esc(d.ref)}</div>
+        ${headerBadges ? `<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:10px">${headerBadges}</div>` : ""}
       </div>
     </div>
 
     <div style="padding:0 32px 20px">
       <div style="border:1px solid ${line};border-radius:12px;padding:16px 18px;background:#fff">
-        <div style="font-size:9.5px;color:${muted};font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-bottom:8px">${esc(d.partyLabel)}${B ? " · Bill To" : ""}${simplified ? ` <span style="font-weight:400;text-transform:none;opacity:.7">(اختياري · optional)</span>` : ""}</div>
+        <div style="font-size:9.5px;color:${muted};font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-bottom:8px">${esc(d.partyLabel || partyRole)}${B ? " · Bill To" : ""}${simplified ? ` <span style="font-weight:400;text-transform:none;opacity:.7">(اختياري · optional)</span>` : ""}</div>
         ${partyBlock}
       </div>
     </div>
@@ -211,15 +249,52 @@ export function buildDocHtml(d: PrintDocData): string {
             <th style="padding:11px 8px;text-align:center;width:56px;font-size:9.5px;color:${muted};font-weight:700;letter-spacing:.06em;text-transform:uppercase">الكمية${en("Qty")}</th>
             <th style="padding:11px 8px;text-align:center;width:78px;font-size:9.5px;color:${muted};font-weight:700;letter-spacing:.06em;text-transform:uppercase">السعر${en("Unit Price")}</th>
             <th style="padding:11px 8px;text-align:center;width:70px;font-size:9.5px;color:${muted};font-weight:700;letter-spacing:.06em;text-transform:uppercase">الخصم${en("Discount")}</th>
-            <th style="padding:11px 8px;text-align:center;width:86px;font-size:9.5px;color:${muted};font-weight:700;letter-spacing:.06em;text-transform:uppercase">المبلغ${en("Taxable")}</th>
-            <th style="padding:11px 8px;text-align:center;width:95px;font-size:9.5px;color:${muted};font-weight:700;letter-spacing:.06em;text-transform:uppercase">الضريبة${en("VAT")}</th>
+            <th style="padding:11px 8px;text-align:center;width:86px;font-size:9.5px;color:${muted};font-weight:700;letter-spacing:.06em;text-transform:uppercase">${isInvoice ? `خاضع للضريبة${en("Taxable")}` : `المبلغ${en("Amount")}`}</th>
+            ${isInvoice ? `<th style="padding:11px 8px;text-align:center;width:95px;font-size:9.5px;color:${muted};font-weight:700;letter-spacing:.06em;text-transform:uppercase">الضريبة${en("VAT")}</th>` : ""}
             <th style="padding:11px 10px;text-align:center;width:98px;font-size:9.5px;color:${muted};font-weight:700;letter-spacing:.06em;text-transform:uppercase">الإجمالي${en("Line Total")}</th>
           </tr>
         </thead>
-        <tbody>${rows || `<tr><td colspan="8" style="padding:24px;text-align:center;color:#b7bdb2;font-size:11px">لا توجد بنود</td></tr>`}</tbody>
+        <tbody>${
+          isInvoice
+            ? taxSummaryRows || `<tr><td colspan="6" style="padding:24px;text-align:center;color:#b7bdb2;font-size:11px">لا توجد بنود</td></tr>`
+            : rows || `<tr><td colspan="8" style="padding:24px;text-align:center;color:#b7bdb2;font-size:11px">لا توجد بنود</td></tr>`
+        }</tbody>
 
       </table>
     </div>
+
+    ${isCreditNote ? `
+    <div style="padding:0 32px 22px">
+      <div style="border:1px solid ${line};border-radius:12px;padding:14px 18px;background:${soft}">
+        <div style="font-size:9.5px;color:${muted};font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-bottom:8px">مرجع الإشعار الدائن · Credit Note Reference</div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;font-size:12px;color:${ink}">
+          <div><span style="color:${muted};font-size:10px">المستند الأصلي</span><div style="font-weight:700">${esc(d.originalRef || d.reference || "—")}</div></div>
+          <div><span style="color:${muted};font-size:10px">سبب الإصدار</span><div style="font-weight:700">${esc(d.reason || d.notes || "—")}</div></div>
+        </div>
+      </div>
+    </div>` : ""}
+
+    ${isQuotation ? `
+    <div style="padding:0 32px 22px">
+      <div style="border:1px solid ${line};border-radius:12px;padding:14px 18px;background:${soft}">
+        <div style="font-size:9.5px;color:${muted};font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-bottom:8px">تفاصيل العرض · Quote Terms</div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;font-size:12px;color:${ink}">
+          <div><span style="color:${muted};font-size:10px">صلاحية العرض</span><div style="font-weight:700">${esc(d.expiry || d.dueDate || "—")}</div></div>
+          <div><span style="color:${muted};font-size:10px">الشروط</span><div style="font-weight:700">${esc(d.terms || d.notes || "—")}</div></div>
+        </div>
+      </div>
+    </div>` : ""}
+
+    ${isPurchase ? `
+    <div style="padding:0 32px 22px">
+      <div style="border:1px solid ${line};border-radius:12px;padding:14px 18px;background:${soft}">
+        <div style="font-size:9.5px;color:${muted};font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-bottom:8px">${kind === "bill" ? "بيانات فاتورة المورد · Supplier Bill" : "بيانات أمر الشراء · Purchase Order"}</div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;font-size:12px;color:${ink}">
+          <div><span style="color:${muted};font-size:10px">${kind === "bill" ? "المورد" : "الجهة الموردة"}</span><div style="font-weight:700">${esc(party?.name || d.partyLabel || "—")}</div></div>
+          <div><span style="color:${muted};font-size:10px">المرجع</span><div style="font-weight:700">${esc(d.reference || d.poNumber || "—")}</div></div>
+        </div>
+      </div>
+    </div>` : ""}
 
     <div class="avoid-break" style="padding:0 32px 22px;display:grid;grid-template-columns:170px 1fr 320px;gap:18px;align-items:start">
       <div>${qrBlock}${stampBlock ? `<div style="margin-top:10px;text-align:center">${stampBlock}</div>` : ""}</div>

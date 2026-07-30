@@ -260,6 +260,7 @@ export function QuotationForm({ docId }: { docId?: string }) {
     const verifyUrl = buildVerifyUrl("quotation", ref, token);
     const verifyQr = await QRCode.toDataURL(verifyUrl, { margin: 1, width: 220 });
     printDoc({
+      kind: "quotation",
       title: "عرض سعر",
       titleEn: "Quotation",
       ref, date, expiry,
@@ -268,6 +269,8 @@ export function QuotationForm({ docId }: { docId?: string }) {
       subtotal, tax, total,
       discAmt, shipAmt,
       notes,
+      terms: notes,
+      partyRole: "العميل",
       currency: CUR,
       branding,
       tpl,
