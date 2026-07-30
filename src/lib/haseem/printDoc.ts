@@ -2,10 +2,11 @@
 // Renders an HTML string with inline styles (no Tailwind dependency),
 // then prints via a hidden iframe so popup blockers can't interfere.
 
-export type PrintLine = { description: string; qty: number; price: number; tax: number };
+export type PrintLine = { description: string; qty: number; price: number; tax: number; discount?: number };
 export type PrintLineCalc = { net: number; taxAmt: number; gross: number };
 
 export type PrintTpl = { name: string; accent: string; onAccent: string; soft: string };
+
 
 export function makeZatcaQrPayload(input: {
   sellerName: string;
