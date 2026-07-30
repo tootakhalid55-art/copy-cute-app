@@ -221,11 +221,27 @@ export function DocumentForm({
       .catch(() => setVerifyQrDataUrl(""));
   }, [org.name, org.taxNumber, date, total, tax, usesZatcaQr, usesVerifyQr, cloudKind, ref]);
 
+  // ZATCA-aware document heading — never the "إنشاء/تعديل" form title
+  const docTitle = useMemo(
+    () => resolveDocTitle(kind ?? cloudKind, party?.taxNumber),
+    [kind, cloudKind, party?.taxNumber],
+  );
+  const issuedAtIso = useMemo(() => docTimestamp(date, existing?.issuedAt), [date, existing?.issuedAt]);
+  const partyAddress = useMemo(() => {
+    if (!party) return "";
+    return [party.street, party.district, party.city, party.region].filter(Boolean).join("، ");
+  }, [party]);
+
   const handlePrint = () => {
     printDoc({
-      title,
+      title: docTitle.ar,
+      titleEn: docTitle.en,
+      variant: docTitle.variant,
+      issuedAtIso,
       ref, date, dueDate,
-      org, party, partyLabel,
+      org,
+      party: party ? { ...party, address: partyAddress } : party,
+      partyLabel,
       lines, lineCalcs,
       subtotal, tax, total,
       notes,
@@ -238,6 +254,7 @@ export function DocumentForm({
         : undefined,
     });
   };
+
 
 
 
