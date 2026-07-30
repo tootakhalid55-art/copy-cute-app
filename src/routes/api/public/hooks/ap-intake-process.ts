@@ -141,8 +141,8 @@ export const Route = createFileRoute("/api/public/hooks/ap-intake-process")({
                 ocr_json: {
                   ...extraction,
                   ocr_boxes: ocrBoxes,
-                } as any,
-              })
+                },
+              } as any)
               .eq("id", intake.id);
 
             await admin.from("ap_intake_events").insert({
