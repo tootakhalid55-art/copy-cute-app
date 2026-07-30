@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useOrg } from "@/lib/db/org";
 import { money } from "@/components/haseem/Shell";
 import { getStatement, summarizeStatement, type StatementAccountKind, type StatementLine } from "@/lib/accounting/statement";
+import { useCollectionChangedListener } from "@/lib/db/collection-events";
 
 export const Route = createFileRoute("/reports/statement")({
   head: () => ({
@@ -43,6 +44,19 @@ function StatementPage() {
       setLines([]);
     })();
   }, [currentOrgId, accountKind]);
+  useCollectionChangedListener(accountKind === "supplier" ? ["suppliers"] : ["customers", "suppliers"], () => {
+    if (!currentOrgId) return;
+    (async () => {
+      if (accountKind === "cash_account") {
+        const { data } = await supabase.from("cash_bank_accounts").select("id,name,kind").eq("org_id", currentOrgId).order("name");
+        setOptions((data as Option[]) ?? []);
+      } else {
+        const typeFilter: ("customer" | "supplier" | "both")[] = accountKind === "customer" ? ["customer", "both"] : ["supplier", "both"];
+        const { data } = await supabase.from("parties").select("id,name,type").eq("org_id", currentOrgId).in("type", typeFilter).order("name");
+        setOptions((data as any[])?.map((p) => ({ id: p.id, name: p.name })) ?? []);
+      }
+    })();
+  });
 
   const run = async () => {
     if (!currentOrgId || !accountId) return;

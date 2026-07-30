@@ -4,6 +4,7 @@ import { Search, X, FileText, Tag, Users, Paperclip } from "lucide-react";
 import { globalSearch, type SearchHit } from "@/lib/db/search";
 import { useOrg } from "@/lib/db/org";
 import { useNavigate } from "@tanstack/react-router";
+import { useCollectionChangedListener } from "@/lib/db/collection-events";
 
 export function GlobalSearch() {
   const { currentOrgId } = useOrg();
@@ -37,6 +38,10 @@ export function GlobalSearch() {
     }, 200);
     return () => clearTimeout(t);
   }, [q, open, currentOrgId]);
+  useCollectionChangedListener(["customers", "suppliers"], () => {
+    if (!open || !currentOrgId || !q.trim()) return;
+    void globalSearch(currentOrgId, q).then(setHits).catch(() => {});
+  });
 
   const icon = useMemo(
     () => ({

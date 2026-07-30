@@ -7,6 +7,7 @@ import { AllocationPanel, type AllocationRow } from "@/components/haseem/Allocat
 import { createReceipt, checkCredit, type CreditCheckResult, type CreateReceiptInput } from "@/lib/accounting/receipts";
 import { listOpenDocuments } from "@/lib/accounting/settlement";
 import { toast } from "sonner";
+import { useCollectionChangedListener } from "@/lib/db/collection-events";
 
 export const Route = createFileRoute("/cash/receipts")({
   head: () => ({
@@ -50,6 +51,7 @@ function ReceiptsPage() {
   };
 
   useEffect(() => { refresh(); }, [currentOrgId]);
+  useCollectionChangedListener(["customers"], refresh);
 
   const partyName = (id: string) => parties.find((p) => p.id === id)?.name ?? "—";
 

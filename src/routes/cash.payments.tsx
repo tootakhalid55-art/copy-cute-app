@@ -6,6 +6,7 @@ import { money } from "@/components/haseem/Shell";
 import { AllocationPanel, type AllocationRow } from "@/components/haseem/AllocationPanel";
 import { createPayment } from "@/lib/accounting/receipts";
 import { toast } from "sonner";
+import { useCollectionChangedListener } from "@/lib/db/collection-events";
 
 export const Route = createFileRoute("/cash/payments")({
   head: () => ({
@@ -41,6 +42,7 @@ function PaymentsPage() {
   };
 
   useEffect(() => { refresh(); }, [currentOrgId]);
+  useCollectionChangedListener(["suppliers"], refresh);
   const partyName = (id: string) => parties.find((p) => p.id === id)?.name ?? "—";
 
   return (

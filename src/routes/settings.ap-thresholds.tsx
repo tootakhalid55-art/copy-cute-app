@@ -6,6 +6,7 @@ import { Shell, PageHeader, PrimaryBtn, OutlineBtn, EmptyState } from "@/compone
 import { useOrg } from "@/lib/db/org";
 import { supabase } from "@/integrations/supabase/client";
 import { listThresholds, upsertThreshold, deleteThreshold } from "@/lib/ap/thresholds.functions";
+import { useCollectionChangedListener } from "@/lib/db/collection-events";
 
 export const Route = createFileRoute("/settings/ap-thresholds")({
   head: () => ({ meta: [
@@ -46,6 +47,7 @@ function Page() {
   }, [org?.id, list]);
 
   useEffect(() => { load(); }, [load]);
+  useCollectionChangedListener(["suppliers"], load);
 
   const addRow = () => setRows((r) => [
     { id: "", name: "قاعدة جديدة", min_amount: 0, max_amount: null, party_id: null,
