@@ -164,6 +164,8 @@ export function DocumentForm({
 
   const party = parties.find((p) => p.id === partyId);
   const partyName = party?.name ?? "—";
+  const statusLabel = existing?.status ?? "مسودة";
+  const approvalLabel = existing?.status === "مؤكد" ? "معتمد" : "";
 
   const { currentOrgId } = useOrg();
   const cloudKind = useMemo(() => toDocKind(kind ?? storageKey), [kind, storageKey]);
@@ -340,6 +342,16 @@ export function DocumentForm({
           {subtitle && (
             <p className="text-xs text-[#0f2a1d]/60 mt-1">{subtitle}</p>
           )}
+          <div className="flex flex-wrap gap-2 mt-3">
+            <BadgeChip label={statusLabel} tone="status" />
+            {approvalLabel && <BadgeChip label={approvalLabel} tone="approval" />}
+            {kind === "invoice" && (
+              <BadgeChip label={docTitle.variant === "standard" ? "فاتورة ضريبية" : "فاتورة ضريبية مبسطة"} tone="accent" />
+            )}
+            {kind === "quotation" && <BadgeChip label="عرض سعر" tone="accent" />}
+            {kind === "credit-note" && <BadgeChip label="إشعار دائن" tone="accent" />}
+            {(kind === "purchase-order" || kind === "bill") && <BadgeChip label={kind === "bill" ? "فاتورة مشتريات" : "أمر شراء"} tone="accent" />}
+          </div>
         </div>
         <div className="flex gap-2 flex-wrap items-center">
           <div className="flex items-center gap-1.5 border border-[#eceae2] rounded-lg px-2 py-1 bg-white">
@@ -378,6 +390,49 @@ export function DocumentForm({
             title={!isValid ? validation.join(" · ") : uploading ? "يوجد مرفقات قيد الرفع" : undefined}
           >حفظ واعتماد</PrimaryBtn>
         </div>
+      </div>
+
+      <div className="rounded-xl border border-[#eceae2] bg-white p-5">
+        <div className="flex items-center justify-between gap-3 flex-wrap mb-4">
+          <div>
+            <div className="text-xs text-[#0f2a1d]/60">المعاينة الحية · Live View</div>
+            <div className="font-semibold text-sm mt-1">{docTitle.ar} · {docTitle.en}</div>
+          </div>
+          <div className="flex items-center gap-2 flex-wrap">
+            {usesZatcaQr && qrDataUrl && <BadgeChip label="ZATCA QR" tone="approval" />}
+            {usesVerifyQr && verifyQrDataUrl && <BadgeChip label="Verify QR" tone="status" />}
+            {branding.stamp && <BadgeChip label="ختم معتمد" tone="accent" />}
+          </div>
+        </div>
+        <DocumentLivePreview
+          kind={kind ?? cloudKind}
+          tpl={tpl}
+          org={org}
+          party={party}
+          partyName={partyName}
+          partyLabel={partyLabel}
+          partyAddress={partyAddress}
+          ref_={ref}
+          date={date}
+          dueDate={dueDate}
+          issuedAtIso={issuedAtIso}
+          lines={lines}
+          lineCalcs={lineCalcs}
+          subtotal={subtotal}
+          tax={tax}
+          total={total}
+          notes={notes}
+          terms={notes}
+          originalRef={existing?.reference ?? existing?.originalRef}
+          reason={existing?.reason}
+          usesZatcaQr={usesZatcaQr}
+          qrDataUrl={qrDataUrl}
+          usesVerifyQr={usesVerifyQr}
+          verifyQrDataUrl={verifyQrDataUrl}
+          branding={branding}
+          docTitle={docTitle}
+          currency={CUR}
+        />
       </div>
 
 
@@ -674,111 +729,36 @@ export function DocumentForm({
                 </button>
               </div>
             </div>
-            <div className="p-8 text-sm print:p-0">
-              <div
-                className="flex justify-between items-start pb-4 mb-5"
-                style={{ borderBottom: `3px solid ${tpl.accent}` }}
-              >
-                <div>
-                  {branding.logo && <img src={branding.logo} alt="logo" className="max-h-16 mb-2 object-contain" />}
-                  <h1 className="text-xl font-bold m-0" style={{ color: tpl.accent }}>{org.name}</h1>
-                  <p className="text-xs text-[#0f2a1d]/70 mt-1">الرقم الضريبي · VAT No.: {org.taxNumber}</p>
-                  <p className="text-xs text-[#0f2a1d]/70">{org.address || "المملكة العربية السعودية"}</p>
-                  {org.address && <p className="text-xs text-[#0f2a1d]/70">المملكة العربية السعودية · Kingdom of Saudi Arabia</p>}
-                </div>
-                <div className="text-left">
-                  <span
-                    className="inline-block mb-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide"
-                    style={{ background: tpl.soft, color: tpl.accent }}
-                  >
-                    {docTitle.en}
-                  </span>
-                  <h2 className="text-lg font-bold m-0" style={{ color: tpl.accent }}>{docTitle.ar}</h2>
-                  <span
-                    className="inline-block mt-1 px-3 py-1 rounded text-xs"
-                    style={{ background: tpl.accent, color: tpl.onAccent }}
-                  >
-                    {ref}
-                  </span>
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4 mb-5">
-                <div className="border border-[#eceae2] rounded-lg p-3" style={{ background: tpl.soft }}>
-                  <div className="text-[11px] text-[#0f2a1d]/60 font-semibold mb-1">
-                    {partyLabel} · Bill To
-                    {docTitle.variant === "simplified" && <span className="font-normal"> (اختياري · optional)</span>}
-                  </div>
-                  <div className="font-semibold">{partyName}</div>
-                  {party?.taxNumber && <div className="text-xs text-[#0f2a1d]/70">الرقم الضريبي · VAT No.: {party.taxNumber}</div>}
-                  {docTitle.variant !== "simplified" && partyAddress && <div className="text-xs text-[#0f2a1d]/70">العنوان · Address: {partyAddress}</div>}
-                  {party?.phone && <div className="text-xs text-[#0f2a1d]/70">الجوال · Phone: {party.phone}</div>}
-                  {docTitle.variant !== "simplified" && party?.email && <div className="text-xs text-[#0f2a1d]/70">البريد · Email: {party.email}</div>}
-                </div>
-                <div className="border border-[#eceae2] rounded-lg p-3" style={{ background: tpl.soft }}>
-                  <div className="text-[11px] text-[#0f2a1d]/60 font-semibold mb-1">بيانات المستند · Document Info</div>
-                  <div className="text-xs">رقم المستند · No.: <strong>{ref}</strong></div>
-                  <div className="text-xs">التاريخ · Date: <strong>{date}</strong></div>
-                  <div className="text-xs">وقت الإصدار · Timestamp: <strong dir="ltr" className="inline-block">{formatTimestamp(issuedAtIso)}</strong></div>
-                  <div className="text-xs">الاستحقاق · Due: <strong>{dueDate}</strong></div>
-                </div>
-              </div>
-
-              <table className="w-full border-collapse text-xs mb-4">
-                <thead>
-                  <tr style={{ background: tpl.accent, color: tpl.onAccent }}>
-                    <th className="p-2 text-right" style={{ border: `1px solid ${tpl.accent}` }}>#</th>
-                    <th className="p-2 text-right" style={{ border: `1px solid ${tpl.accent}` }}>الوصف<span className="opacity-60 font-normal"> · Description</span></th>
-                    <th className="p-2 text-right" style={{ border: `1px solid ${tpl.accent}` }}>الكمية<span className="opacity-60 font-normal"> · Qty</span></th>
-                    <th className="p-2 text-right" style={{ border: `1px solid ${tpl.accent}` }}>السعر<span className="opacity-60 font-normal"> · Unit</span></th>
-                    <th className="p-2 text-right" style={{ border: `1px solid ${tpl.accent}` }}>الخصم<span className="opacity-60 font-normal"> · Disc.</span></th>
-                    <th className="p-2 text-right" style={{ border: `1px solid ${tpl.accent}` }}>الوعاء<span className="opacity-60 font-normal"> · Taxable</span></th>
-                    <th className="p-2 text-right" style={{ border: `1px solid ${tpl.accent}` }}>الضريبة<span className="opacity-60 font-normal"> · VAT</span></th>
-                    <th className="p-2 text-right" style={{ border: `1px solid ${tpl.accent}` }}>الإجمالي<span className="opacity-60 font-normal"> · Total</span></th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {lines.map((l, i) => (
-                    <tr key={i} style={i % 2 ? { background: tpl.soft } : undefined}>
-                      <td className="border border-[#d4d0c4] p-2">{i + 1}</td>
-                      <td className="border border-[#d4d0c4] p-2">{l.description || "—"}</td>
-                      <td className="border border-[#d4d0c4] p-2">{l.qty}</td>
-                      <td className="border border-[#d4d0c4] p-2 tabular-nums">{fmt(l.price)}</td>
-                      <td className="border border-[#d4d0c4] p-2 tabular-nums">{fmt(Number((l as any).discount ?? 0))}</td>
-                      <td className="border border-[#d4d0c4] p-2 tabular-nums">{fmt(lineCalcs[i].net)}</td>
-                      <td className="border border-[#d4d0c4] p-2 tabular-nums">{fmt(lineCalcs[i].taxAmt)} <span className="opacity-60">({l.tax}%)</span></td>
-                      <td className="border border-[#d4d0c4] p-2 tabular-nums">{fmt(lineCalcs[i].gross)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-              <div className="grid grid-cols-[160px_1fr_240px] gap-4 items-start">
-                <div className="text-center">
-                  {usesZatcaQr && qrDataUrl && <img src={qrDataUrl} alt="ZATCA QR" className="border border-[#eceae2] p-1.5 rounded bg-white mx-auto" width={140} height={140} />}
-                  {usesVerifyQr && verifyQrDataUrl && <img src={verifyQrDataUrl} alt="Document Verify QR" className="border border-[#eceae2] p-1.5 rounded bg-white mx-auto" width={140} height={140} />}
-                  <div className="text-[10px] text-[#0f2a1d]/60 mt-1">
-                    {usesZatcaQr ? "رمز الفاتورة (ZATCA) · QR" : "رمز التحقق من المستند"}
-                  </div>
-                  {branding.stamp && <img src={branding.stamp} alt="stamp" className="max-h-24 mx-auto mt-2 object-contain" />}
-                </div>
-                <div
-                  className="text-xs rounded p-3"
-                  style={{ background: tpl.soft, borderRight: `3px solid ${tpl.accent}` }}
-                >
-                  {notes ? <><strong>ملاحظات · Notes:</strong><br />{notes}</> : <span className="text-[#0f2a1d]/40">لا توجد ملاحظات</span>}
-                </div>
-                <div className="text-sm space-y-1">
-                  <div className="flex justify-between py-1.5 border-b border-[#eceae2]"><span>المجموع الفرعي <span className="text-[10px] opacity-60">· Subtotal</span></span><span className="tabular-nums">{fmt(subtotal)} {CUR}</span></div>
-                  <div className="flex justify-between py-1.5 border-b border-[#eceae2]"><span>ضريبة القيمة المضافة (15%) <span className="text-[10px] opacity-60">· Total VAT</span></span><span className="tabular-nums">{fmt(tax)} {CUR}</span></div>
-                  <div
-                    className="flex justify-between px-3 py-2.5 rounded font-bold mt-1"
-                    style={{ background: tpl.accent, color: tpl.onAccent }}
-                  >
-                    <span>الإجمالي شامل الضريبة <span className="text-[10px] opacity-80">· Grand Total</span></span><span className="tabular-nums">{fmt(total)} {CUR}</span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="text-center text-[11px] text-[#0f2a1d]/50 mt-6 pt-3 border-t border-[#eceae2]">شكراً لتعاملكم معنا · {org.name}</div>
+              <div className="p-8 text-sm print:p-0">
+              <DocumentLivePreview
+                kind={kind ?? cloudKind}
+                tpl={tpl}
+                org={org}
+                party={party}
+                partyName={partyName}
+                partyLabel={partyLabel}
+                partyAddress={partyAddress}
+                ref_={ref}
+                date={date}
+                dueDate={dueDate}
+                issuedAtIso={issuedAtIso}
+                lines={lines}
+                lineCalcs={lineCalcs}
+                subtotal={subtotal}
+                tax={tax}
+                total={total}
+                notes={notes}
+                terms={notes}
+                originalRef={existing?.reference ?? existing?.originalRef}
+                reason={existing?.reason}
+                usesZatcaQr={usesZatcaQr}
+                qrDataUrl={qrDataUrl}
+                usesVerifyQr={usesVerifyQr}
+                verifyQrDataUrl={verifyQrDataUrl}
+                branding={branding}
+                docTitle={docTitle}
+                currency={CUR}
+              />
             </div>
           </div>
         </div>
@@ -1076,6 +1056,271 @@ export function DocumentForm({
         />
       </div>
     </Shell>
+  );
+}
+
+function BadgeChip({ label, tone }: { label: string; tone: "status" | "approval" | "accent" }) {
+  const cls =
+    tone === "status"
+      ? "bg-[#f2f0e8] text-[#0f2a1d]/75 border-[#eceae2]"
+      : tone === "approval"
+        ? "bg-[#ecfdf5] text-[#0f6b3a] border-[#bbf7d0]"
+        : "bg-[#f3f9fe] text-[#1b6ea8] border-[#dbeafe]";
+  return <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-semibold border ${cls}`}>{label}</span>;
+}
+
+function DocumentLivePreview({
+  kind,
+  tpl,
+  org,
+  party,
+  partyName,
+  partyLabel,
+  partyAddress,
+  ref_,
+  date,
+  dueDate,
+  issuedAtIso,
+  lines,
+  lineCalcs,
+  subtotal,
+  tax,
+  total,
+  notes,
+  terms,
+  originalRef,
+  reason,
+  usesZatcaQr,
+  qrDataUrl,
+  usesVerifyQr,
+  verifyQrDataUrl,
+  branding,
+  docTitle,
+  currency,
+}: any) {
+  if (kind === "quotation") {
+    return <QuotationPreview {...{ tpl, org, party, partyName, partyLabel, ref_, date, dueDate, issuedAtIso, lines, lineCalcs, subtotal, tax, total, notes, terms, branding, qrDataUrl, usesVerifyQr, verifyQrDataUrl, currency }} />;
+  }
+  if (kind === "credit-note") {
+    return <CreditNotePreview {...{ tpl, org, party, partyName, partyLabel, ref_, date, issuedAtIso, lines, lineCalcs, subtotal, tax, total, notes, originalRef, reason, branding, qrDataUrl, usesZatcaQr, currency }} />;
+  }
+  if (kind === "purchase-order" || kind === "bill") {
+    return <PurchasePreview {...{ tpl, org, party, partyName, partyLabel, ref_, date, dueDate, issuedAtIso, lines, lineCalcs, subtotal, tax, total, notes, branding, qrDataUrl, usesVerifyQr, verifyQrDataUrl, currency, kind }} />;
+  }
+  return <InvoicePreview {...{ tpl, org, party, partyName, partyLabel, partyAddress, ref_, date, dueDate, issuedAtIso, lines, lineCalcs, subtotal, tax, total, notes, branding, qrDataUrl, usesZatcaQr, docTitle, currency }} />;
+}
+
+function InvoicePreview(props: any) {
+  const { tpl, org, party, partyName, partyLabel, partyAddress, ref_, date, dueDate, issuedAtIso, lines, lineCalcs, subtotal, tax, total, notes, branding, qrDataUrl, usesZatcaQr, docTitle, currency } = props;
+  return (
+    <div className="grid gap-4 lg:grid-cols-[1.3fr_0.9fr]">
+      <div className="rounded-xl border border-[#eceae2] p-4" style={{ background: tpl.soft }}>
+        <div className="flex items-start justify-between gap-3 pb-3 mb-4 border-b border-[#eceae2]">
+          <div>
+            <div className="font-bold text-base" style={{ color: tpl.accent }}>{org.name}</div>
+            <div className="text-[11px] text-[#0f2a1d]/60">الرقم الضريبي · TRN: {org.taxNumber}</div>
+            <div className="text-[11px] text-[#0f2a1d]/60">{org.address || "المملكة العربية السعودية"}</div>
+          </div>
+          <div className="text-left">
+            <div className="font-bold text-base" style={{ color: tpl.accent }}>{docTitle.ar}</div>
+            <div className="text-[11px] text-[#0f2a1d]/60">{docTitle.en}</div>
+            <span className="inline-block mt-1 px-2.5 py-1 rounded text-xs" style={{ background: tpl.accent, color: tpl.onAccent }}>{ref_}</span>
+          </div>
+        </div>
+        <div className="grid grid-cols-2 gap-3 mb-4 text-xs">
+          <div className="rounded-lg border border-[#eceae2] bg-white p-3">
+            <div className="text-[#0f2a1d]/60 mb-1">العميل</div>
+            <div className="font-semibold">{partyName}</div>
+            {party?.taxNumber && <div className="text-[#0f2a1d]/70">TRN: {party.taxNumber}</div>}
+            {partyAddress && <div className="text-[#0f2a1d]/70">{partyAddress}</div>}
+          </div>
+          <div className="rounded-lg border border-[#eceae2] bg-white p-3">
+            <div className="text-[#0f2a1d]/60 mb-1">بيانات المستند</div>
+            <div>التاريخ: <strong>{date}</strong></div>
+            <div>الاستحقاق: <strong>{dueDate || "—"}</strong></div>
+            <div>وقت الإصدار: <strong dir="ltr" className="inline-block">{formatTimestamp(issuedAtIso)}</strong></div>
+          </div>
+        </div>
+        <div className="overflow-hidden rounded-lg border border-[#eceae2] bg-white">
+          <table className="w-full text-xs border-collapse">
+            <thead>
+              <tr style={{ background: tpl.accent, color: tpl.onAccent }}>
+                <th className="p-2 text-right">#</th>
+                <th className="p-2 text-right">الوصف · Description</th>
+                <th className="p-2 text-right">الكمية</th>
+                <th className="p-2 text-right">السعر</th>
+                <th className="p-2 text-right">الوعاء</th>
+                <th className="p-2 text-right">VAT 15%</th>
+                <th className="p-2 text-right">الإجمالي</th>
+              </tr>
+            </thead>
+            <tbody>
+              {lines.map((l: any, i: number) => (
+                <tr key={i} className={i % 2 ? "bg-[#faf9f4]" : ""}>
+                  <td className="border border-[#d4d0c4] p-2">{i + 1}</td>
+                  <td className="border border-[#d4d0c4] p-2">{l.description || "—"}</td>
+                  <td className="border border-[#d4d0c4] p-2">{l.qty}</td>
+                  <td className="border border-[#d4d0c4] p-2 tabular-nums">{fmt(l.price)}</td>
+                  <td className="border border-[#d4d0c4] p-2 tabular-nums">{fmt(lineCalcs[i].net)}</td>
+                  <td className="border border-[#d4d0c4] p-2 tabular-nums">{fmt(lineCalcs[i].taxAmt)}</td>
+                  <td className="border border-[#d4d0c4] p-2 tabular-nums">{fmt(lineCalcs[i].gross)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div className="space-y-3">
+        <div className="rounded-xl border border-[#eceae2] p-4 bg-white">
+          <div className="text-xs font-semibold text-[#0f2a1d]/60 mb-2">QR / الضريبة</div>
+          <div className="flex items-center justify-center min-h-[180px] rounded-lg border border-dashed border-[#eceae2] bg-[#faf9f4] p-4">
+            {usesZatcaQr && qrDataUrl ? <img src={qrDataUrl} alt="ZATCA QR" className="max-w-[150px]" /> : <div className="text-center text-xs text-[#0f2a1d]/50">QR Placeholder</div>}
+          </div>
+          <div className="text-[11px] text-[#0f2a1d]/60 mt-2 text-center">رمز الفاتورة (ZATCA)</div>
+          {branding.stamp && <img src={branding.stamp} alt="stamp" className="max-h-24 mx-auto mt-3 object-contain" />}
+        </div>
+        <div className="rounded-xl border border-[#eceae2] p-4 bg-white">
+          <div className="text-xs font-semibold text-[#0f2a1d]/60 mb-2">الملخص</div>
+          <div className="space-y-1 text-sm">
+            <div className="flex justify-between border-b border-[#eceae2] pb-1"><span>المجموع الفرعي</span><span className="tabular-nums">{fmt(subtotal)} {currency}</span></div>
+            <div className="flex justify-between border-b border-[#eceae2] pb-1"><span>الضريبة 15%</span><span className="tabular-nums">{fmt(tax)} {currency}</span></div>
+            <div className="flex justify-between rounded px-3 py-2 font-bold" style={{ background: tpl.accent, color: tpl.onAccent }}><span>الإجمالي</span><span className="tabular-nums">{fmt(total)} {currency}</span></div>
+          </div>
+        </div>
+        <div className="rounded-xl border border-[#eceae2] p-4 bg-white text-xs">
+          <div className="font-semibold text-[#0f2a1d]/60 mb-2">ملاحظات</div>
+          <div>{notes || "لا توجد ملاحظات"}</div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function QuotationPreview(props: any) {
+  const { tpl, org, partyName, partyLabel, ref_, date, dueDate, lines, lineCalcs, subtotal, tax, total, notes, terms, branding, qrDataUrl, usesVerifyQr, verifyQrDataUrl, currency } = props;
+  return (
+    <div className="grid gap-4 lg:grid-cols-[1.2fr_0.8fr]">
+      <div className="rounded-xl border border-[#eceae2] p-4" style={{ background: tpl.soft }}>
+        <div className="flex justify-between items-start pb-3 mb-4 border-b border-[#eceae2]">
+          <div><div className="font-bold" style={{ color: tpl.accent }}>{org.name}</div><div className="text-[11px] text-[#0f2a1d]/60">عرض سعر · Quotation</div></div>
+          <div className="text-left"><div className="font-bold" style={{ color: tpl.accent }}>عرض سعر</div><span className="inline-block mt-1 px-2.5 py-1 rounded text-xs" style={{ background: tpl.accent, color: tpl.onAccent }}>{ref_}</span></div>
+        </div>
+        <div className="grid grid-cols-2 gap-3 mb-4 text-xs">
+          <div className="rounded-lg border border-[#eceae2] bg-white p-3"><div className="text-[#0f2a1d]/60 mb-1">العميل</div><div className="font-semibold">{partyName}</div><div className="text-[#0f2a1d]/70">{partyLabel}</div></div>
+          <div className="rounded-lg border border-[#eceae2] bg-white p-3"><div className="text-[#0f2a1d]/60 mb-1">المدد</div><div>التاريخ: <strong>{date}</strong></div><div>الصلاحية: <strong>{dueDate || "—"}</strong></div></div>
+        </div>
+        <div className="rounded-lg border border-[#eceae2] bg-white p-3 text-xs mb-4">
+          <div className="font-semibold mb-1 text-[#0f2a1d]/60">الشروط</div>
+          <div>{terms || notes || "—"}</div>
+        </div>
+        <div className="overflow-hidden rounded-lg border border-[#eceae2] bg-white">
+          <table className="w-full text-xs border-collapse">
+            <thead><tr style={{ background: tpl.accent, color: tpl.onAccent }}><th className="p-2 text-right">#</th><th className="p-2 text-right">الوصف</th><th className="p-2 text-right">الكمية</th><th className="p-2 text-right">السعر</th><th className="p-2 text-right">الإجمالي</th></tr></thead>
+            <tbody>{lines.map((l: any, i: number) => <tr key={i}><td className="border border-[#d4d0c4] p-2">{i + 1}</td><td className="border border-[#d4d0c4] p-2">{l.description || "—"}</td><td className="border border-[#d4d0c4] p-2">{l.qty}</td><td className="border border-[#d4d0c4] p-2 tabular-nums">{fmt(l.price)}</td><td className="border border-[#d4d0c4] p-2 tabular-nums">{fmt(lineCalcs[i].gross)}</td></tr>)}</tbody>
+          </table>
+        </div>
+      </div>
+      <div className="space-y-3">
+        <div className="rounded-xl border border-[#eceae2] p-4 bg-white">
+          <div className="text-xs font-semibold text-[#0f2a1d]/60 mb-2">المراجعة</div>
+          <div className="flex items-center justify-center min-h-[180px] rounded-lg border border-dashed border-[#eceae2] bg-[#faf9f4] p-4">
+            {usesVerifyQr && verifyQrDataUrl ? <img src={verifyQrDataUrl} alt="verify QR" className="max-w-[150px]" /> : <div className="text-center text-xs text-[#0f2a1d]/50">Verification QR</div>}
+          </div>
+          {branding.stamp && <img src={branding.stamp} alt="stamp" className="max-h-24 mx-auto mt-3 object-contain" />}
+        </div>
+        <div className="rounded-xl border border-[#eceae2] p-4 bg-white text-sm">
+          <div className="flex justify-between border-b border-[#eceae2] pb-1"><span>المجموع الفرعي</span><span className="tabular-nums">{fmt(subtotal)} {currency}</span></div>
+          <div className="flex justify-between border-b border-[#eceae2] pb-1 mt-1"><span>الضريبة</span><span className="tabular-nums">{fmt(tax)} {currency}</span></div>
+          <div className="flex justify-between rounded px-3 py-2 font-bold mt-2" style={{ background: tpl.accent, color: tpl.onAccent }}><span>الإجمالي</span><span className="tabular-nums">{fmt(total)} {currency}</span></div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function CreditNotePreview(props: any) {
+  const { tpl, org, partyName, ref_, date, lines, lineCalcs, subtotal, tax, total, notes, originalRef, reason, branding, qrDataUrl, usesZatcaQr, currency } = props;
+  return (
+    <div className="grid gap-4 lg:grid-cols-[1.2fr_0.8fr]">
+      <div className="rounded-xl border border-[#eceae2] p-4" style={{ background: tpl.soft }}>
+        <div className="flex justify-between items-start pb-3 mb-4 border-b border-[#eceae2]">
+          <div><div className="font-bold" style={{ color: tpl.accent }}>{org.name}</div><div className="text-[11px] text-[#0f2a1d]/60">إشعار دائن</div></div>
+          <div className="text-left"><div className="font-bold" style={{ color: tpl.accent }}>إشعار دائن</div><span className="inline-block mt-1 px-2.5 py-1 rounded text-xs" style={{ background: tpl.accent, color: tpl.onAccent }}>{ref_}</span></div>
+        </div>
+        <div className="grid grid-cols-2 gap-3 mb-4 text-xs">
+          <div className="rounded-lg border border-[#eceae2] bg-white p-3"><div className="text-[#0f2a1d]/60 mb-1">الطرف</div><div className="font-semibold">{partyName}</div></div>
+          <div className="rounded-lg border border-[#eceae2] bg-white p-3"><div className="text-[#0f2a1d]/60 mb-1">التاريخ</div><div>{date}</div></div>
+        </div>
+        <div className="rounded-lg border border-[#eceae2] bg-white p-3 mb-4 text-xs">
+          <div className="font-semibold text-[#0f2a1d]/60 mb-1">المرجع الأصلي</div>
+          <div>{originalRef || "—"}</div>
+          <div className="font-semibold text-[#0f2a1d]/60 mt-3 mb-1">سبب التعديل</div>
+          <div>{reason || notes || "—"}</div>
+        </div>
+        <div className="overflow-hidden rounded-lg border border-[#eceae2] bg-white">
+          <table className="w-full text-xs border-collapse">
+            <thead><tr style={{ background: tpl.accent, color: tpl.onAccent }}><th className="p-2 text-right">#</th><th className="p-2 text-right">الوصف</th><th className="p-2 text-right">الكمية</th><th className="p-2 text-right">السعر</th><th className="p-2 text-right">الإجمالي</th></tr></thead>
+            <tbody>{lines.map((l: any, i: number) => <tr key={i}><td className="border border-[#d4d0c4] p-2">{i + 1}</td><td className="border border-[#d4d0c4] p-2">{l.description || "—"}</td><td className="border border-[#d4d0c4] p-2">{l.qty}</td><td className="border border-[#d4d0c4] p-2 tabular-nums">{fmt(l.price)}</td><td className="border border-[#d4d0c4] p-2 tabular-nums">{fmt(lineCalcs[i].gross)}</td></tr>)}</tbody>
+          </table>
+        </div>
+      </div>
+      <div className="space-y-3">
+        <div className="rounded-xl border border-[#eceae2] p-4 bg-white">
+          <div className="text-xs font-semibold text-[#0f2a1d]/60 mb-2">التحقق</div>
+          <div className="flex items-center justify-center min-h-[180px] rounded-lg border border-dashed border-[#eceae2] bg-[#faf9f4] p-4">
+            {usesZatcaQr && qrDataUrl ? <img src={qrDataUrl} alt="ZATCA QR" className="max-w-[150px]" /> : <div className="text-center text-xs text-[#0f2a1d]/50">QR Placeholder</div>}
+          </div>
+          {branding.stamp && <img src={branding.stamp} alt="stamp" className="max-h-24 mx-auto mt-3 object-contain" />}
+        </div>
+        <div className="rounded-xl border border-[#eceae2] p-4 bg-white text-sm">
+          <div className="flex justify-between border-b border-[#eceae2] pb-1"><span>المجموع الفرعي</span><span className="tabular-nums">{fmt(subtotal)} {currency}</span></div>
+          <div className="flex justify-between border-b border-[#eceae2] pb-1 mt-1"><span>الضريبة</span><span className="tabular-nums">{fmt(tax)} {currency}</span></div>
+          <div className="flex justify-between rounded px-3 py-2 font-bold mt-2" style={{ background: tpl.accent, color: tpl.onAccent }}><span>الإجمالي</span><span className="tabular-nums">{fmt(total)} {currency}</span></div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function PurchasePreview(props: any) {
+  const { tpl, org, partyName, partyLabel, ref_, date, dueDate, lines, lineCalcs, subtotal, tax, total, notes, branding, verifyQrDataUrl, usesVerifyQr, kind, currency } = props;
+  return (
+    <div className="grid gap-4 lg:grid-cols-[1.25fr_0.75fr]">
+      <div className="rounded-xl border border-[#eceae2] p-4" style={{ background: tpl.soft }}>
+        <div className="flex justify-between items-start pb-3 mb-4 border-b border-[#eceae2]">
+          <div><div className="font-bold" style={{ color: tpl.accent }}>{org.name}</div><div className="text-[11px] text-[#0f2a1d]/60">{kind === "bill" ? "فاتورة مشتريات" : "أمر شراء"}</div></div>
+          <div className="text-left"><div className="font-bold" style={{ color: tpl.accent }}>{kind === "bill" ? "فاتورة مشتريات" : "أمر شراء"}</div><span className="inline-block mt-1 px-2.5 py-1 rounded text-xs" style={{ background: tpl.accent, color: tpl.onAccent }}>{ref_}</span></div>
+        </div>
+        <div className="grid grid-cols-2 gap-3 mb-4 text-xs">
+          <div className="rounded-lg border border-[#eceae2] bg-white p-3"><div className="text-[#0f2a1d]/60 mb-1">{partyLabel || "المورد"}</div><div className="font-semibold">{partyName}</div></div>
+          <div className="rounded-lg border border-[#eceae2] bg-white p-3"><div className="text-[#0f2a1d]/60 mb-1">المدد</div><div>التاريخ: <strong>{date}</strong></div><div>الاستحقاق: <strong>{dueDate || "—"}</strong></div></div>
+        </div>
+        <div className="rounded-lg border border-[#eceae2] bg-white p-3 mb-4 text-xs">
+          <div className="font-semibold text-[#0f2a1d]/60 mb-1">ملاحظات / مرجع المورد</div>
+          <div>{notes || "—"}</div>
+        </div>
+        <div className="overflow-hidden rounded-lg border border-[#eceae2] bg-white">
+          <table className="w-full text-xs border-collapse">
+            <thead><tr style={{ background: tpl.accent, color: tpl.onAccent }}><th className="p-2 text-right">#</th><th className="p-2 text-right">الوصف</th><th className="p-2 text-right">الكمية</th><th className="p-2 text-right">السعر</th><th className="p-2 text-right">الإجمالي</th></tr></thead>
+            <tbody>{lines.map((l: any, i: number) => <tr key={i}><td className="border border-[#d4d0c4] p-2">{i + 1}</td><td className="border border-[#d4d0c4] p-2">{l.description || "—"}</td><td className="border border-[#d4d0c4] p-2">{l.qty}</td><td className="border border-[#d4d0c4] p-2 tabular-nums">{fmt(l.price)}</td><td className="border border-[#d4d0c4] p-2 tabular-nums">{fmt(lineCalcs[i].gross)}</td></tr>)}</tbody>
+          </table>
+        </div>
+      </div>
+      <div className="space-y-3">
+        <div className="rounded-xl border border-[#eceae2] p-4 bg-white">
+          <div className="text-xs font-semibold text-[#0f2a1d]/60 mb-2">الاعتماد</div>
+          <div className="flex items-center justify-center min-h-[180px] rounded-lg border border-dashed border-[#eceae2] bg-[#faf9f4] p-4">
+            {usesVerifyQr && verifyQrDataUrl ? <img src={verifyQrDataUrl} alt="verify QR" className="max-w-[150px]" /> : <div className="text-center text-xs text-[#0f2a1d]/50">Verification QR</div>}
+          </div>
+          {branding.stamp && <img src={branding.stamp} alt="stamp" className="max-h-24 mx-auto mt-3 object-contain" />}
+        </div>
+        <div className="rounded-xl border border-[#eceae2] p-4 bg-white text-sm">
+          <div className="flex justify-between border-b border-[#eceae2] pb-1"><span>المجموع الفرعي</span><span className="tabular-nums">{fmt(subtotal)} {currency}</span></div>
+          <div className="flex justify-between border-b border-[#eceae2] pb-1 mt-1"><span>الضريبة</span><span className="tabular-nums">{fmt(tax)} {currency}</span></div>
+          <div className="flex justify-between rounded px-3 py-2 font-bold mt-2" style={{ background: tpl.accent, color: tpl.onAccent }}><span>الإجمالي</span><span className="tabular-nums">{fmt(total)} {currency}</span></div>
+        </div>
+      </div>
+    </div>
   );
 }
 
