@@ -586,9 +586,11 @@ export function DocumentForm({
               <p>المملكة العربية السعودية</p>
             </div>
             <div className="doc-title">
-              <h2>{title}</h2>
+              <h2>{docTitle.ar}</h2>
+              <div style={{ fontSize: 11, opacity: 0.6 }}>{docTitle.en}</div>
               <span className="ref">{ref}</span>
             </div>
+
           </div>
           <div className="parties">
             <div className="card">
