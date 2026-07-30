@@ -65,6 +65,69 @@ function TestDataPage() {
 
   const setC = (k: keyof Counts, v: number) => setCounts((c) => ({ ...c, [k]: Math.max(0, v) }));
 
+  async function closedBetaSeed() {
+    if (!currentOrgId || !user) return alert("لا توجد منشأة");
+    if (!confirm("سيتم إنشاء بيانات Closed Beta الخفيفة للمنشأة الحالية. متابعة؟")) return;
+    setRunning(true);
+    cancelRef.current = false;
+    setLog([]);
+    setPerf([]);
+    const tag = `CB-${Date.now().toString(36)}`;
+    push(`بدء Closed Beta Seed — علامة: ${tag}`);
+    try {
+      const coaRows = [
+        { code: "1101", name: "Cash on Hand", type: "أصول", subtype: "أصول متداولة", opening_balance: 0 },
+        { code: "1102", name: "Bank", type: "أصول", subtype: "أصول متداولة", opening_balance: 0 },
+        { code: "1201", name: "Accounts Receivable", type: "أصول", subtype: "أصول متداولة", opening_balance: 0 },
+        { code: "2101", name: "Accounts Payable", type: "التزامات", subtype: "التزامات متداولة", opening_balance: 0 },
+        { code: "2201", name: "VAT Payable", type: "التزامات", subtype: "التزامات متداولة", opening_balance: 0 },
+        { code: "4101", name: "Sales Revenue", type: "إيرادات", subtype: "إيرادات تشغيلية", opening_balance: 0 },
+        { code: "5101", name: "Cost of Sales", type: "مصروفات", subtype: "تكلفة المبيعات", opening_balance: 0 },
+        { code: "6401", name: "General Expenses", type: "مصروفات", subtype: "مصروفات تشغيلية", opening_balance: 0 },
+      ].map((r) => ({ org_id: currentOrgId, currency: "SAR", is_active: true, ...r }));
+      const { error: coaErr } = await supabase.from("chart_of_accounts").upsert(coaRows, { onConflict: "org_id,code" });
+      if (coaErr) throw coaErr;
+      push("تم تجهيز دليل الحسابات الأساسي");
+
+      const customers = [
+        { name: "Closed Beta Customer 1", code: `CB-CUST-001`, email: "customer1@example.test", phone: "0500000001" },
+        { name: "Closed Beta Customer 2", code: `CB-CUST-002`, email: "customer2@example.test", phone: "0500000002" },
+      ].map((r) => ({
+        org_id: currentOrgId,
+        type: "customer",
+        vat_number: null,
+        opening_balance: 0,
+        currency: "SAR",
+        notes: "Closed Beta seed",
+        meta: { seed: tag, closed_beta: true },
+        ...r,
+      }));
+      const suppliers = [
+        { name: "Closed Beta Supplier 1", code: `CB-SUP-001`, email: "supplier1@example.test", phone: "0550000001" },
+        { name: "Closed Beta Supplier 2", code: `CB-SUP-002`, email: "supplier2@example.test", phone: "0550000002" },
+      ].map((r) => ({
+        org_id: currentOrgId,
+        type: "supplier",
+        vat_number: null,
+        opening_balance: 0,
+        currency: "SAR",
+        notes: "Closed Beta seed",
+        meta: { seed: tag, closed_beta: true },
+        ...r,
+      }));
+      const { error: partyErr } = await supabase.from("parties").upsert([...customers, ...suppliers], { onConflict: "org_id,code" });
+      if (partyErr) throw partyErr;
+      push("تم تجهيز العملاء والموردين التجريبيين");
+
+      setPerf([{ name: "closed beta seed", ms: 0, rows: coaRows.length + customers.length + suppliers.length }]);
+      push("✅ اكتمل Closed Beta Seed");
+    } catch (e: any) {
+      push(`❌ خطأ في Closed Beta Seed: ${e.message}`);
+    } finally {
+      setRunning(false);
+    }
+  }
+
   async function generate() {
     if (!currentOrgId || !user) return alert("لا توجد منشأة");
     if (!confirm(`سيتم إنشاء بيانات كبيرة الحجم في المنشأة الحالية. متابعة؟`)) return;
@@ -345,6 +408,10 @@ function TestDataPage() {
       </div>
 
       <div className="flex flex-wrap gap-2">
+        <button onClick={closedBetaSeed} disabled={running}
+          className="px-4 py-2 rounded-lg bg-emerald-600 text-white disabled:opacity-50">
+          Closed Beta Seed
+        </button>
         <button onClick={generate} disabled={running}
           className="px-4 py-2 rounded-lg bg-primary text-primary-foreground disabled:opacity-50">
           {running ? "جارٍ التوليد..." : "إنشاء البيانات"}
