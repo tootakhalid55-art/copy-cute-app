@@ -191,10 +191,14 @@ export function CrudModule({
           fields={fields}
           initial={editing ?? {}}
           onClose={() => setOpen(false)}
-          onSubmit={(data) => {
-            if (editing) update(editing.id, data);
-            else add(data);
-            setOpen(false);
+          onSubmit={async (data) => {
+            try {
+              if (editing) update(editing.id, data);
+              else await addAsync(data);
+              setOpen(false);
+            } catch (e: any) {
+              alert(`تعذّر الحفظ: ${e?.message ?? e}`);
+            }
           }}
         />
       )}
