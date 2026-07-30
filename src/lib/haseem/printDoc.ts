@@ -178,8 +178,9 @@ export function buildDocHtml(d: PrintDocData): string {
       <div style="max-width:60%">
         ${logoBlock}
         <div style="font-size:19px;font-weight:800;color:${ink};letter-spacing:-.01em">${esc(org.name)}</div>
-        <div style="font-size:11px;color:${muted};margin-top:4px">الرقم الضريبي · ${esc(org.taxNumber)}</div>
-        <div style="font-size:11px;color:${muted}">المملكة العربية السعودية</div>
+        <div style="font-size:11px;color:${muted};margin-top:4px">الرقم الضريبي · VAT No. ${esc(org.taxNumber)}</div>
+        <div style="font-size:11px;color:${muted}">${esc(org.address || "المملكة العربية السعودية")}</div>
+        ${org.address ? `<div style="font-size:11px;color:${muted}">المملكة العربية السعودية · Kingdom of Saudi Arabia</div>` : ""}
       </div>
       <div style="text-align:left;min-width:220px">
         <div style="display:inline-block;padding:5px 12px;background:${soft};color:${accent};font-size:10.5px;font-weight:700;border-radius:999px;letter-spacing:.06em;text-transform:uppercase;margin-bottom:10px">${esc(d.titleEn || "Document")}</div>
@@ -190,7 +191,7 @@ export function buildDocHtml(d: PrintDocData): string {
 
     <div style="padding:0 32px 20px">
       <div style="border:1px solid ${line};border-radius:12px;padding:16px 18px;background:#fff">
-        <div style="font-size:9.5px;color:${muted};font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-bottom:8px">${esc(d.partyLabel)}${B ? " · Bill To" : ""}</div>
+        <div style="font-size:9.5px;color:${muted};font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-bottom:8px">${esc(d.partyLabel)}${B ? " · Bill To" : ""}${simplified ? ` <span style="font-weight:400;text-transform:none;opacity:.7">(اختياري · optional)</span>` : ""}</div>
         ${partyBlock}
       </div>
     </div>
@@ -205,14 +206,16 @@ export function buildDocHtml(d: PrintDocData): string {
           <tr style="background:${soft}">
             <th style="padding:11px 8px;text-align:center;width:36px;font-size:9.5px;color:${muted};font-weight:700;letter-spacing:.06em;text-transform:uppercase">#</th>
             <th style="padding:11px 10px;text-align:right;font-size:9.5px;color:${muted};font-weight:700;letter-spacing:.06em;text-transform:uppercase">الوصف${en("Description")}</th>
-            <th style="padding:11px 8px;text-align:center;width:60px;font-size:9.5px;color:${muted};font-weight:700;letter-spacing:.06em;text-transform:uppercase">الكمية${en("Qty")}</th>
-            <th style="padding:11px 8px;text-align:center;width:80px;font-size:9.5px;color:${muted};font-weight:700;letter-spacing:.06em;text-transform:uppercase">السعر${en("Price")}</th>
-            <th style="padding:11px 8px;text-align:center;width:90px;font-size:9.5px;color:${muted};font-weight:700;letter-spacing:.06em;text-transform:uppercase">المبلغ${en("Amount")}</th>
+            <th style="padding:11px 8px;text-align:center;width:56px;font-size:9.5px;color:${muted};font-weight:700;letter-spacing:.06em;text-transform:uppercase">الكمية${en("Qty")}</th>
+            <th style="padding:11px 8px;text-align:center;width:78px;font-size:9.5px;color:${muted};font-weight:700;letter-spacing:.06em;text-transform:uppercase">السعر${en("Unit Price")}</th>
+            <th style="padding:11px 8px;text-align:center;width:70px;font-size:9.5px;color:${muted};font-weight:700;letter-spacing:.06em;text-transform:uppercase">الخصم${en("Discount")}</th>
+            <th style="padding:11px 8px;text-align:center;width:86px;font-size:9.5px;color:${muted};font-weight:700;letter-spacing:.06em;text-transform:uppercase">المبلغ${en("Taxable")}</th>
             <th style="padding:11px 8px;text-align:center;width:95px;font-size:9.5px;color:${muted};font-weight:700;letter-spacing:.06em;text-transform:uppercase">الضريبة${en("VAT")}</th>
-            <th style="padding:11px 10px;text-align:center;width:100px;font-size:9.5px;color:${muted};font-weight:700;letter-spacing:.06em;text-transform:uppercase">الإجمالي${en("Total")}</th>
+            <th style="padding:11px 10px;text-align:center;width:98px;font-size:9.5px;color:${muted};font-weight:700;letter-spacing:.06em;text-transform:uppercase">الإجمالي${en("Line Total")}</th>
           </tr>
         </thead>
-        <tbody>${rows || `<tr><td colspan="7" style="padding:24px;text-align:center;color:#b7bdb2;font-size:11px">لا توجد بنود</td></tr>`}</tbody>
+        <tbody>${rows || `<tr><td colspan="8" style="padding:24px;text-align:center;color:#b7bdb2;font-size:11px">لا توجد بنود</td></tr>`}</tbody>
+
       </table>
     </div>
 
