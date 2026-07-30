@@ -52,6 +52,21 @@ function randomDate(): string {
   return new Date(start + Math.random() * (end - start)).toISOString().slice(0, 10);
 }
 
+const CLOSED_BETA_ITEMS = [
+  { sku: "SRV-CONS-001", name: "Professional Consulting Service", kind: "service", unit: "hour", price: 450, cost: 0, stock: 0 },
+  { sku: "SRV-MNT-001", name: "Annual Maintenance Support", kind: "service", unit: "contract", price: 1800, cost: 0, stock: 0 },
+  { sku: "SRV-SW-001", name: "Accounting Software License", kind: "service", unit: "license", price: 1200, cost: 0, stock: 0 },
+  { sku: "PRD-LAP-001", name: "Business Laptop 14-inch", kind: "product", unit: "piece", price: 3200, cost: 2550, stock: 25 },
+  { sku: "PRD-MON-001", name: "24-inch Monitor", kind: "product", unit: "piece", price: 850, cost: 620, stock: 40 },
+  { sku: "PRD-PAPR-001", name: "Premium A4 Paper Box", kind: "product", unit: "box", price: 48, cost: 28, stock: 200 },
+  { sku: "PRD-INK-001", name: "Printer Ink Cartridge", kind: "product", unit: "piece", price: 165, cost: 110, stock: 75 },
+  { sku: "PRD-CHAIR-001", name: "Office Chair", kind: "product", unit: "piece", price: 725, cost: 480, stock: 30 },
+].map((item) => ({
+  ...item,
+  tax_rate: 15,
+  meta: { category: item.kind === "service" ? "service" : "standard_good", vat_compliant: true, seed: "closed-beta" },
+}));
+
 function TestDataPage() {
   const { currentOrgId } = useOrg();
   const { user } = useAuth();
@@ -119,7 +134,23 @@ function TestDataPage() {
       if (partyErr) throw partyErr;
       push("تم تجهيز العملاء والموردين التجريبيين");
 
-      setPerf([{ name: "closed beta seed", ms: 0, rows: coaRows.length + customers.length + suppliers.length }]);
+      const items = CLOSED_BETA_ITEMS.map((item) => ({
+        org_id: currentOrgId,
+        sku: item.sku,
+        name: item.name,
+        kind: item.kind,
+        unit: item.unit,
+        price: item.price,
+        cost: item.cost,
+        stock: item.stock,
+        tax_rate: item.tax_rate,
+        meta: { ...item.meta, seed: tag },
+      })) as any[];
+      const { error: itemErr } = await supabase.from("items").upsert(items, { onConflict: "org_id,sku" });
+      if (itemErr) throw itemErr;
+      push("تم تجهيز الأصناف والخدمات والبضائع التجريبية");
+
+      setPerf([{ name: "closed beta seed", ms: 0, rows: coaRows.length + customers.length + suppliers.length + items.length }]);
       push("✅ اكتمل Closed Beta Seed");
     } catch (e: any) {
       push(`❌ خطأ في Closed Beta Seed: ${e.message}`);
