@@ -651,11 +651,11 @@ export function DocumentForm({
       </div>
 
       {previewOpen && (
-        <div className="fixed inset-0 z-50 bg-black/50 flex items-start justify-center p-4 overflow-auto" onClick={() => setPreviewOpen(false)}>
-          <div className="bg-white rounded-xl max-w-3xl w-full my-8 overflow-hidden" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center justify-between px-6 py-3 border-b border-[#eceae2] bg-[#fafaf7]">
+        <div className="fixed inset-0 z-50 bg-black/50 flex items-start justify-center p-4 overflow-auto print:static print:bg-white print:p-0 print:overflow-visible" onClick={() => setPreviewOpen(false)}>
+          <div className="bg-white rounded-xl max-w-3xl w-full my-8 overflow-hidden print:my-0 print:max-w-none print:rounded-none" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between px-6 py-3 border-b border-[#eceae2] bg-[#fafaf7] print:hidden">
               <div className="flex items-center gap-3">
-                <h2 className="text-base font-bold">معاينة الفاتورة</h2>
+                <h2 className="text-base font-bold">{docTitle.ar} · {docTitle.en}</h2>
                 <span
                   className="text-[11px] px-2 py-0.5 rounded-full"
                   style={{ background: tpl.soft, color: tpl.accent, border: `1px solid ${tpl.accent}33` }}
@@ -672,7 +672,7 @@ export function DocumentForm({
                 </button>
               </div>
             </div>
-            <div className="p-8 text-sm">
+            <div className="p-8 text-sm print:p-0">
               <div
                 className="flex justify-between items-start pb-4 mb-5"
                 style={{ borderBottom: `3px solid ${tpl.accent}` }}
@@ -680,11 +680,18 @@ export function DocumentForm({
                 <div>
                   {branding.logo && <img src={branding.logo} alt="logo" className="max-h-16 mb-2 object-contain" />}
                   <h1 className="text-xl font-bold m-0" style={{ color: tpl.accent }}>{org.name}</h1>
-                  <p className="text-xs text-[#0f2a1d]/70 mt-1">الرقم الضريبي: {org.taxNumber}</p>
-                  <p className="text-xs text-[#0f2a1d]/70">المملكة العربية السعودية</p>
+                  <p className="text-xs text-[#0f2a1d]/70 mt-1">الرقم الضريبي · VAT No.: {org.taxNumber}</p>
+                  <p className="text-xs text-[#0f2a1d]/70">{org.address || "المملكة العربية السعودية"}</p>
+                  {org.address && <p className="text-xs text-[#0f2a1d]/70">المملكة العربية السعودية · Kingdom of Saudi Arabia</p>}
                 </div>
                 <div className="text-left">
-                  <h2 className="text-lg font-bold m-0" style={{ color: tpl.accent }}>{title}</h2>
+                  <span
+                    className="inline-block mb-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide"
+                    style={{ background: tpl.soft, color: tpl.accent }}
+                  >
+                    {docTitle.en}
+                  </span>
+                  <h2 className="text-lg font-bold m-0" style={{ color: tpl.accent }}>{docTitle.ar}</h2>
                   <span
                     className="inline-block mt-1 px-3 py-1 rounded text-xs"
                     style={{ background: tpl.accent, color: tpl.onAccent }}
@@ -695,18 +702,25 @@ export function DocumentForm({
               </div>
               <div className="grid grid-cols-2 gap-4 mb-5">
                 <div className="border border-[#eceae2] rounded-lg p-3" style={{ background: tpl.soft }}>
-                  <div className="text-[11px] text-[#0f2a1d]/60 font-semibold mb-1">{partyLabel}</div>
+                  <div className="text-[11px] text-[#0f2a1d]/60 font-semibold mb-1">
+                    {partyLabel} · Bill To
+                    {docTitle.variant === "simplified" && <span className="font-normal"> (اختياري · optional)</span>}
+                  </div>
                   <div className="font-semibold">{partyName}</div>
-                  {party?.taxNumber && <div className="text-xs text-[#0f2a1d]/70">الرقم الضريبي: {party.taxNumber}</div>}
-                  {party?.phone && <div className="text-xs text-[#0f2a1d]/70">الجوال: {party.phone}</div>}
-                  {party?.email && <div className="text-xs text-[#0f2a1d]/70">البريد: {party.email}</div>}
+                  {party?.taxNumber && <div className="text-xs text-[#0f2a1d]/70">الرقم الضريبي · VAT No.: {party.taxNumber}</div>}
+                  {docTitle.variant !== "simplified" && partyAddress && <div className="text-xs text-[#0f2a1d]/70">العنوان · Address: {partyAddress}</div>}
+                  {party?.phone && <div className="text-xs text-[#0f2a1d]/70">الجوال · Phone: {party.phone}</div>}
+                  {docTitle.variant !== "simplified" && party?.email && <div className="text-xs text-[#0f2a1d]/70">البريد · Email: {party.email}</div>}
                 </div>
                 <div className="border border-[#eceae2] rounded-lg p-3" style={{ background: tpl.soft }}>
-                  <div className="text-[11px] text-[#0f2a1d]/60 font-semibold mb-1">بيانات المستند</div>
-                  <div className="text-xs">التاريخ: <strong>{date}</strong></div>
-                  <div className="text-xs">الاستحقاق: <strong>{dueDate}</strong></div>
+                  <div className="text-[11px] text-[#0f2a1d]/60 font-semibold mb-1">بيانات المستند · Document Info</div>
+                  <div className="text-xs">رقم المستند · No.: <strong>{ref}</strong></div>
+                  <div className="text-xs">التاريخ · Date: <strong>{date}</strong></div>
+                  <div className="text-xs">وقت الإصدار · Timestamp: <strong dir="ltr" className="inline-block">{formatTimestamp(issuedAtIso)}</strong></div>
+                  <div className="text-xs">الاستحقاق · Due: <strong>{dueDate}</strong></div>
                 </div>
               </div>
+
               <table className="w-full border-collapse text-xs mb-4">
                 <thead>
                   <tr style={{ background: tpl.accent, color: tpl.onAccent }}>
