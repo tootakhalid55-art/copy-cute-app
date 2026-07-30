@@ -12,6 +12,7 @@ import { submitApproval, listApprovals } from "@/lib/ap/workflow.functions";
 import { resolveThreshold } from "@/lib/ap/thresholds.functions";
 import { preprocessImage } from "@/lib/ap/preprocess";
 import { CopilotPanel } from "@/components/haseem/CopilotPanel";
+import { useCollectionChangedListener } from "@/lib/db/collection-events";
 
 export const Route = createFileRoute("/purchases/ap-review")({
   head: () => ({ meta: [
@@ -91,6 +92,7 @@ function ApReviewPage() {
       .subscribe();
     return () => { supabase.removeChannel(ch); };
   }, [org?.id, load]);
+  useCollectionChangedListener(["suppliers"], load);
 
   const upload = useCallback(async (files: FileList | File[]) => {
     if (!org?.id) return;
@@ -323,6 +325,12 @@ function ReviewDrawer({
       setThreshold(t);
     })();
   }, [orgId, intake.id, listAppr, resolve, ex.grandTotal, intake.matched_party_id]);
+  useCollectionChangedListener(["suppliers"], () => {
+    if (!orgId) return;
+    supabase.from("parties").select("id, name, vat_number").eq("org_id", orgId).eq("type", "supplier").order("name").limit(200)
+      .then(({ data }) => setSuppliers((data as any) || []))
+      .catch(() => {});
+  });
 
   const submit = async (decision: "approved" | "rejected" | "commented") => {
     const level = (approvals.filter((a) => a.decision === "approved").length) + 1;
