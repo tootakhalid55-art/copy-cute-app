@@ -63,7 +63,7 @@ function toPartyInsert(input: any, orgId: string, partyType: "customer" | "suppl
     cr_number: cr_number ?? null,
     phone: phone ?? null,
     email: email ?? null,
-    address: address ? { text: String(address) } : null,
+    address: { text: String(address ?? "").trim() || "غير محدد" },
     opening_balance: Number(openingBalance ?? 0) || 0,
     currency: currency ?? "SAR",
     payment_terms_days: Number(payment_terms_days ?? 0) || 0,

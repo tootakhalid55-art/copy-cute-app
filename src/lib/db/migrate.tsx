@@ -69,7 +69,7 @@ export function MigrationGate() {
             vat_number: r.taxNumber ?? null,
             phone: r.phone ?? null,
             email: r.email ?? null,
-            address: r.address ? { text: String(r.address) } : null,
+            address: { text: String(r.address ?? "").trim() || "غير محدد" },
             opening_balance: Number(r.openingBalance ?? 0) || 0,
             currency: r.currency ?? "SAR",
             meta: { imported: true, imported_from: k, legacy_id: r.id ?? null, type: r.type ?? null },
