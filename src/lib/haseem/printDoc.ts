@@ -88,14 +88,17 @@ export function buildDocHtml(d: PrintDocData): string {
   const muted = "#6b7469";
   const line = "#ececec";
 
-  const partyBlock = party
+  const simplified = d.variant === "simplified";
+
+  const partyBlock = party && (party.name || party.taxNumber || party.phone)
     ? `<div style="font-size:14px;font-weight:700;color:${ink};margin-bottom:6px;letter-spacing:.01em">${esc(party.name || "—")}</div>
        <div style="display:grid;gap:3px;font-size:11px;color:${muted}">
-         ${party.taxNumber ? `<div><span style="color:${accent};font-weight:600">الرقم الضريبي · </span>${esc(party.taxNumber)}</div>` : ""}
-         ${party.phone ? `<div><span style="color:${accent};font-weight:600">الجوال · </span>${esc(party.phone)}</div>` : ""}
-         ${party.email ? `<div><span style="color:${accent};font-weight:600">البريد · </span>${esc(party.email)}</div>` : ""}
+         ${party.taxNumber ? `<div><span style="color:${accent};font-weight:600">الرقم الضريبي · VAT No. </span>${esc(party.taxNumber)}</div>` : ""}
+         ${!simplified && party.address ? `<div><span style="color:${accent};font-weight:600">العنوان · Address </span>${esc(party.address)}</div>` : ""}
+         ${party.phone ? `<div><span style="color:${accent};font-weight:600">الجوال · Phone </span>${esc(party.phone)}</div>` : ""}
+         ${!simplified && party.email ? `<div><span style="color:${accent};font-weight:600">البريد · Email </span>${esc(party.email)}</div>` : ""}
        </div>`
-    : `<span style="color:#b7bdb2">—</span>`;
+    : `<span style="color:#b7bdb2">${simplified ? "عميل نقدي · Cash customer" : "—"}</span>`;
 
   const rows = lines
     .map((l, i) => {
@@ -108,6 +111,7 @@ export function buildDocHtml(d: PrintDocData): string {
         </td>
         <td style="${bd};padding:12px 8px;text-align:center;font-variant-numeric:tabular-nums;color:${ink}">${esc(l.qty)}</td>
         <td style="${bd};padding:12px 8px;text-align:center;font-variant-numeric:tabular-nums;color:${ink}">${fmt(l.price)}</td>
+        <td style="${bd};padding:12px 8px;text-align:center;font-variant-numeric:tabular-nums;color:${muted}">${fmt(l.discount ?? 0)}</td>
         <td style="${bd};padding:12px 8px;text-align:center;font-variant-numeric:tabular-nums;color:${muted}">${fmt(c.net)}</td>
         <td style="${bd};padding:12px 8px;text-align:center;font-variant-numeric:tabular-nums;color:${muted}">${fmt(c.taxAmt)} <span style="opacity:.55;font-size:9px">(${esc(l.tax)}%)</span></td>
         <td style="${bd};padding:12px 10px;text-align:center;font-variant-numeric:tabular-nums;color:${ink};font-weight:700">${fmt(c.gross)}</td>
@@ -121,13 +125,17 @@ export function buildDocHtml(d: PrintDocData): string {
       <div style="font-size:12px;color:${ink};font-weight:600;font-variant-numeric:tabular-nums;word-break:break-word">${value || "—"}</div>
     </div>`;
 
+  const stamp = d.issuedAtIso ? formatTs(d.issuedAtIso) : "";
+
   const metaGrid = [
     metaCell("التاريخ", "Date", esc(d.date)),
+    stamp ? metaCell("وقت الإصدار", "Timestamp", `<span style="direction:ltr;display:inline-block">${esc(stamp)}</span>`) : "",
     metaCell(d.expiry ? "الصلاحية" : "الاستحقاق", d.expiry ? "Expiry" : "Due", esc(d.expiry || d.dueDate || "—")),
     d.poNumber ? metaCell("أمر الشراء", "PO No.", esc(d.poNumber)) : "",
     d.reference ? metaCell("المرجع", "Reference", esc(d.reference)) : "",
     d.project ? metaCell("المشروع", "Project", esc(d.project)) : "",
   ].filter(Boolean).join("");
+
 
   const totalsRow = (label: string, enLabel: string, value: string, opts?: { strong?: boolean; dashed?: boolean }) => `
     <div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0;${opts?.dashed === false || opts?.strong ? "" : `border-bottom:1px dashed ${line};`}">
