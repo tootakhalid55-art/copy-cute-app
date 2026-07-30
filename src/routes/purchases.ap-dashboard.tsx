@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrg } from "@/lib/db/org";
 import { Shell } from "@/components/haseem/Shell";
+import { useCollectionChangedListener } from "@/lib/db/collection-events";
 
 export const Route = createFileRoute("/purchases/ap-dashboard")({
   component: ApDashboard,
@@ -76,6 +77,46 @@ function ApDashboard() {
     const t = setInterval(load, 15000);
     return () => clearInterval(t);
   }, [currentOrg?.id]);
+  useCollectionChangedListener(["suppliers"], () => {
+    if (currentOrg?.id) {
+      void (async () => {
+        const { data: m } = await supabase
+          .from("ap_intake_documents")
+          .select("id")
+          .eq("org_id", currentOrg.id);
+        const { data: sup } = await supabase
+          .from("ap_intake_documents")
+          .select("matched_party_id, confidence, processing_time_ms, status")
+          .eq("org_id", currentOrg.id)
+          .not("matched_party_id", "is", null);
+        const agg: Record<string, { n: number; sc: number; st: number; posted: number }> = {};
+        (sup || []).forEach((r: any) => {
+          const k = String(r.matched_party_id);
+          if (!agg[k]) agg[k] = { n: 0, sc: 0, st: 0, posted: 0 };
+          agg[k].n++;
+          agg[k].sc += Number(r.confidence || 0);
+          if (r.processing_time_ms) agg[k].st += r.processing_time_ms;
+          if (r.status === "posted") agg[k].posted++;
+        });
+        setMetrics({
+          queue: (m || []).length,
+          matched: (sup || []).length,
+        } as any);
+        const ids = Object.keys(agg);
+        if (ids.length) {
+          const { data: parties } = await supabase
+            .from("parties").select("id, name").in("id", ids);
+          setBySupplier((parties || []).map((p: any) => ({
+            name: p.name,
+            n: agg[p.id].n,
+            avg_conf: agg[p.id].sc / Math.max(1, agg[p.id].n),
+            avg_ms: agg[p.id].st / Math.max(1, agg[p.id].n),
+            posted: agg[p.id].posted,
+          })).sort((a, b) => b.n - a.n).slice(0, 15));
+        }
+      })();
+    }
+  });
 
   return (
     <Shell>
