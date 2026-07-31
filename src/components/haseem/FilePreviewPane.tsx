@@ -69,6 +69,7 @@ function PdfCanvasViewer({ src, filename }: { src: string; filename?: string }) 
           await page.render({ canvasContext: ctx, viewport, canvas }).promise;
         }
       } catch (e) {
+        console.error("[pdf-preview]", e);
         if (!cancelled) setError(e instanceof Error ? e.message : "تعذر عرض الملف");
       }
     })();
