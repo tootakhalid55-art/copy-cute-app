@@ -249,7 +249,7 @@ export function DocumentForm({
 
   const handlePrint = () => {
     printDoc({
-      kind: cloudKind,
+      kind: printKind,
       title: docTitle.ar,
       titleEn: docTitle.en,
       variant: docTitle.variant,
@@ -261,7 +261,7 @@ export function DocumentForm({
       lines, lineCalcs,
       subtotal, tax, total,
       notes,
-      partyRole: cloudKind === "bill" || cloudKind === "purchase-order" ? "المورد" : "العميل",
+      partyRole: printKind === "bill" || printKind === "purchase-order" ? "المورد" : "العميل",
       currency: CUR,
       qrDataUrl: usesZatcaQr ? qrDataUrl : undefined,
       branding,
