@@ -173,6 +173,15 @@ export function DocumentForm({
 
   const { currentOrgId } = useOrg();
   const cloudKind = useMemo(() => toDocKind(kind ?? storageKey), [kind, storageKey]);
+  // Template/print kind (hyphenated design-system kinds), distinct from the cloud DB kind
+  const printKind: DocKind = useMemo(() => {
+    if (kind) return kind;
+    if (storageKey === "bills") return "bill";
+    if (storageKey === "purchaseOrders") return "purchase-order";
+    if (storageKey === "creditNotes") return "credit-note";
+    if (storageKey === "quotations") return "quotation";
+    return "invoice";
+  }, [kind, storageKey]);
   // Selected invoice template — drives accent color & style variant in preview/print
   const { all: allTemplates, selected: tpl, selectedId, setSelectedId } = useInvoiceTemplates(kind);
   const usesZatcaQr = useMemo(() => ["invoice", "credit-note", "debit-note"].includes(cloudKind), [cloudKind]);
