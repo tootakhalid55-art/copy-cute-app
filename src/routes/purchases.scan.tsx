@@ -458,13 +458,12 @@ function ReviewModal({
               </a>
             </div>
             <div className="flex-1 min-h-0 bg-[#f7f6f0]">
-              {isPdf ? (
-                <iframe src={job.dataUrl} title="pdf" className="w-full h-full min-h-[560px]" />
-              ) : (
-                <div className="h-full overflow-auto bg-white flex items-center justify-center p-3">
-                  <img src={job.dataUrl} alt="" className="max-w-full h-auto shadow-sm rounded" />
-                </div>
-              )}
+              <FilePreviewPane
+                src={job.dataUrl}
+                mime={job.file.type}
+                filename={job.file.name}
+                minHeightClass="min-h-[560px]"
+              />
             </div>
           </div>
 

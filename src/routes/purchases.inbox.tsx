@@ -470,11 +470,13 @@ function ReviewModal({
         </div>
         <div className="flex-1 overflow-auto grid lg:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)] gap-0">
           <div className="bg-[#f7f6f0] p-3 border-e border-[#eceae2] min-h-[300px]">
-            {doc.mime.startsWith("image/") ? (
-              <img src={doc.dataUrl} alt="" className="w-full rounded" />
-            ) : (
-              <iframe src={doc.dataUrl} title="doc" className="w-full h-full min-h-[500px] rounded bg-white" />
-            )}
+            <FilePreviewPane
+              src={doc.dataUrl}
+              mime={doc.mime}
+              filename={doc.filename}
+              minHeightClass="min-h-[500px]"
+              className="rounded"
+            />
           </div>
           <div className="p-4 space-y-3 text-sm">
             {doc.status === "duplicate" && (
