@@ -1,3 +1,4 @@
+import { FilePreviewPane } from "@/components/haseem/FilePreviewPane";
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useCallback, useMemo, useRef, useState, useEffect } from "react";
