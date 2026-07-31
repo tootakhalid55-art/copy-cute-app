@@ -1,3 +1,4 @@
+import { FilePreviewPane } from "@/components/haseem/FilePreviewPane";
 import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -394,13 +395,12 @@ function ReviewDrawer({
               )}
               {originalDataUrl ? (
                 <>
-                  {isPdf ? (
-                    <iframe src={originalDataUrl} title="original-invoice" className="w-full h-full min-h-[580px]" />
-                  ) : (
-                    <div className="h-full overflow-auto bg-white flex items-center justify-center p-3">
-                      <img src={originalDataUrl} alt="" className="max-w-full h-auto shadow-sm rounded" />
-                    </div>
-                  )}
+                  <FilePreviewPane
+                    src={originalDataUrl}
+                    mime={isPdf ? "application/pdf" : undefined}
+                    filename={intake.raw_payload?.filename || "original-invoice"}
+                    minHeightClass="min-h-[580px]"
+                  />
                   {activeBoxes.length > 0 && (
                     <div className="absolute inset-0 pointer-events-none">
                       {activeBoxes.map((box: any, i: number) => {
