@@ -4,8 +4,8 @@ import { Plus, Trash2, Printer, Eye, X, Pencil, Upload, Check } from "lucide-rea
 import QRCode from "qrcode";
 import { Shell, PrimaryBtn, OutlineBtn } from "./Shell";
 import { useCollection, useKV } from "@/lib/haseem/store";
-import { useInvoiceTemplates, type DocKind } from "@/lib/haseem/templates";
-import { makeZatcaQrPayload, printDoc } from "@/lib/haseem/printDoc";
+import { type DocKind, CONTENT_VARIANTS, type ContentVariant, contrastColorFor, tintColorFor } from "@/lib/haseem/templates";
+import { makeZatcaQrPayload, printDoc, DOC_STRUCTURES } from "@/lib/haseem/printDoc";
 import { resolveDocTitle, docTimestamp } from "@/lib/haseem/zatca";
 import { InvoicePreview } from "./InvoicePreview";
 import { QuotationPreview } from "./QuotationPreview";
@@ -16,6 +16,7 @@ import { DocumentSidePanel } from "./DocumentSidePanel";
 import { useOrg } from "@/lib/db/org";
 import { syncDocumentToCloud, toDocKind } from "@/lib/db/document-bridge";
 import { buildVerifyUrl, signDoc } from "@/lib/haseem/docSignature";
+import { listAttachments, getSignedUrl } from "@/lib/db/attachments";
 
 // Read a File as base64 data URL
 function fileToDataURL(f: File): Promise<string> {
@@ -43,7 +44,7 @@ function zatcaTLV(seller: string, vat: string, iso: string, total: string, taxAm
   return typeof btoa !== "undefined" ? btoa(bin) : Buffer.from(bin, "binary").toString("base64");
 }
 
-type Line = { description: string; qty: number; price: number; tax: number };
+type Line = { description: string; qty: number; price: number; tax: number; unit?: string };
 
 export function DocumentForm({
   storageKey,
@@ -92,6 +93,12 @@ export function DocumentForm({
   const [lines, setLines] = useState<Line[]>(
     existing?.lines ?? [{ description: "", qty: 1, price: 0, tax: 15 }]
   );
+  // Progress-billing (مستخلص) fields — only surfaced/used when the selected
+  // template's layoutVariant is "contracting".
+  const [contractValue, setContractValue] = useState<number>(existing?.contractValue ?? 0);
+  const [previousCertified, setPreviousCertified] = useState<number>(existing?.previousCertified ?? 0);
+  const [retentionPct, setRetentionPct] = useState<number>(existing?.retentionPct ?? 10);
+  const [advanceRecoveryPct, setAdvanceRecoveryPct] = useState<number>(existing?.advanceRecoveryPct ?? 0);
   // Hydrate when the record loads asynchronously
   useEffect(() => {
     if (existing) {
@@ -101,6 +108,10 @@ export function DocumentForm({
       setPartyId(existing.partyId ?? "");
       setNotes(existing.notes ?? "");
       setLines(existing.lines ?? [{ description: "", qty: 1, price: 0, tax: 15 }]);
+      setContractValue(existing.contractValue ?? 0);
+      setPreviousCertified(existing.previousCertified ?? 0);
+      setRetentionPct(existing.retentionPct ?? 10);
+      setAdvanceRecoveryPct(existing.advanceRecoveryPct ?? 0);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [docId, existing?.id]);
@@ -182,10 +193,42 @@ export function DocumentForm({
     if (storageKey === "quotations") return "quotation";
     return "invoice";
   }, [kind, storageKey]);
-  // Selected invoice template — drives accent color & style variant in preview/print
-  const { all: allTemplates, selected: tpl, selectedId, setSelectedId } = useInvoiceTemplates(kind);
-  const usesZatcaQr = useMemo(() => ["invoice", "credit-note", "debit-note"].includes(cloudKind), [cloudKind]);
-  const usesVerifyQr = useMemo(() => ["quotation", "purchase-order", "payment_voucher", "receipt_voucher", "journal_voucher", "expense_voucher"].includes(cloudKind), [cloudKind]);
+  // Structure+color engine: every document kind now gets an independent
+  // structural layout (boxed/banner/minimal/corporate/thermal) and a free
+  // color picker, instead of a fixed list of near-identical named templates.
+  const DEFAULT_DOC_COLOR: Record<string, string> = {
+    invoice: "#1b6ea8", quotation: "#0d9488", "credit-note": "#9f1239",
+    "debit-note": "#9f1239", "purchase-order": "#0369a1", bill: "#8a6a3d",
+  };
+  const kindForKV = kind ?? "invoice";
+  const [structureId, setStructureId] = useKV<string>(`doc-structure:${kindForKV}`, "boxed");
+  const structure = structureId as "boxed" | "banner" | "minimal" | "corporate" | "thermal";
+  const [docColor, setDocColor] = useKV<string>(`doc-color:${kindForKV}`, DEFAULT_DOC_COLOR[kindForKV] ?? "#1b6ea8");
+  // Content variant (progress billing / supply / services) only makes sense
+  // where line items represent billable work — invoices and purchase bills.
+  const supportsContentVariant = kind === "invoice" || kind === "bill";
+  const [contentVariant, setContentVariant] = useKV<ContentVariant>(`doc-content-variant:${kindForKV}`, "standard");
+  const tpl = {
+    name: "مخصص",
+    accent: docColor,
+    onAccent: contrastColorFor(docColor),
+    soft: tintColorFor(docColor),
+    layoutVariant: supportsContentVariant && contentVariant !== "standard" ? contentVariant : undefined,
+  };
+  // ZATCA QR is exclusive to sales invoices (usesZatcaQr) and purchase bills
+  // (usesSupplierZatcaQr below) — every other document kind (quotations, POs,
+  // credit/debit notes, vouchers) must never show it.
+  const usesZatcaQr = useMemo(
+    () => ["sales_invoice", "simplified_tax_invoice", "standard_tax_invoice"].includes(cloudKind),
+    [cloudKind],
+  );
+  const usesVerifyQr = useMemo(
+    () => ["sales_quotation", "purchase_order", "credit_note", "debit_note", "payment_voucher", "receipt_voucher", "journal_voucher", "expense_voucher"].includes(cloudKind),
+    [cloudKind],
+  );
+  // A purchase bill is the supplier's own tax invoice to us — its ZATCA QR
+  // must encode the supplier (party) as the seller, not our org.
+  const usesSupplierZatcaQr = useMemo(() => cloudKind === "purchase_invoice", [cloudKind]);
 
   // Round half-up to 2 decimals (matches ZATCA / Qoyod invoice math)
   const r2 = (n: number) => Math.round((n + Number.EPSILON) * 100) / 100;
@@ -204,12 +247,43 @@ export function DocumentForm({
   const tax = r2(lineCalcs.reduce((s, c) => s + c.taxAmt, 0));
   const total = r2(subtotal + tax);
 
+  // مستخلص (progress billing) summary — additive on top of the normal
+  // subtotal/tax/total above, never replaces them. The line items represent
+  // the work billed *this* period; contractValue/previousCertified are
+  // entered manually since there's no cross-document running ledger yet.
+  const progressBilling = useMemo(() => {
+    const cumulativeCompleted = r2(previousCertified + subtotal);
+    const cumulativePct = contractValue > 0 ? r2((cumulativeCompleted / contractValue) * 100) : 0;
+    const retentionAmt = r2((subtotal * retentionPct) / 100);
+    const advanceRecoveryAmt = r2((subtotal * advanceRecoveryPct) / 100);
+    const netPayable = r2(total - retentionAmt - advanceRecoveryAmt);
+    return {
+      contractValue, previousCertified, retentionPct, advanceRecoveryPct,
+      currentCertificate: subtotal,
+      cumulativeCompleted, cumulativePct, retentionAmt, advanceRecoveryAmt, netPayable,
+    };
+  }, [contractValue, previousCertified, retentionPct, advanceRecoveryPct, subtotal, total]);
+
   useEffect(() => {
     const iso = new Date(`${date}T00:00:00`).toISOString();
     if (usesZatcaQr) {
       const payload = makeZatcaQrPayload({
         sellerName: org.name,
         vatNumber: org.taxNumber,
+        issuedAtIso: iso,
+        totalWithVat: total,
+        vatAmount: tax,
+      });
+      QRCode.toDataURL(payload, { margin: 1, width: 180 })
+        .then(setQrDataUrl)
+        .catch(() => setQrDataUrl(""));
+      setVerifyQrDataUrl("");
+      return;
+    }
+    if (usesSupplierZatcaQr) {
+      const payload = makeZatcaQrPayload({
+        sellerName: party?.name || "",
+        vatNumber: party?.taxNumber || "",
         issuedAtIso: iso,
         totalWithVat: total,
         vatAmount: tax,
@@ -234,12 +308,21 @@ export function DocumentForm({
       .then((verifyUrl) => QRCode.toDataURL(verifyUrl, { margin: 1, width: 180 }))
       .then(setVerifyQrDataUrl)
       .catch(() => setVerifyQrDataUrl(""));
-  }, [org.name, org.taxNumber, date, total, tax, usesZatcaQr, usesVerifyQr, cloudKind, ref]);
+  }, [org.name, org.taxNumber, date, total, tax, usesZatcaQr, usesSupplierZatcaQr, party?.name, party?.taxNumber, usesVerifyQr, cloudKind, ref]);
 
   // ZATCA-aware document heading — never the "إنشاء/تعديل" form title
   const docTitle = useMemo(
     () => resolveDocTitle(kind ?? cloudKind, party?.taxNumber),
     [kind, cloudKind, party?.taxNumber],
+  );
+  // Shared "verify" QR block (non-tax documents: quotations, purchase orders,
+  // vouchers) — built once so the live preview and the print output show the
+  // exact same QR + verification URL instead of two separately-assembled ones.
+  const verify = useMemo(
+    () => (usesVerifyQr && verifyQrDataUrl && verifyToken
+      ? { qrDataUrl: verifyQrDataUrl, url: buildVerifyUrl(cloudKind, ref, verifyToken), label: "التحقق من المستند · Verify Document" }
+      : undefined),
+    [usesVerifyQr, verifyQrDataUrl, verifyToken, cloudKind, ref],
   );
   const issuedAtIso = useMemo(() => docTimestamp(date, existing?.issuedAt), [date, existing?.issuedAt]);
   const partyAddress = useMemo(() => {
@@ -247,29 +330,56 @@ export function DocumentForm({
     return [party.street, party.district, party.city, party.region].filter(Boolean).join("، ");
   }, [party]);
 
-  const handlePrint = () => {
-    printDoc({
-      kind: printKind,
-      title: docTitle.ar,
-      titleEn: docTitle.en,
-      variant: docTitle.variant,
-      issuedAtIso,
-      ref, date, dueDate,
-      org,
-      party: party ? { ...party, address: partyAddress } : party,
-      partyLabel,
-      lines, lineCalcs,
-      subtotal, tax, total,
-      notes,
-      partyRole: printKind === "bill" || printKind === "purchase-order" ? "المورد" : "العميل",
-      currency: CUR,
-      qrDataUrl: usesZatcaQr ? qrDataUrl : undefined,
-      branding,
-      tpl,
-      verify: usesVerifyQr && verifyQrDataUrl && verifyToken
-        ? { qrDataUrl: verifyQrDataUrl, url: buildVerifyUrl(cloudKind, ref, verifyToken), label: "التحقق من المستند · Verify Document" }
-        : undefined,
-    });
+  const [printing, setPrinting] = useState(false);
+  const handlePrint = async () => {
+    setPrinting(true);
+    try {
+      // For a purchase bill, fetch the supplier's original scanned file (if
+      // one is linked in cloud storage) so it prints merged after the
+      // generated digital invoice — one combined job for audit/review.
+      let attachment: { url: string; mime?: string; label?: string } | undefined;
+      if (printKind === "bill" && currentOrgId && dbId) {
+        try {
+          const atts = await listAttachments(currentOrgId, "document", dbId);
+          const latest = atts[0];
+          if (latest) {
+            const url = await getSignedUrl(latest.storage_path);
+            if (url) attachment = { url, mime: latest.mime_type ?? undefined, label: `النسخة الأصلية · ${latest.filename}` };
+          }
+        } catch (e) {
+          console.error("[print] failed to load original attachment", e);
+        }
+      }
+
+      await printDoc({
+        kind: printKind,
+        title: docTitle.ar,
+        titleEn: docTitle.en,
+        variant: docTitle.variant,
+        issuedAtIso,
+        ref, date, dueDate,
+        expiry: printKind === "quotation" ? dueDate : undefined,
+        terms: printKind === "quotation" ? notes : undefined,
+        org,
+        party: party ? { ...party, address: partyAddress } : party,
+        partyLabel,
+        lines, lineCalcs,
+        subtotal, tax, total,
+        notes,
+        partyRole: printKind === "bill" ? "العميل" : printKind === "purchase-order" ? "المورد" : "العميل",
+        currency: CUR,
+        qrDataUrl: usesZatcaQr || usesSupplierZatcaQr ? qrDataUrl : undefined,
+        branding,
+        tpl,
+        verify,
+        attachment,
+        layoutVariant: tpl.layoutVariant,
+        progressBilling: tpl.layoutVariant === "contracting" ? progressBilling : undefined,
+        structure,
+      });
+    } finally {
+      setPrinting(false);
+    }
   };
 
 
@@ -303,6 +413,7 @@ export function DocumentForm({
       ref, date, dueDate, partyId, partyName, notes,
       status: finalStatus, lines, subtotal, tax, total,
       dbId,
+      contractValue, previousCertified, retentionPct, advanceRecoveryPct,
     };
     let localId = existing?.id;
     if (existing) update(existing.id, payload);
@@ -358,9 +469,6 @@ export function DocumentForm({
           <div className="flex flex-wrap gap-2 mt-3">
             <BadgeChip label={statusLabel} tone="status" />
             {approvalLabel && <BadgeChip label={approvalLabel} tone="approval" />}
-            {kind === "invoice" && (
-              <BadgeChip label={docTitle.variant === "standard" ? "فاتورة ضريبية" : "فاتورة ضريبية مبسطة"} tone="accent" />
-            )}
             {kind === "quotation" && <BadgeChip label="عرض سعر" tone="accent" />}
             {kind === "credit-note" && <BadgeChip label="إشعار دائن" tone="accent" />}
             {(kind === "purchase-order" || kind === "bill") && <BadgeChip label={kind === "bill" ? "فاتورة مشتريات" : "أمر شراء"} tone="accent" />}
@@ -368,31 +476,53 @@ export function DocumentForm({
         </div>
         <div className="flex gap-2 flex-wrap items-center">
           <div className="flex items-center gap-1.5 border border-[#eceae2] rounded-lg px-2 py-1 bg-white">
-            <span className="text-xs text-[#0f2a1d]/60">القالب:</span>
+            <span className="text-xs text-[#0f2a1d]/60">الهيكل:</span>
             <select
-              value={selectedId}
-              onChange={(e) => setSelectedId(e.target.value)}
-              className="bg-transparent text-sm outline-none max-w-[200px]"
-              title="تغيير قالب المستند"
+              value={structureId}
+              onChange={(e) => setStructureId(e.target.value)}
+              className="bg-transparent text-sm outline-none max-w-[180px]"
+              title="تغيير الهيكل التصميمي للمستند"
             >
-              {allTemplates.map((t) => (
-                <option key={t.id} value={t.id}>{t.name}</option>
+              {DOC_STRUCTURES.map((s) => (
+                <option key={s.id} value={s.id}>{s.name}</option>
               ))}
             </select>
-            <span
-              className="inline-block w-4 h-4 rounded border border-[#eceae2]"
-              style={{ background: tpl.accent }}
-              aria-hidden
-            />
           </div>
+          {supportsContentVariant && (
+            <div className="flex items-center gap-1.5 border border-[#eceae2] rounded-lg px-2 py-1 bg-white">
+              <span className="text-xs text-[#0f2a1d]/60">نوع النشاط:</span>
+              <select
+                value={contentVariant}
+                onChange={(e) => setContentVariant(e.target.value as ContentVariant)}
+                className="bg-transparent text-sm outline-none max-w-[180px]"
+                title="تغيير نوع محتوى المستند"
+              >
+                {CONTENT_VARIANTS.map((v) => (
+                  <option key={v.id} value={v.id}>{v.name}</option>
+                ))}
+              </select>
+            </div>
+          )}
+          <label
+            className="flex items-center gap-1.5 border border-[#eceae2] rounded-lg px-2 py-1 bg-white cursor-pointer"
+            title="لون الهوية للمستند"
+          >
+            <span className="text-xs text-[#0f2a1d]/60">اللون:</span>
+            <input
+              type="color"
+              value={docColor}
+              onChange={(e) => setDocColor(e.target.value)}
+              className="w-6 h-6 rounded border border-[#eceae2] cursor-pointer bg-transparent p-0"
+            />
+          </label>
           <OutlineBtn type="button" onClick={() => navigate({ to: backTo })}>
             رجوع
           </OutlineBtn>
           <OutlineBtn type="button" onClick={() => setPreviewOpen(true)}>
             <Eye className="w-4 h-4" /> معاينة
           </OutlineBtn>
-          <OutlineBtn type="button" onClick={handlePrint}>
-            <Printer className="w-4 h-4" /> طباعة
+          <OutlineBtn type="button" onClick={handlePrint} disabled={printing}>
+            <Printer className="w-4 h-4" /> {printing ? "جارٍ التحضير…" : "طباعة"}
           </OutlineBtn>
           <OutlineBtn type="button" onClick={() => save("مسودة")}>
             حفظ كمسودة
@@ -409,7 +539,6 @@ export function DocumentForm({
         <div className="flex items-center justify-between gap-3 flex-wrap mb-4">
           <div>
             <div className="text-xs text-[#0f2a1d]/60">المعاينة الحية · Live View</div>
-            <div className="font-semibold text-sm mt-1">{docTitle.ar} · {docTitle.en}</div>
           </div>
           <div className="flex items-center gap-2 flex-wrap">
             {usesZatcaQr && qrDataUrl && <BadgeChip label="ZATCA QR" tone="approval" />}
@@ -439,12 +568,17 @@ export function DocumentForm({
           originalRef={existing?.reference ?? existing?.originalRef}
           reason={existing?.reason}
           usesZatcaQr={usesZatcaQr}
+          usesSupplierZatcaQr={usesSupplierZatcaQr}
           qrDataUrl={qrDataUrl}
           usesVerifyQr={usesVerifyQr}
           verifyQrDataUrl={verifyQrDataUrl}
+          verify={verify}
           branding={branding}
           docTitle={docTitle}
           currency={CUR}
+          layoutVariant={tpl.layoutVariant}
+          progressBilling={tpl.layoutVariant === "contracting" ? progressBilling : undefined}
+          structure={structure}
         />
       </div>
 
@@ -538,8 +672,9 @@ export function DocumentForm({
               <tr className="text-right">
                 <th className="py-2 w-8">#</th>
                 <th>الوصف</th>
-                <th className="w-20">الكمية</th>
-                <th className="w-28">السعر</th>
+                {tpl.layoutVariant === "supply" && <th className="w-20">الوحدة</th>}
+                <th className="w-20">{tpl.layoutVariant === "services" ? "الساعات" : "الكمية"}</th>
+                <th className="w-28">{tpl.layoutVariant === "services" ? "الأجر / ساعة" : "السعر"}</th>
                 <th className="w-24">الضريبة %</th>
                 <th className="w-28">المبلغ</th>
                 <th className="w-10"></th>
@@ -559,6 +694,16 @@ export function DocumentForm({
                       className="border border-[#eceae2] rounded px-2 py-1 w-full"
                     />
                   </td>
+                  {tpl.layoutVariant === "supply" && (
+                    <td>
+                      <input
+                        value={l.unit ?? ""}
+                        onChange={(e) => updateLine(i, { unit: e.target.value })}
+                        placeholder="قطعة"
+                        className="border border-[#eceae2] rounded px-2 py-1 w-full"
+                      />
+                    </td>
+                  )}
                   <td>
                     <input
                       type="number"
@@ -612,6 +757,50 @@ export function DocumentForm({
             </tbody>
           </table>
         </div>
+
+        {tpl.layoutVariant === "contracting" && (
+          <div className="rounded-lg border border-[#eceae2] bg-[#fafaf7] p-4 space-y-3">
+            <div className="text-sm font-bold text-[#0f2a1d]">تفاصيل المستخلص</div>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <FormField label="قيمة العقد الإجمالية">
+                <input
+                  type="number" min={0} step="0.01" value={contractValue}
+                  onChange={(e) => setContractValue(Number(e.target.value))}
+                  className="border border-[#eceae2] rounded-lg px-3 py-2 w-full"
+                />
+              </FormField>
+              <FormField label="المستخلصات السابقة">
+                <input
+                  type="number" min={0} step="0.01" value={previousCertified}
+                  onChange={(e) => setPreviousCertified(Number(e.target.value))}
+                  className="border border-[#eceae2] rounded-lg px-3 py-2 w-full"
+                />
+              </FormField>
+              <FormField label="نسبة الحجز الاحتياطي %">
+                <input
+                  type="number" min={0} max={100} step="0.5" value={retentionPct}
+                  onChange={(e) => setRetentionPct(Number(e.target.value))}
+                  className="border border-[#eceae2] rounded-lg px-3 py-2 w-full"
+                />
+              </FormField>
+              <FormField label="نسبة استرداد الدفعة المقدمة %">
+                <input
+                  type="number" min={0} max={100} step="0.5" value={advanceRecoveryPct}
+                  onChange={(e) => setAdvanceRecoveryPct(Number(e.target.value))}
+                  className="border border-[#eceae2] rounded-lg px-3 py-2 w-full"
+                />
+              </FormField>
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-2 text-xs bg-white rounded-lg border border-[#eceae2] p-3">
+              <div>نسبة الإنجاز التراكمية: <strong>{progressBilling.cumulativePct}%</strong></div>
+              <div>المحجوز من هذا المستخلص: <strong>{fmt(progressBilling.retentionAmt)} {CUR}</strong></div>
+              <div>استرداد الدفعة المقدمة: <strong>{fmt(progressBilling.advanceRecoveryAmt)} {CUR}</strong></div>
+              <div className="col-span-2 md:col-span-3 pt-1 border-t border-[#eceae2] font-bold">
+                الصافي المستحق بعد الحجز والاسترداد: {fmt(progressBilling.netPayable)} {CUR}
+              </div>
+            </div>
+          </div>
+        )}
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t border-[#eceae2]">
           <div className="space-y-3">
@@ -725,7 +914,7 @@ export function DocumentForm({
           <div className="bg-white rounded-xl max-w-3xl w-full my-8 overflow-hidden print:my-0 print:max-w-none print:rounded-none" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between px-6 py-3 border-b border-[#eceae2] bg-[#fafaf7] print:hidden">
               <div className="flex items-center gap-3">
-                <h2 className="text-base font-bold">{docTitle.ar} · {docTitle.en}</h2>
+                <h2 className="text-base font-bold">{ref}</h2>
                 <span
                   className="text-[11px] px-2 py-0.5 rounded-full"
                   style={{ background: tpl.soft, color: tpl.accent, border: `1px solid ${tpl.accent}33` }}
@@ -765,12 +954,17 @@ export function DocumentForm({
                 originalRef={existing?.reference ?? existing?.originalRef}
                 reason={existing?.reason}
                 usesZatcaQr={usesZatcaQr}
+                usesSupplierZatcaQr={usesSupplierZatcaQr}
                 qrDataUrl={qrDataUrl}
                 usesVerifyQr={usesVerifyQr}
                 verifyQrDataUrl={verifyQrDataUrl}
+                verify={verify}
                 branding={branding}
                 docTitle={docTitle}
                 currency={CUR}
+                layoutVariant={tpl.layoutVariant}
+                progressBilling={tpl.layoutVariant === "contracting" ? progressBilling : undefined}
+                structure={structure}
               />
             </div>
           </div>
@@ -1104,23 +1298,33 @@ function DocumentLivePreview({
   originalRef,
   reason,
   usesZatcaQr,
+  usesSupplierZatcaQr,
   qrDataUrl,
   usesVerifyQr,
   verifyQrDataUrl,
+  verify,
   branding,
   docTitle,
   currency,
+  layoutVariant,
+  progressBilling,
+  structure,
 }: any) {
   if (kind === "quotation") {
-    return <QuotationPreview {...{ tpl, org, party, partyName, partyLabel, ref_, date, dueDate, issuedAtIso, lines, lineCalcs, subtotal, tax, total, notes, terms, branding, qrDataUrl, usesVerifyQr, verifyQrDataUrl, currency }} />;
+    return <QuotationPreview {...{ tpl, org, party, partyName, partyLabel, partyAddress, ref_, date, dueDate, issuedAtIso, lines, lineCalcs, subtotal, tax, total, notes, terms, branding, currency, verify, structure }} />;
   }
-  if (kind === "credit-note") {
-    return <CreditNotePreview {...{ tpl, org, party, partyName, partyLabel, ref_, date, issuedAtIso, lines, lineCalcs, subtotal, tax, total, notes, originalRef, reason, branding, qrDataUrl, usesZatcaQr, currency }} />;
+  if (kind === "credit-note" || kind === "debit-note") {
+    return <CreditNotePreview {...{ tpl, org, party, partyName, partyLabel, partyAddress, ref_, date, issuedAtIso, lines, lineCalcs, subtotal, tax, total, notes, originalRef, reason, branding, qrDataUrl, usesZatcaQr, verify, currency, structure, kind }} />;
   }
   if (kind === "purchase-order" || kind === "bill") {
-    return <PurchasePreview {...{ tpl, org, party, partyName, partyLabel, ref_, date, dueDate, issuedAtIso, lines, lineCalcs, subtotal, tax, total, notes, branding, qrDataUrl, usesVerifyQr, verifyQrDataUrl, currency, kind }} />;
+    return <PurchasePreview {...{
+      tpl, org, party, partyName, partyLabel, partyAddress, ref_, date, dueDate, issuedAtIso,
+      lines, lineCalcs, subtotal, tax, total, notes, branding, currency, kind,
+      qrDataUrl, usesZatcaQr: usesSupplierZatcaQr, verify,
+      layoutVariant, progressBilling, structure,
+    }} />;
   }
-  return <InvoicePreview {...{ tpl, org, party, partyName, partyLabel, partyAddress, ref_, date, dueDate, issuedAtIso, lines, lineCalcs, subtotal, tax, total, notes, branding, qrDataUrl, usesZatcaQr, docTitle, currency }} />;
+  return <InvoicePreview {...{ tpl, org, party, partyName, partyLabel, partyAddress, ref_, date, dueDate, issuedAtIso, lines, lineCalcs, subtotal, tax, total, notes, branding, qrDataUrl, usesZatcaQr, docTitle, currency, layoutVariant, progressBilling, structure }} />;
 }
 
 function FormField({

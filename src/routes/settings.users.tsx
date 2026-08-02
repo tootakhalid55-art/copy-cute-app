@@ -1,10 +1,12 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { CrudModule } from "@/components/haseem/CrudModule";
 import { Badge } from "@/components/haseem/Shell";
+import { RequireOrgOwner } from "@/lib/auth-guards";
 
 export const Route = createFileRoute("/settings/users")({
   head: () => ({ meta: [{ title: "المستخدمون — كنار المحاسبية" }] }),
   component: () => (
+    <RequireOrgOwner>
     <CrudModule
       storageKey="users"
       title="المستخدمون"
@@ -51,6 +53,7 @@ export const Route = createFileRoute("/settings/users")({
         },
       ]}
     />
+    </RequireOrgOwner>
   ),
 });
 

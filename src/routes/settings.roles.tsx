@@ -1,9 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { CrudModule } from "@/components/haseem/CrudModule";
+import { RequireOrgOwner } from "@/lib/auth-guards";
 
 export const Route = createFileRoute("/settings/roles")({
   head: () => ({ meta: [{ title: "الأدوار — كنار المحاسبية" }] }),
   component: () => (
+    <RequireOrgOwner>
     <CrudModule
       storageKey="roles"
       title="الأدوار والصلاحيات"
@@ -26,6 +28,7 @@ export const Route = createFileRoute("/settings/roles")({
         { name: "description", label: "الوصف" },
       ]}
     />
+    </RequireOrgOwner>
   ),
 });
 

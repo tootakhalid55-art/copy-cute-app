@@ -9,6 +9,9 @@ import {
 import { Shell, PageHeader, PrimaryBtn, OutlineBtn, EmptyState } from "@/components/haseem/Shell";
 import { useCollection, useKV } from "@/lib/haseem/store";
 import { scanInvoice, type ScanResult, type ScanLine as SLine } from "@/lib/haseem/scan.functions";
+import { useOrg } from "@/lib/db/org";
+import { syncDocumentToCloud } from "@/lib/db/document-bridge";
+import { uploadAttachment } from "@/lib/db/attachments";
 
 export const Route = createFileRoute("/purchases/scan")({
   head: () => ({ meta: [{ title: "مسح الفواتير بالذكاء الاصطناعي — كنار المحاسبية" }] }),
@@ -45,8 +48,9 @@ function newId() {
 
 function ScanPage() {
   const scan = useServerFn(scanInvoice);
-  const { items: bills, add: addBill } = useCollection<any>("bills");
-  const { items: suppliers, add: addSupplier } = useCollection<any>("suppliers");
+  const { currentOrgId } = useOrg();
+  const { items: bills, add: addBill, update: updateBill } = useCollection<any>("bills");
+  const { items: suppliers, addAsync: addSupplierAsync } = useCollection<any>("suppliers");
   const { items: scanHistory, add: addHistory, remove: removeHistory } = useCollection<any>("invoice-scans");
   const [org] = useKV<{ name: string; taxNumber: string }>("org", {
     name: "شركة كنار الحديثة للمقاولات",
@@ -266,7 +270,11 @@ function ScanPage() {
               (s: any) => s.name?.trim() === payload.supplierName?.trim()
             );
             if (!supplier && payload.createSupplier) {
-              supplier = addSupplier({
+              // Must await the real DB record here: the sync `add()` on a
+              // cloud-backed collection returns an optimistic stub with a
+              // temporary id (`tmp_...`) that never matches the real row,
+              // which silently broke the partyId link on every scanned bill.
+              supplier = await addSupplierAsync({
                 name: payload.supplierName,
                 taxNumber: payload.supplierVatNumber,
                 currency: payload.currency || "SAR",
@@ -287,14 +295,33 @@ function ScanPage() {
               tax: payload.vat,
               total: payload.grandTotal,
               currency: payload.currency,
-              attachment: {
-                filename: reviewJob.file.name,
-                dataUrl: reviewJob.dataUrl,
-                mime: reviewJob.file.type,
-                size: reviewJob.file.size,
-              },
               source: "ai-scan",
             });
+
+            // Persist the original scanned file to Supabase Storage (not
+            // localStorage — an 8MB base64 blob per bill would blow the
+            // browser storage quota fast) so it's linked by the bill's cloud
+            // document id and picked up automatically by the attachment
+            // viewer (DocumentSidePanel) and the merged print output.
+            if (currentOrgId) {
+              try {
+                const dbId = await syncDocumentToCloud(
+                  currentOrgId,
+                  "purchase_invoice",
+                  {
+                    id: bill.id, ref: bill.ref, date: bill.date, dueDate: bill.dueDate,
+                    partyId: bill.partyId, partyName: bill.partyName, notes: bill.notes,
+                    lines: bill.lines, subtotal: bill.subtotal, tax: bill.tax, total: bill.total,
+                  },
+                  null,
+                );
+                updateBill(bill.id, { dbId });
+                uploadAttachment(reviewJob.file, { orgId: currentOrgId, entityType: "document", entityId: dbId });
+              } catch (e) {
+                console.error("[scan] failed to sync bill / upload original to cloud", e);
+              }
+            }
+
             addHistory({
               supplierName: payload.supplierName,
               invoiceNumber: payload.invoiceNumber,

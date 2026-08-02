@@ -8,6 +8,7 @@ import {
   type DocKind,
   type InvoiceTemplate,
 } from "@/lib/haseem/templates";
+import { amountToWordsArabic } from "@/lib/haseem/amountWords";
 
 export const Route = createFileRoute("/settings/templates")({
   head: () => ({ meta: [{ title: "قوالب المستندات — كنار المحاسبية" }] }),
@@ -412,6 +413,12 @@ function FullPreview({ tpl }: { tpl: InvoiceTemplate }) {
           <div className="flex justify-between px-3 py-2.5 rounded font-bold mt-1" style={{ background: tpl.accent, color: tpl.onAccent }}>
             <span>الإجمالي شامل الضريبة</span><span className="tabular-nums">{fmt(total)} ر.س</span>
           </div>
+          {tpl.layout === "simplified" && (
+            <div className="text-[11px] text-[#0f2a1d]/70 pt-1">
+              <span className="font-semibold">المبلغ بالحروف: </span>
+              {amountToWordsArabic(total)}
+            </div>
+          )}
         </div>
       </div>
     </div>

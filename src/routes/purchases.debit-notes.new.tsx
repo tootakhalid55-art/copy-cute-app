@@ -11,6 +11,7 @@ export const Route = createFileRoute("/purchases/debit-notes/new")({
       title="إنشاء إشعار مدين"
       backTo="/purchases/debit-notes"
       docPrefix="DN"
+      kind="debit-note"
     />
   ),
 });

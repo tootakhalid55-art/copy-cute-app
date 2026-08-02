@@ -15,11 +15,22 @@ export type Org = {
   stamp_url: string | null;
 };
 
+export type OrgRole = "owner" | "admin" | "accountant" | "user" | "viewer";
+
 type Ctx = {
   ready: boolean;
   orgs: Org[];
   currentOrgId: string | null;
   currentOrg: Org | null;
+  /** The signed-in user's org_members.role for currentOrgId — null until loaded
+   * or if they have no membership row (shouldn't normally happen). Null for
+   * the whole duration of an active platform-admin impersonation session,
+   * since impersonation doesn't currently resolve the target user's role. */
+  currentRole: OrgRole | null;
+  /** True only for org_members.role === "owner" — the subscriber account
+   * that created the organization (auto-assigned by the add_org_owner
+   * trigger). Sub-accounts (admin/accountant/user/viewer) are never owners. */
+  isOrgOwner: boolean;
   setCurrentOrg: (id: string) => void;
   createOrg: (input: { name: string; vat_number?: string; cr_number?: string }) => Promise<Org | null>;
   reload: () => Promise<void>;
@@ -48,6 +59,7 @@ export function OrgProvider({ children }: { children: ReactNode }) {
   const logSwitchFn = useServerFn(logImpersonationOrgSwitch);
   const [orgs, setOrgs] = useState<Org[]>([]);
   const [currentOrgId, setCurrentOrgIdState] = useState<string | null>(null);
+  const [rolesByOrgId, setRolesByOrgId] = useState<Record<string, OrgRole>>({});
   const [impersonation, setImpersonation] = useState<Ctx["impersonation"]>({
     active: false,
     targetUserId: null,
@@ -60,6 +72,7 @@ export function OrgProvider({ children }: { children: ReactNode }) {
     if (!user) {
       setOrgs([]);
       setCurrentOrgIdState(null);
+      setRolesByOrgId({});
       setImpersonation({ active: false, targetUserId: null, targetUserName: null, targetUserEmail: null });
       if (typeof window !== "undefined") localStorage.removeItem(IMPERSONATION_KEY);
       setReady(true);
@@ -86,6 +99,9 @@ export function OrgProvider({ children }: { children: ReactNode }) {
         targetUserEmail: context.targetUser.email,
       });
       setOrgs(context.orgs ?? []);
+      // Impersonation doesn't resolve the target user's org_members.role
+      // today — leave roles empty rather than guess a role for them.
+      setRolesByOrgId({});
       const saved = typeof window !== "undefined" ? localStorage.getItem(LS_KEY) : null;
       const pick = saved && context.orgs.find((o) => o.id === saved) ? saved : context.orgs[0]?.id ?? null;
       setCurrentOrgIdState(pick);
@@ -96,7 +112,7 @@ export function OrgProvider({ children }: { children: ReactNode }) {
     // memberships → orgs
     const { data: memberships, error: mErr } = await supabase
       .from("org_members")
-      .select("org_id")
+      .select("org_id,role")
       .eq("user_id", user.id);
     if (mErr) {
       console.error("[OrgProvider] memberships failed", mErr);
@@ -104,6 +120,11 @@ export function OrgProvider({ children }: { children: ReactNode }) {
       return;
     }
     const ids = (memberships ?? []).map((m) => m.org_id);
+    const roleMap: Record<string, OrgRole> = {};
+    for (const m of memberships ?? []) {
+      if (m.org_id && m.role) roleMap[m.org_id] = m.role as OrgRole;
+    }
+    setRolesByOrgId(roleMap);
     if (ids.length === 0) {
       setOrgs([]);
       setCurrentOrgIdState(null);
@@ -185,10 +206,12 @@ export function OrgProvider({ children }: { children: ReactNode }) {
   );
 
   const currentOrg = orgs.find((o) => o.id === currentOrgId) ?? null;
+  const currentRole = currentOrgId ? rolesByOrgId[currentOrgId] ?? null : null;
+  const isOrgOwner = currentRole === "owner";
 
   return (
     <OrgCtx.Provider
-      value={{ ready, orgs, currentOrgId, currentOrg, setCurrentOrg, createOrg, reload: load, impersonation }}
+      value={{ ready, orgs, currentOrgId, currentOrg, currentRole, isOrgOwner, setCurrentOrg, createOrg, reload: load, impersonation }}
     >
       {children}
     </OrgCtx.Provider>

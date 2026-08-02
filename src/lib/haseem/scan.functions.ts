@@ -1,5 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
-import { callLovableAI } from "@/lib/ai-gateway.server";
+import { callAnthropicAI } from "@/lib/ai-gateway.server";
 
 export type ScanLine = {
   description: string;
@@ -81,17 +81,15 @@ Rules:
 async function extract(fileDataUrl: string, filename: string): Promise<ScanResult> {
   const isPdf = fileDataUrl.startsWith("data:application/pdf");
 
-  const content: NonNullable<Parameters<typeof callLovableAI>[0]>["messages"][number]["content"] = [
+  const content: NonNullable<Parameters<typeof callAnthropicAI>[0]>["messages"][number]["content"] = [
     { type: "text", text: "استخرج بيانات فاتورة المورد من الملف المرفق وأعدها JSON فقط." },
     isPdf
       ? { type: "file", file: { filename, file_data: fileDataUrl } }
       : { type: "image_url", image_url: { url: fileDataUrl } },
   ];
 
-  const raw = await callLovableAI({
-    model: "google/gemini-2.5-flash",
-    response_format: { type: "json_object" },
-    temperature: 0.1,
+  const raw = await callAnthropicAI({
+    model: "claude-sonnet-5",
     messages: [
       { role: "system", content: SYSTEM },
       { role: "user", content },
@@ -111,7 +109,13 @@ async function extract(fileDataUrl: string, filename: string): Promise<ScanResul
   } catch {
     // Best-effort fallback: extract the first {...} object
     const m = cleaned.match(/\{[\s\S]*\}/);
-    parsed = m ? JSON.parse(m[0]) : {};
+    if (!m) {
+      // No JSON object at all in the response — surface a real error instead
+      // of silently returning {}, which would show the user a "ready for
+      // review" form with every field blank and no indication anything failed.
+      throw new Error("AI_EXTRACTION_FAILED: تعذر استخراج بيانات الفاتورة من رد الذكاء الاصطناعي");
+    }
+    parsed = JSON.parse(m[0]);
   }
 
   const num = (v: any) => {

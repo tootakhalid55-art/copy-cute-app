@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import {
   Plus, Trash2, Printer, Eye, EyeOff, X, Save, Send,
@@ -6,11 +6,12 @@ import {
 } from "lucide-react";
 import { Shell, PrimaryBtn, OutlineBtn } from "./Shell";
 import { useCollection, useKV } from "@/lib/haseem/store";
-import { useInvoiceTemplates } from "@/lib/haseem/templates";
-import { printDoc } from "@/lib/haseem/printDoc";
+import { contrastColorFor, tintColorFor } from "@/lib/haseem/templates";
+import { printDoc, DOC_STRUCTURES } from "@/lib/haseem/printDoc";
 import { signDoc, buildVerifyUrl } from "@/lib/haseem/docSignature";
 import QRCode from "qrcode";
 import { DocumentSidePanel } from "./DocumentSidePanel";
+import { QuotationPreview } from "./QuotationPreview";
 import { useOrg } from "@/lib/db/org";
 import { syncDocumentToCloud, toDocKind } from "@/lib/db/document-bridge";
 
@@ -122,7 +123,10 @@ export function QuotationForm({ docId }: { docId?: string }) {
   }, [docId, existing?.id]);
 
   const party = parties.find((p) => p.id === partyId);
-  const { all: allTemplates, selected: tpl, selectedId, setSelectedId } = useInvoiceTemplates("quotation");
+  const [structureId, setStructureId] = useKV<string>("doc-structure:quotation", "boxed");
+  const structure = structureId as "boxed" | "banner" | "minimal" | "corporate" | "thermal";
+  const [docColor, setDocColor] = useKV<string>("doc-color:quotation", "#0d9488");
+  const tpl = { name: "مخصص", accent: docColor, onAccent: contrastColorFor(docColor), soft: tintColorFor(docColor) };
 
   // Math
   const r2 = (n: number) => Math.round((n + Number.EPSILON) * 100) / 100;
@@ -254,7 +258,6 @@ export function QuotationForm({ docId }: { docId?: string }) {
   };
 
   // Printing
-  const printRef = useRef<HTMLDivElement>(null);
   const handlePrint = async () => {
     try {
       const token = await signDoc({ kind: "quotation", ref, total });
@@ -280,6 +283,7 @@ export function QuotationForm({ docId }: { docId?: string }) {
         project: optCols.project ? project : undefined,
         bilingual: true,
         verify: { qrDataUrl: verifyQr, url: verifyUrl, label: "التوقيع الرقمي — Digital Signature" },
+        structure,
       });
     } catch (error) {
       console.warn("quotation print verification failed, printing fallback", error);
@@ -303,6 +307,7 @@ export function QuotationForm({ docId }: { docId?: string }) {
         reference: optCols.reference ? reference : undefined,
         project: optCols.project ? project : undefined,
         bilingual: true,
+        structure,
       });
     }
   };
@@ -325,19 +330,27 @@ export function QuotationForm({ docId }: { docId?: string }) {
         </div>
         <div className="flex items-center gap-2 flex-wrap">
           <div className="flex items-center gap-1.5 border border-[#eceae2] rounded px-2 py-1">
-            <span className="text-xs text-[#0f2a1d]/60">القالب:</span>
+            <span className="text-xs text-[#0f2a1d]/60">الهيكل:</span>
             <select
-              value={selectedId}
-              onChange={(e) => setSelectedId(e.target.value)}
+              value={structureId}
+              onChange={(e) => setStructureId(e.target.value)}
               className="bg-transparent text-sm outline-none max-w-[180px]"
-              title="تغيير قالب عرض السعر"
+              title="تغيير الهيكل التصميمي لعرض السعر"
             >
-              {allTemplates.map((t) => (
-                <option key={t.id} value={t.id}>{t.name}</option>
+              {DOC_STRUCTURES.map((s) => (
+                <option key={s.id} value={s.id}>{s.name}</option>
               ))}
             </select>
-            <span className="inline-block w-4 h-4 rounded border border-[#eceae2]" style={{ background: tpl.accent }} aria-hidden />
           </div>
+          <label className="flex items-center gap-1.5 border border-[#eceae2] rounded px-2 py-1 cursor-pointer" title="لون الهوية لعرض السعر">
+            <span className="text-xs text-[#0f2a1d]/60">اللون:</span>
+            <input
+              type="color"
+              value={docColor}
+              onChange={(e) => setDocColor(e.target.value)}
+              className="w-6 h-6 rounded border border-[#eceae2] cursor-pointer bg-transparent p-0"
+            />
+          </label>
           <button type="button" onClick={() => setPreviewHidden((v) => !v)}
             className="inline-flex items-center gap-1 text-sm px-2 py-1.5 rounded hover:bg-[#f7f6f0]">
             {previewHidden ? <><Eye className="w-4 h-4" /> إظهار المعاينة</> : <><EyeOff className="w-4 h-4" /> إخفاء المعاينة</>}
@@ -673,27 +686,22 @@ export function QuotationForm({ docId }: { docId?: string }) {
                   <Maximize2 className="w-4 h-4" />
                 </button>
               </div>
-              <QuotePaper
+              <QuotationPreview
                 tpl={tpl}
                 org={org}
                 party={party}
                 ref_={ref}
                 date={date}
-                expiry={expiry}
+                dueDate={expiry}
                 lines={lines}
                 lineCalcs={lineCalcs}
                 subtotal={subtotal}
                 tax={tax}
-                discAmt={discAmt}
-                shipAmt={shipAmt}
                 total={total}
                 notes={notes}
-                CUR={CUR}
-                fmt={fmt}
-                poNumber={optCols.poNumber ? poNumber : ""}
-                reference={optCols.reference ? reference : ""}
-                project={optCols.project ? project : ""}
-                priceMode={priceMode}
+                terms={notes}
+                currency={CUR}
+                structure={structure}
               />
               <div className="flex items-center justify-center pt-2">
                 <button type="button"
@@ -764,33 +772,15 @@ export function QuotationForm({ docId }: { docId?: string }) {
               </div>
             </div>
             <div className="p-6 bg-[#f4f4f0]">
-              <QuotePaper
-                tpl={tpl} org={org} party={party} ref_={ref} date={date} expiry={expiry}
+              <QuotationPreview
+                tpl={tpl} org={org} party={party} ref_={ref} date={date} dueDate={expiry}
                 lines={lines} lineCalcs={lineCalcs} subtotal={subtotal} tax={tax}
-                discAmt={discAmt} shipAmt={shipAmt} total={total} notes={notes} CUR={CUR} fmt={fmt}
-                poNumber={optCols.poNumber ? poNumber : ""}
-                reference={optCols.reference ? reference : ""}
-                project={optCols.project ? project : ""}
-                priceMode={priceMode}
+                total={total} notes={notes} terms={notes} currency={CUR} structure={structure}
               />
             </div>
           </div>
         </div>
       )}
-
-      {/* Hidden printable */}
-      <div className="hidden">
-        <div ref={printRef}>
-          <QuotePaperStatic
-            tpl={tpl} org={org} party={party} ref_={ref} date={date} expiry={expiry}
-            lines={lines} lineCalcs={lineCalcs} subtotal={subtotal} tax={tax}
-            discAmt={discAmt} shipAmt={shipAmt} total={total} notes={notes} CUR={CUR} fmt={fmt}
-            poNumber={optCols.poNumber ? poNumber : ""}
-            reference={optCols.reference ? reference : ""}
-            project={optCols.project ? project : ""}
-          />
-        </div>
-      </div>
 
       <div className="mt-6">
         <DocumentSidePanel
@@ -867,135 +857,5 @@ function ToggleRow({ label, checked, onChange }: { label: string; checked: boole
   );
 }
 
-/* ---------- Paper / preview ---------- */
-
-function QuotePaper(props: any) {
-  const { tpl } = props;
-  return (
-    <div className="bg-white rounded-lg border border-[#eceae2] shadow-sm p-6" style={{ fontSize: 12 }}>
-      <QuotePaperInner {...props} />
-      <style>{`.qp-th{background:${tpl.accent};color:${tpl.onAccent};}`}</style>
-    </div>
-  );
-}
-function QuotePaperStatic(props: any) { return <QuotePaperInner {...props} />; }
-
-function QuotePaperInner({
-  tpl, org, party, ref_, date, expiry,
-  lines, lineCalcs, subtotal, tax, discAmt, shipAmt, total, notes, CUR, fmt,
-  poNumber, reference, project,
-}: any) {
-  return (
-    <div dir="rtl">
-      <div className="flex justify-between items-start pb-3 mb-4" style={{ borderBottom: `2px solid ${tpl.accent}` }}>
-        <div>
-          <div className="font-bold text-base" style={{ color: tpl.accent }}>{org.name}</div>
-          <div className="text-[11px] text-[#0f2a1d]/60">المملكة العربية السعودية</div>
-        </div>
-        <div className="text-left">
-          <div className="font-bold text-base" style={{ color: tpl.accent }}>شركتك</div>
-          <div className="text-[11px] text-[#0f2a1d]/60">Kingdom of Saudi Arabia</div>
-        </div>
-      </div>
-
-      <div className="text-center mb-4">
-        <div className="text-lg font-bold">عرض سعر <span className="text-[#0f2a1d]/60 text-sm">Quote</span></div>
-      </div>
-
-      <table className="w-full mb-4 text-[11px]">
-        <tbody>
-          <tr>
-            <td className="p-1.5 border border-[#eceae2] bg-[#faf9f4] w-24">التاريخ</td>
-            <td className="p-1.5 border border-[#eceae2] w-32">{date}</td>
-            <td className="p-1.5 border border-[#eceae2] bg-[#faf9f4] w-16">Date</td>
-            <td className="p-1.5 border border-[#eceae2] bg-[#faf9f4] w-16">رقم</td>
-            <td className="p-1.5 border border-[#eceae2]">{ref_}</td>
-            <td className="p-1.5 border border-[#eceae2] bg-[#faf9f4] w-20">Number</td>
-          </tr>
-          {expiry && (
-            <tr>
-              <td className="p-1.5 border border-[#eceae2] bg-[#faf9f4]">الصلاحية</td>
-              <td className="p-1.5 border border-[#eceae2]" colSpan={5}>{expiry}</td>
-            </tr>
-          )}
-          {party && (
-            <tr>
-              <td className="p-1.5 border border-[#eceae2] bg-[#faf9f4]">العميل</td>
-              <td className="p-1.5 border border-[#eceae2]" colSpan={5}>
-                <strong>{party.name}</strong>
-                {party.taxNumber && <span className="text-[10px] text-[#0f2a1d]/60 mr-2">ض. {party.taxNumber}</span>}
-              </td>
-            </tr>
-          )}
-          {poNumber && <tr><td className="p-1.5 border border-[#eceae2] bg-[#faf9f4]">أمر الشراء</td><td className="p-1.5 border border-[#eceae2]" colSpan={5}>{poNumber}</td></tr>}
-          {reference && <tr><td className="p-1.5 border border-[#eceae2] bg-[#faf9f4]">المرجع</td><td className="p-1.5 border border-[#eceae2]" colSpan={5}>{reference}</td></tr>}
-          {project && <tr><td className="p-1.5 border border-[#eceae2] bg-[#faf9f4]">المشروع</td><td className="p-1.5 border border-[#eceae2]" colSpan={5}>{project}</td></tr>}
-        </tbody>
-      </table>
-
-      <table className="w-full text-[11px] mb-4" style={{ borderCollapse: "collapse" }}>
-        <thead>
-          <tr className="qp-th" style={{ background: tpl.accent, color: tpl.onAccent }}>
-            <th className="p-1.5 border" style={{ borderColor: tpl.accent }}>#</th>
-            <th className="p-1.5 border text-right" style={{ borderColor: tpl.accent }}>الوصف<br/><span className="text-[9px] opacity-80">Description</span></th>
-            <th className="p-1.5 border" style={{ borderColor: tpl.accent }}>الكمية<br/><span className="text-[9px] opacity-80">Qty</span></th>
-            <th className="p-1.5 border" style={{ borderColor: tpl.accent }}>السعر<br/><span className="text-[9px] opacity-80">Price</span></th>
-            <th className="p-1.5 border" style={{ borderColor: tpl.accent }}>المبلغ الخاضع للضريبة<br/><span className="text-[9px] opacity-80">Taxable amount</span></th>
-            <th className="p-1.5 border" style={{ borderColor: tpl.accent }}>القيمة المضافة<br/><span className="text-[9px] opacity-80">VAT amount</span></th>
-            <th className="p-1.5 border" style={{ borderColor: tpl.accent }}>المجموع<br/><span className="text-[9px] opacity-80">Line amount</span></th>
-          </tr>
-        </thead>
-        <tbody>
-          {lines.map((l: Line, i: number) => (
-            <tr key={i}>
-              <td className="p-1.5 border border-[#d4d0c4] text-center">{i + 1}</td>
-              <td className="p-1.5 border border-[#d4d0c4] text-right">{l.description || "—"}</td>
-              <td className="p-1.5 border border-[#d4d0c4] text-center tabular-nums">{l.qty}</td>
-              <td className="p-1.5 border border-[#d4d0c4] text-center tabular-nums">{fmt(l.price)}</td>
-              <td className="p-1.5 border border-[#d4d0c4] text-center tabular-nums">{fmt(lineCalcs[i].net)}</td>
-              <td className="p-1.5 border border-[#d4d0c4] text-center tabular-nums">{fmt(lineCalcs[i].taxAmt)}</td>
-              <td className="p-1.5 border border-[#d4d0c4] text-center tabular-nums">{fmt(lineCalcs[i].gross)}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-
-      <div className="flex justify-end">
-        <table className="text-[11px] w-[280px]">
-          <tbody>
-            <tr><td className="p-1.5 border border-[#eceae2] bg-[#faf9f4]">المجموع الفرعي <span className="text-[9px] opacity-60">Subtotal</span></td>
-              <td className="p-1.5 border border-[#eceae2] text-left tabular-nums">{fmt(subtotal)} <span className="text-[9px]">{CUR}</span></td></tr>
-            <tr><td className="p-1.5 border border-[#eceae2] bg-[#faf9f4]">إجمالي ضريبة القيمة المضافة <span className="text-[9px] opacity-60">Total VAT</span></td>
-              <td className="p-1.5 border border-[#eceae2] text-left tabular-nums">{fmt(tax)} <span className="text-[9px]">{CUR}</span></td></tr>
-            {discAmt > 0 && <tr><td className="p-1.5 border border-[#eceae2] bg-[#faf9f4]">خصم</td>
-              <td className="p-1.5 border border-[#eceae2] text-left tabular-nums">- {fmt(discAmt)}</td></tr>}
-            {shipAmt > 0 && <tr><td className="p-1.5 border border-[#eceae2] bg-[#faf9f4]">شحن</td>
-              <td className="p-1.5 border border-[#eceae2] text-left tabular-nums">{fmt(shipAmt)}</td></tr>}
-            <tr style={{ background: tpl.accent, color: tpl.onAccent }}>
-              <td className="p-1.5 border font-bold" style={{ borderColor: tpl.accent }}>المجموع شامل القيمة المضافة</td>
-              <td className="p-1.5 border font-bold text-left tabular-nums" style={{ borderColor: tpl.accent }}>{fmt(total)} <span className="text-[9px]">{CUR}</span></td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-
-      {notes && (
-        <div className="mt-4 p-2 rounded border border-[#eceae2] text-[11px] bg-[#faf9f4]">
-          <strong>ملاحظات:</strong> {notes}
-        </div>
-      )}
-
-      <div className="mt-6 pt-3 text-center text-[10px] text-[#0f2a1d]/50" style={{ borderTop: `1px solid ${tpl.accent}33` }}>
-        {ref_} · Page 1 of 1 · {org.name}
-      </div>
-    </div>
-  );
-}
-
-function QUOTE_PRINT_CSS(accent: string) {
-  return `
-    table{width:100%;border-collapse:collapse}
-    th,td{border:1px solid #d4d0c4;padding:6px 8px}
-    .qp-th th{background:${accent};color:#fff;border-color:${accent}}
-  `;
-}
+/* Preview rendering now goes through QuotationPreview (buildDocHtml) — see
+   the imports/usages above; the old hand-rolled QuotePaper* JSX is gone. */

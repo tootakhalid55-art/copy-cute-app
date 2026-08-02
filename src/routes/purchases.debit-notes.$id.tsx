@@ -17,6 +17,7 @@ function EditDebitNotePage() {
       backTo="/purchases/debit-notes"
       docPrefix="DN"
       docId={id}
+      kind="debit-note"
     />
   );
 }

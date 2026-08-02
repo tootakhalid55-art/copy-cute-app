@@ -17,12 +17,17 @@ import { GlobalSearch } from "./GlobalSearch";
 import { useServerFn } from "@tanstack/react-start";
 import { getPlatformAdminStatus } from "@/lib/platform-admin.functions";
 
-type NavChild = { label: string; to: string; icon?: LucideIcon };
+// Nav visibility context passed to each item's `visible` predicate — extend
+// this (not ad-hoc booleans scattered through NAV) whenever a new permission
+// axis needs to gate a menu entry.
+type NavAccess = { isPlatformAdmin: boolean; isOrgOwner: boolean };
+type NavChild = { label: string; to: string; icon?: LucideIcon; visible?: (a: NavAccess) => boolean };
 type NavItem = {
   icon: LucideIcon;
   label: string;
   to?: string;
   children?: NavChild[];
+  visible?: (a: NavAccess) => boolean;
 };
 
 const NAV: NavItem[] = [
@@ -124,9 +129,8 @@ const NAV: NavItem[] = [
     children: [
       { label: "إعدادات المنشأة", to: "/settings/organization", icon: Building2 },
       { label: "الفروع", to: "/settings/branches", icon: Building },
-      { label: "المستخدمون", to: "/settings/users", icon: Users },
-      { label: "الأدوار", to: "/settings/roles", icon: ShieldCheck },
-      { label: "إدارة المنصة", to: "/platform-admin", icon: ShieldCheck },
+      { label: "المستخدمون", to: "/settings/users", icon: Users, visible: (a) => a.isOrgOwner },
+      { label: "الأدوار", to: "/settings/roles", icon: ShieldCheck, visible: (a) => a.isOrgOwner },
       { label: "مناديب المبيعات", to: "/settings/sales-reps", icon: UserCog },
       { label: "الضرائب والربط", to: "/settings/taxes", icon: Receipt },
       { label: "العملات وأسعار الصرف", to: "/settings/currencies", icon: Coins },
@@ -159,7 +163,7 @@ export function Shell({ children }: { children: ReactNode }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const { user, ready, logout } = useAuth();
   const navigate = useNavigate();
-  const { currentOrg, orgs, ready: orgReady, impersonation } = useOrg();
+  const { currentOrg, orgs, ready: orgReady, impersonation, isOrgOwner } = useOrg();
   const platformAdminStatusFn = useServerFn(getPlatformAdminStatus);
   const org = {
     name: currentOrg?.name ?? "بدون منشأة",
@@ -199,7 +203,17 @@ export function Shell({ children }: { children: ReactNode }) {
     return acc;
   }, {});
   const [open, setOpen] = useState<Record<string, boolean>>(initialOpen);
-  const navItems = isPlatformAdmin ? [...NAV.slice(0, -1), ...SUPER_ADMIN_NAV, NAV[NAV.length - 1]] : NAV;
+  const rawNavItems = isPlatformAdmin ? [...NAV.slice(0, -1), ...SUPER_ADMIN_NAV, NAV[NAV.length - 1]] : NAV;
+  // Dynamic UI rendering: every item is checked against the user's actual
+  // access before it's ever drawn — nothing is hidden by CSS, and nothing
+  // renders that the user isn't permitted to open.
+  const navAccess: NavAccess = { isPlatformAdmin, isOrgOwner };
+  const navItems = rawNavItems
+    .map((item) => ({
+      ...item,
+      children: item.children?.filter((c) => c.visible?.(navAccess) ?? true),
+    }))
+    .filter((item) => (item.visible?.(navAccess) ?? true) && (!item.children || item.children.length > 0 || item.to));
 
   if (!ready || !user) {
     return (
