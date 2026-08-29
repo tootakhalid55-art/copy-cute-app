@@ -35,6 +35,7 @@ export function CrudModule({
   emptyDescription,
   headerExtra,
   beforeList,
+  rowActions,
 }: {
   storageKey: string;
   title: string;
@@ -48,6 +49,7 @@ export function CrudModule({
   emptyDescription?: string;
   headerExtra?: ReactNode;
   beforeList?: ReactNode;
+  rowActions?: (row: any) => ReactNode;
 }) {
   const { items, addAsync, update, remove } = useCollection<any>(storageKey);
   const navigate = useNavigate();
@@ -165,6 +167,7 @@ export function CrudModule({
                             <Pencil className="w-3.5 h-3.5" />
                           </button>
                         )}
+                        {rowActions?.(row)}
                         <button
                           onClick={() => {
                             if (confirm("حذف هذا السجل؟")) remove(row.id);
