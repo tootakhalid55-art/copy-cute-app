@@ -38,8 +38,25 @@ fi
 REF="${SUPABASE_PROJECT_REF:-}"
 if [ "${CREATE_PROJECT:-1}" = "1" ] && [ -z "$REF" ]; then
   say "Creating a new Supabase project"
-  ORG="${SUPABASE_ORG_ID:-$(curl -fsS "${AUTH[@]}" "$API/v1/organizations" | jq -r '.[0].id')}"
-  [ -n "$ORG" ] && [ "$ORG" != "null" ] || { echo "No Supabase organization found for this token"; exit 1; }
+  if [ -n "${SUPABASE_ORG_ID:-}" ]; then
+    ORG="$SUPABASE_ORG_ID"
+  else
+    ORG_RESP=$(curl -sS "${AUTH[@]}" -w '\n%{http_code}' "$API/v1/organizations")
+    ORG_CODE=$(echo "$ORG_RESP" | tail -1)
+    ORG_BODY=$(echo "$ORG_RESP" | sed '$d')
+    if [ "$ORG_CODE" != "200" ]; then
+      echo "!! Management API /v1/organizations returned HTTP $ORG_CODE:"
+      echo "$ORG_BODY" | head -3
+      echo "   -> إذا كان 401: الرمز غير صالح أو منتهٍ — أنشئ رمزاً جديداً من supabase.com/dashboard/account/tokens"
+      exit 1
+    fi
+    ORG=$(echo "$ORG_BODY" | jq -r '(.[0].id // .[0].slug // empty)')
+    if [ -z "$ORG" ]; then
+      echo "!! الحساب لا يحتوي على أي منظمة (organizations = $ORG_BODY)."
+      echo "   افتح https://supabase.com/dashboard وأكمل إنشاء الحساب/المنظمة (New organization) ثم أعد تشغيل السكربت."
+      exit 1
+    fi
+  fi
   DB_PASS="$(openssl rand -base64 24 | tr -d '/+=' | cut -c1-24)"
   BODY=$(jq -n --arg org "$ORG" --arg pass "$DB_PASS" --arg region "${SUPABASE_REGION:-eu-central-1}" \
     '{name:"canar-accounting", organization_id:$org, db_pass:$pass, region:$region}')
