@@ -1,0 +1,26 @@
+name: Verify site
+
+on:
+  workflow_dispatch: {}
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check the deployed site
+        run: |
+          echo '== HTTPS =='
+          curl -sS -o /tmp/page.html -w "code=%{http_code} time=%{time_total}s\n" --max-time 30 "https://accounting.canarmodern.com/" || true
+          echo '== HTTP (IP with Host header) =='
+          curl -sS -o /dev/null -w "code=%{http_code}\n" --max-time 30 "http://69.164.245.35/" -H "Host: accounting.canarmodern.com" || true
+          echo '== Page head =='
+          head -c 400 /tmp/page.html 2>/dev/null || echo '(no body)'
+          echo
+          echo '== Public Supabase values baked into the bundle =='
+          ASSET=$(grep -o '/assets/[A-Za-z0-9_.-]*\.js' /tmp/page.html | head -1 || true)
+          echo "asset: $ASSET"
+          if [ -n "$ASSET" ]; then
+            curl -sS --max-time 30 "https://accounting.canarmodern.com$ASSET" -o /tmp/app.js || true
+            grep -o 'https://[a-z]*\.supabase\.co' /tmp/app.js | sort -u | head -3 || echo '(url not found in this chunk)'
+            grep -o 'sb_publishable_[A-Za-z0-9_-]*' /tmp/app.js | sort -u | head -3 || echo '(publishable key not found in this chunk)'
+          fi
