@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { CrudModule } from "@/components/haseem/CrudModule";
+import { RecurringGenerator } from "@/components/haseem/RecurringGenerator";
 
 export const Route = createFileRoute("/sales/recurring")({
   head: () => ({ meta: [{ title: "الفواتير المتكررة — كنار المحاسبية" }] }),
@@ -28,6 +29,7 @@ export const Route = createFileRoute("/sales/recurring")({
         { name: "startDate", label: "البدء" },
         { name: "status", label: "الحالة" },
       ]}
+      beforeList={<RecurringGenerator />}
       emptyTitle="لا توجد فواتير متكررة"
       emptyDescription="أنشئ جدولاً لإصدار الفواتير تلقائياً."
     />

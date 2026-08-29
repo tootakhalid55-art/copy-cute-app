@@ -10,6 +10,7 @@ import {
 import type { LucideIcon } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
 import { useAuth } from "@/lib/haseem/auth";
+import { NotificationsBell } from "./NotificationsBell";
 import { useOrg } from "@/lib/db/org";
 import { BRAND } from "@/lib/brand";
 import { useKV } from "@/lib/haseem/store";
@@ -107,6 +108,9 @@ const NAV: NavItem[] = [
       { label: "دليل الحسابات", to: "/accounting/chart-of-accounts", icon: BookOpen },
       { label: "القيود اليومية", to: "/accounting/journal-entries", icon: BookText },
       { label: "الأستاذ العام", to: "/accounting/general-ledger", icon: ClipboardList },
+      { label: "الأساس المحاسبي والفترات", to: "/settings/accounting-foundation", icon: BookOpen },
+      { label: "ربط الحسابات الافتراضية", to: "/settings/determinations", icon: Plug },
+      { label: "صحة البيانات المالية", to: "/settings/finance-health", icon: ShieldCheck },
     ],
   },
   {
@@ -122,6 +126,7 @@ const NAV: NavItem[] = [
       { label: "المبيعات حسب الصنف", to: "/reports/sales-by-item" },
       { label: "المشتريات حسب المورد", to: "/reports/purchases-by-supplier" },
       { label: "تقرير المبيعات", to: "/reports/sales-report" },
+      { label: "كشف حساب موحّد", to: "/reports/statement", icon: ScrollText },
     ],
   },
   {
@@ -262,6 +267,7 @@ export function Shell({ children }: { children: ReactNode }) {
 
         <div className="flex items-center gap-2 relative">
           <GlobalSearch />
+          <NotificationsBell />
           <Link to="/sales/invoices/new">
             <button className="flex items-center gap-2 bg-[#0f2a1d] text-white rounded-lg px-4 py-2 text-sm font-medium hover:bg-[#163a29]">
               <Plus className="w-4 h-4" />

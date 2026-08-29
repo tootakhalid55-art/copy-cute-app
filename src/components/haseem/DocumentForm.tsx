@@ -497,6 +497,24 @@ export function DocumentForm({
           <OutlineBtn type="button" onClick={handlePrint} disabled={printing}>
             <Printer className="w-4 h-4" /> {printing ? "جارٍ التحضير…" : "طباعة"}
           </OutlineBtn>
+          <OutlineBtn
+            type="button"
+            title="مشاركة ملخص المستند عبر واتساب"
+            onClick={() => {
+              const text = [
+                `${title} ${ref}`,
+                `من: ${org.name}`,
+                party?.name ? `إلى: ${party.name}` : null,
+                `التاريخ: ${date}`,
+                `الإجمالي: ${total.toLocaleString("en-US", { minimumFractionDigits: 2 })} ر.س`,
+                notes ? `ملاحظات: ${notes}` : null,
+              ].filter(Boolean).join("\n");
+              const phone = String(party?.phone ?? "").replace(/[^\d]/g, "");
+              window.open(`https://wa.me/${phone}?text=${encodeURIComponent(text)}`, "_blank", "noopener");
+            }}
+          >
+            مشاركة واتساب
+          </OutlineBtn>
           <OutlineBtn type="button" onClick={() => save("مسودة")}>
             حفظ كمسودة
           </OutlineBtn>
