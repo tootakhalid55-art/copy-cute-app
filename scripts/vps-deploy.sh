@@ -10,9 +10,16 @@ BRANCH="${DEPLOY_BRANCH:-claude/open-app-jqqvl9}"
 
 cd "$APP_DIR"
 echo "== Fetching $BRANCH"
+# .env is tracked in the repo with placeholder values; the server copy holds
+# the real secrets — preserve it across the hard reset.
+cp "$APP_DIR/.env" /tmp/canar-env-backup 2>/dev/null || true
 git fetch origin "$BRANCH"
 git checkout "$BRANCH"
 git reset --hard "origin/$BRANCH"
+if [ -s /tmp/canar-env-backup ]; then
+  cp /tmp/canar-env-backup "$APP_DIR/.env"
+  chmod 600 "$APP_DIR/.env"
+fi
 
 echo "== Install & build"
 npm ci
