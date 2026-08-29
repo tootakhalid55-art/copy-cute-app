@@ -43,22 +43,36 @@ fi
 cd "$APP_DIR"
 git fetch origin && git checkout claude/open-app-jqqvl9 && git pull
 
-if [ ! -f "$APP_DIR/.env" ]; then
-  cp "$APP_DIR/scripts/env.production.example" "$APP_DIR/.env"
-  chmod 600 "$APP_DIR/.env"
-  if [ "${NONINTERACTIVE:-}" = "1" ]; then
-    # CI mode: fill the secret values from the workflow-provided environment.
-    CRON="${CRON_HOOK_SECRET:-$(openssl rand -hex 32)}"
-    sed -i "s|^SUPABASE_SERVICE_ROLE_KEY=.*|SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY:-}|" "$APP_DIR/.env"
-    sed -i "s|^CRON_HOOK_SECRET=.*|CRON_HOOK_SECRET=${CRON}|" "$APP_DIR/.env"
-    if [ -n "${LOVABLE_API_KEY:-}" ]; then
-      sed -i "s|^LOVABLE_API_KEY=.*|LOVABLE_API_KEY=${LOVABLE_API_KEY}|" "$APP_DIR/.env"
-    fi
-  else
-    echo
-    echo ">>> افتح الملف $APP_DIR/.env واملأ القيم (خاصة SUPABASE_SERVICE_ROLE_KEY و CRON_HOOK_SECRET)"
-    read -r -p "اضغط Enter بعد تعبئة .env ... " _
+# NOTE: the repo ships a committed .env with only public keys, so its mere
+# presence does not mean the server is configured — check for the secret.
+if [ "${NONINTERACTIVE:-}" = "1" ]; then
+  # CI mode: (re)write the full env from the workflow-provided environment.
+  CRON="${CRON_HOOK_SECRET:-$(openssl rand -hex 32)}"
+  if [ -f "$APP_DIR/.env" ] && grep -q '^CRON_HOOK_SECRET=..*' "$APP_DIR/.env" && [ -z "${CRON_HOOK_SECRET:-}" ]; then
+    CRON="$(grep '^CRON_HOOK_SECRET=' "$APP_DIR/.env" | cut -d= -f2-)"
   fi
+  : "${SUPABASE_URL:?SUPABASE_URL is required in CI mode}"
+  : "${SUPABASE_PUBLISHABLE_KEY:?SUPABASE_PUBLISHABLE_KEY is required in CI mode}"
+  : "${SUPABASE_SERVICE_ROLE_KEY:?SUPABASE_SERVICE_ROLE_KEY is required in CI mode}"
+  PROJECT_REF="${SUPABASE_PROJECT_ID:-$(echo "$SUPABASE_URL" | sed -E 's#https://([^.]+)\..*#\1#')}"
+  cat > "$APP_DIR/.env" <<ENVEOF
+SUPABASE_PROJECT_ID=${PROJECT_REF}
+SUPABASE_URL=${SUPABASE_URL}
+SUPABASE_PUBLISHABLE_KEY=${SUPABASE_PUBLISHABLE_KEY}
+VITE_SUPABASE_PROJECT_ID=${PROJECT_REF}
+VITE_SUPABASE_URL=${SUPABASE_URL}
+VITE_SUPABASE_PUBLISHABLE_KEY=${SUPABASE_PUBLISHABLE_KEY}
+SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY}
+CRON_HOOK_SECRET=${CRON}
+LOVABLE_API_KEY=${LOVABLE_API_KEY:-}
+ENVEOF
+  chmod 600 "$APP_DIR/.env"
+elif ! grep -q '^SUPABASE_SERVICE_ROLE_KEY=..*' "$APP_DIR/.env" 2>/dev/null; then
+  [ -f "$APP_DIR/.env" ] || cp "$APP_DIR/scripts/env.production.example" "$APP_DIR/.env"
+  chmod 600 "$APP_DIR/.env"
+  echo
+  echo ">>> افتح الملف $APP_DIR/.env واملأ القيم (خاصة SUPABASE_SERVICE_ROLE_KEY و CRON_HOOK_SECRET)"
+  read -r -p "اضغط Enter بعد تعبئة .env ... " _
 fi
 
 npm ci

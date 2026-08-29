@@ -1,0 +1,111 @@
+name: Full setup (Supabase + VPS)
+
+# Re-links the app to Supabase (new project by default, or an existing one)
+# and deploys to the VPS — all in one run.
+#
+# Required repository secrets:
+#   SUPABASE_ACCESS_TOKEN   supabase.com/dashboard/account/tokens
+#   VPS_PASSWORD  (root password)  -- or --  VPS_SSH_KEY (private key)
+#   LOVABLE_API_KEY         optional (AI features)
+
+on:
+  workflow_dispatch:
+    inputs:
+      project_ref:
+        description: "Existing Supabase project ref (leave empty to CREATE a new project)"
+        required: false
+        default: ""
+      region:
+        description: "Region for a new project"
+        required: false
+        default: "eu-central-1"
+
+concurrency:
+  group: deploy-vps
+  cancel-in-progress: false
+
+jobs:
+  setup:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: claude/open-app-jqqvl9
+
+      - name: Provision Supabase (project + migrations + keys + vault)
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_PROJECT_REF: ${{ inputs.project_ref }}
+          SUPABASE_REGION: ${{ inputs.region }}
+        run: |
+          if [ -z "$SUPABASE_ACCESS_TOKEN" ]; then
+            echo "::error::Secret SUPABASE_ACCESS_TOKEN is required (create one at supabase.com/dashboard/account/tokens)."
+            exit 1
+          fi
+          if [ -n "$SUPABASE_PROJECT_REF" ]; then export CREATE_PROJECT=0; else export CREATE_PROJECT=1; fi
+          bash scripts/supabase-provision.sh
+          # Load outputs and mask the secrets in the logs.
+          set -a; . /tmp/supabase-provision.env; set +a
+          echo "::add-mask::$SUPABASE_SERVICE_ROLE_KEY"
+          echo "::add-mask::$CRON_HOOK_SECRET"
+          {
+            echo "SB_REF=$SUPABASE_PROJECT_ID"
+            echo "SB_URL=$SUPABASE_URL"
+            echo "SB_PUB=$SUPABASE_PUBLISHABLE_KEY"
+            echo "SB_SECRET=$SUPABASE_SERVICE_ROLE_KEY"
+            echo "SB_CRON=$CRON_HOOK_SECRET"
+          } >> "$GITHUB_ENV"
+
+      - name: Prepare SSH auth
+        env:
+          VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+          VPS_PASSWORD: ${{ secrets.VPS_PASSWORD }}
+        run: |
+          mkdir -p ~/.ssh && chmod 700 ~/.ssh
+          if [ -n "$VPS_SSH_KEY" ]; then
+            printf '%s\n' "$VPS_SSH_KEY" > ~/.ssh/id_ed25519
+            chmod 600 ~/.ssh/id_ed25519
+            echo "AUTH=key" >> "$GITHUB_ENV"
+          elif [ -n "$VPS_PASSWORD" ]; then
+            sudo apt-get update -y >/dev/null && sudo apt-get install -y sshpass >/dev/null
+            echo "AUTH=password" >> "$GITHUB_ENV"
+          else
+            echo "::error::Set either VPS_SSH_KEY or VPS_PASSWORD in repository secrets."
+            exit 1
+          fi
+
+      - name: Bootstrap the VPS with the new Supabase project
+        env:
+          VPS_PASSWORD: ${{ secrets.VPS_PASSWORD }}
+          LOVKEY: ${{ secrets.LOVABLE_API_KEY }}
+        run: |
+          {
+            echo "export NONINTERACTIVE=1"
+            printf 'export SUPABASE_URL=%q\n' "$SB_URL"
+            printf 'export SUPABASE_PROJECT_ID=%q\n' "$SB_REF"
+            printf 'export SUPABASE_PUBLISHABLE_KEY=%q\n' "$SB_PUB"
+            printf 'export SUPABASE_SERVICE_ROLE_KEY=%q\n' "$SB_SECRET"
+            printf 'export CRON_HOOK_SECRET=%q\n' "$SB_CRON"
+            [ -n "$LOVKEY" ] && printf 'export LOVABLE_API_KEY=%q\n' "$LOVKEY"
+            cat scripts/vps-bootstrap.sh
+          } > /tmp/remote-bootstrap.sh
+
+          SSH_OPTS="-o StrictHostKeyChecking=accept-new -o ConnectTimeout=20"
+          if [ "$AUTH" = "key" ]; then
+            ssh $SSH_OPTS -i ~/.ssh/id_ed25519 root@69.164.245.35 'bash -s' < /tmp/remote-bootstrap.sh
+          else
+            sshpass -p "$VPS_PASSWORD" ssh $SSH_OPTS root@69.164.245.35 'bash -s' < /tmp/remote-bootstrap.sh
+          fi
+
+      - name: Verify site
+        run: |
+          sleep 5
+          code=$(curl -s -o /dev/null -w "%{http_code}" --max-time 30 -k "https://accounting.canarmodern.com/" || echo 000)
+          echo "https://accounting.canarmodern.com -> HTTP $code"
+          code80=$(curl -s -o /dev/null -w "%{http_code}" --max-time 30 "http://69.164.245.35/" -H "Host: accounting.canarmodern.com" || echo 000)
+          echo "http://69.164.245.35 (Host header) -> HTTP $code80"
+          echo
+          echo "== New Supabase project (public values) =="
+          echo "ref: $SB_REF"
+          echo "url: $SB_URL"
+          echo "publishable key: $SB_PUB"
