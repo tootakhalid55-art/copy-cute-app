@@ -6,7 +6,7 @@ set -euo pipefail
 
 APP_DIR="/opt/canar-accounting"
 SERVICE="canar-accounting"
-BRANCH="${DEPLOY_BRANCH:-claude/open-app-jqqvl9}"
+BRANCH="${DEPLOY_BRANCH:-main}"
 
 cd "$APP_DIR"
 echo "== Fetching $BRANCH"

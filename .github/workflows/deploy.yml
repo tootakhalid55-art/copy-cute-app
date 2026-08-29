@@ -3,7 +3,7 @@ name: Deploy to VPS
 on:
   workflow_dispatch: {}
   push:
-    branches: [claude/open-app-jqqvl9]
+    branches: [main]
 
 concurrency:
   group: deploy-vps

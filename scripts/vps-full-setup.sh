@@ -3,7 +3,7 @@
 # One-command full setup, run DIRECTLY ON THE VPS as root:
 #
 #   export SUPABASE_ACCESS_TOKEN=sbp_xxxxxxxxxxxxxxxxx
-#   curl -fsSL https://raw.githubusercontent.com/tootakhalid55-art/copy-cute-app/claude/open-app-jqqvl9/scripts/vps-full-setup.sh | bash
+#   curl -fsSL https://raw.githubusercontent.com/tootakhalid55-art/copy-cute-app/main/scripts/vps-full-setup.sh | bash
 #
 # Creates a fresh Supabase project (once — reuses it on re-runs),
 # applies all migrations, fetches the API keys, then installs and
@@ -18,7 +18,7 @@ set -euo pipefail
 [ "$(id -u)" -eq 0 ] || { echo "Run as root"; exit 1; }
 
 APP_DIR="/opt/canar-accounting"
-BRANCH="claude/open-app-jqqvl9"
+BRANCH="main"
 REPO_URL="https://github.com/tootakhalid55-art/copy-cute-app.git"
 PROVISION_OUT="/root/.canar-supabase.env"
 

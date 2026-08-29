@@ -38,10 +38,10 @@ node -v && npm -v
 
 say "2/6 Clone & build"
 if [ ! -d "$APP_DIR/.git" ]; then
-  git clone --branch claude/open-app-jqqvl9 "$REPO_URL" "$APP_DIR"
+  git clone --branch main "$REPO_URL" "$APP_DIR"
 fi
 cd "$APP_DIR"
-git fetch origin && git checkout claude/open-app-jqqvl9 && git pull
+git fetch origin && git checkout main && git pull
 
 # NOTE: the repo ships a committed .env with only public keys, so its mere
 # presence does not mean the server is configured — check for the secret.
