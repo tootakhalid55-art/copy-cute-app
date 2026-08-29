@@ -19,6 +19,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          # The deployable code lives on this branch regardless of the ref
+          # the workflow was dispatched from.
+          ref: claude/open-app-jqqvl9
 
       - name: Prepare SSH auth
         env:
