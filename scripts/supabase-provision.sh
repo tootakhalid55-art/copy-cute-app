@@ -52,9 +52,20 @@ if [ "${CREATE_PROJECT:-1}" = "1" ] && [ -z "$REF" ]; then
     fi
     ORG=$(echo "$ORG_BODY" | jq -r '(.[0].id // .[0].slug // empty)')
     if [ -z "$ORG" ]; then
-      echo "!! الحساب لا يحتوي على أي منظمة (organizations = $ORG_BODY)."
-      echo "   افتح https://supabase.com/dashboard وأكمل إنشاء الحساب/المنظمة (New organization) ثم أعد تشغيل السكربت."
-      exit 1
+      echo "No organization on this account — creating one via the Management API"
+      CREATE_RESP=$(curl -sS -X POST "${AUTH[@]}" "${JSON[@]}" \
+        -d '{"name":"Canar Modern"}' -w '\n%{http_code}' "$API/v1/organizations")
+      CREATE_CODE=$(echo "$CREATE_RESP" | tail -1)
+      CREATE_BODY=$(echo "$CREATE_RESP" | sed '$d')
+      if [ "$CREATE_CODE" != "200" ] && [ "$CREATE_CODE" != "201" ]; then
+        echo "!! تعذر إنشاء المنظمة آلياً (HTTP $CREATE_CODE):"
+        echo "$CREATE_BODY" | head -3
+        echo "   افتح https://supabase.com/dashboard وأنشئ المنظمة يدوياً (New organization) ثم أعد تشغيل السكربت."
+        exit 1
+      fi
+      ORG=$(echo "$CREATE_BODY" | jq -r '(.id // .slug // empty)')
+      [ -n "$ORG" ] || { echo "!! استجابة غير متوقعة: $CREATE_BODY"; exit 1; }
+      echo "Organization created: $ORG"
     fi
   fi
   DB_PASS="$(openssl rand -base64 24 | tr -d '/+=' | cut -c1-24)"
