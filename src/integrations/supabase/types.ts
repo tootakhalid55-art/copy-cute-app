@@ -4317,6 +4317,91 @@ export type Database = {
         }
         Relationships: []
       }
+      settlement_refunds: {
+        Row: {
+          amount: number
+          created_at: string
+          created_by: string | null
+          currency: string
+          id: string
+          journal_entry_id: string | null
+          org_id: string
+          reason: string | null
+          refund_date: string
+          source_document_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          created_by?: string | null
+          currency?: string
+          id?: string
+          journal_entry_id?: string | null
+          org_id: string
+          reason?: string | null
+          refund_date?: string
+          source_document_id: string
+        }
+        Update: {
+          amount?: number
+          currency?: string
+          reason?: string | null
+        }
+        Relationships: []
+      }
+      zatca_invoices: {
+        Row: {
+          api_response: Json
+          created_at: string
+          created_by: string | null
+          document_id: string
+          environment: string
+          icv: number
+          id: string
+          invoice_hash: string | null
+          org_id: string
+          pih: string
+          qr: string | null
+          status: string
+          updated_at: string
+          uuid: string
+          xml: string | null
+        }
+        Insert: {
+          api_response?: Json
+          created_at?: string
+          created_by?: string | null
+          document_id: string
+          environment?: string
+          icv: number
+          id?: string
+          invoice_hash?: string | null
+          org_id: string
+          pih: string
+          qr?: string | null
+          status?: string
+          updated_at?: string
+          uuid?: string
+          xml?: string | null
+        }
+        Update: {
+          api_response?: Json
+          invoice_hash?: string | null
+          qr?: string | null
+          status?: string
+          updated_at?: string
+          xml?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "zatca_invoices_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       posting_events: {
         Row: {
           created_at: string
@@ -4980,6 +5065,14 @@ export type Database = {
           _payload: Json
         }
         Returns: string
+      }
+      zatca_attach_xml: {
+        Args: { _org: string; _doc_id: string; _xml: string; _hash: string; _qr: string }
+        Returns: undefined
+      }
+      zatca_next_chain: {
+        Args: { _org: string; _doc_id: string }
+        Returns: Json
       }
       cancel_document: {
         Args: { _org: string; _doc_id: string; _reason?: string | null }

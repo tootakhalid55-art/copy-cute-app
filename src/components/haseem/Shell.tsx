@@ -138,6 +138,7 @@ const NAV: NavItem[] = [
       { label: "الأدوار", to: "/settings/roles", icon: ShieldCheck, visible: (a) => a.isOrgOwner },
       { label: "مناديب المبيعات", to: "/settings/sales-reps", icon: UserCog },
       { label: "الضرائب والربط", to: "/settings/taxes", icon: Receipt },
+      { label: "الفوترة الإلكترونية ZATCA", to: "/settings/zatca", icon: Receipt },
       { label: "العملات وأسعار الصرف", to: "/settings/currencies", icon: Coins },
       { label: "طرق الدفع", to: "/settings/payment-methods", icon: CreditCard },
       { label: "الترقيم التلقائي", to: "/settings/numbering", icon: Hash },
