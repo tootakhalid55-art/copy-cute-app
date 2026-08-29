@@ -14,9 +14,8 @@ export const Route = createFileRoute("/api/public/hooks/ap-intake-process")({
   server: {
     handlers: {
       POST: async ({ request }) => {
-        const apiKey = request.headers.get("apikey") ?? "";
-        const expected = process.env.SUPABASE_PUBLISHABLE_KEY ?? "";
-        if (!apiKey || apiKey !== expected) {
+        const { verifyCronSecret } = await import("@/lib/cron-auth.server");
+        if (!verifyCronSecret(request)) {
           return new Response(JSON.stringify({ error: "unauthorized" }), { status: 401 });
         }
         const admin = await adminClient();
@@ -43,7 +42,7 @@ export const Route = createFileRoute("/api/public/hooks/ap-intake-process")({
               .update({ status: "extracting", extraction_started_at: new Date().toISOString() })
               .eq("id", intake.id);
 
-            const { callLovableAI } = await import("@/lib/ai-gateway.server");
+            const { callAnthropicAI } = await import("@/lib/ai-gateway.server");
             const fileDataUrl: string = job.payload?.fileDataUrl;
             const filename: string = job.payload?.filename || "invoice";
             const isPdf = fileDataUrl?.startsWith("data:application/pdf");
@@ -62,10 +61,9 @@ export const Route = createFileRoute("/api/public/hooks/ap-intake-process")({
                 ? { type: "file", file: { filename, file_data: fileDataUrl } }
                 : { type: "image_url", image_url: { url: fileDataUrl } },
             ];
-            const raw = await callLovableAI({
-              model: "google/gemini-3.6-flash",
-              response_format: { type: "json_object" },
-              temperature: 0.1,
+            const raw = await callAnthropicAI({
+              model: "claude-sonnet-5",
+              maxTokens: 8192,
               messages: [
                 { role: "system", content: "Return JSON only." },
                 { role: "user", content },
@@ -127,7 +125,7 @@ export const Route = createFileRoute("/api/public/hooks/ap-intake-process")({
               .update({
                 status: nextStatus,
                 extraction,
-                extraction_model: "google/gemini-3.6-flash",
+                extraction_model: "claude-sonnet-5",
                 extraction_completed_at: new Date().toISOString(),
                 confidence,
                 matched_party_id: best?.party_id ?? null,

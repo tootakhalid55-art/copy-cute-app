@@ -1,6 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { CrudModule } from "@/components/haseem/CrudModule";
 import { Badge, money, statusTone } from "@/components/haseem/Shell";
+import { RecordPaymentButton } from "@/components/haseem/RecordPaymentButton";
+import { ZatcaXmlButton } from "@/components/haseem/ZatcaXmlButton";
 
 export const Route = createFileRoute("/sales/invoices/")({
   component: () => (
@@ -20,6 +22,7 @@ export const Route = createFileRoute("/sales/invoices/")({
         { name: "total", label: "الإجمالي", format: (r) => money(r.total) },
         { name: "status", label: "الحالة", format: (r) => <Badge tone={statusTone(r.status)}>{r.status}</Badge> },
       ]}
+      rowActions={(row) => (<><RecordPaymentButton row={row} side="receivable" /><ZatcaXmlButton row={row} /></>)}
     />
   ),
 });

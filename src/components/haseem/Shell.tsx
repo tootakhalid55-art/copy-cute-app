@@ -10,6 +10,7 @@ import {
 import type { LucideIcon } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
 import { useAuth } from "@/lib/haseem/auth";
+import { NotificationsBell } from "./NotificationsBell";
 import { useOrg } from "@/lib/db/org";
 import { BRAND } from "@/lib/brand";
 import { useKV } from "@/lib/haseem/store";
@@ -107,6 +108,9 @@ const NAV: NavItem[] = [
       { label: "دليل الحسابات", to: "/accounting/chart-of-accounts", icon: BookOpen },
       { label: "القيود اليومية", to: "/accounting/journal-entries", icon: BookText },
       { label: "الأستاذ العام", to: "/accounting/general-ledger", icon: ClipboardList },
+      { label: "الأساس المحاسبي والفترات", to: "/settings/accounting-foundation", icon: BookOpen },
+      { label: "ربط الحسابات الافتراضية", to: "/settings/determinations", icon: Plug },
+      { label: "صحة البيانات المالية", to: "/settings/finance-health", icon: ShieldCheck },
     ],
   },
   {
@@ -122,6 +126,7 @@ const NAV: NavItem[] = [
       { label: "المبيعات حسب الصنف", to: "/reports/sales-by-item" },
       { label: "المشتريات حسب المورد", to: "/reports/purchases-by-supplier" },
       { label: "تقرير المبيعات", to: "/reports/sales-report" },
+      { label: "كشف حساب موحّد", to: "/reports/statement", icon: ScrollText },
     ],
   },
   {
@@ -133,6 +138,7 @@ const NAV: NavItem[] = [
       { label: "الأدوار", to: "/settings/roles", icon: ShieldCheck, visible: (a) => a.isOrgOwner },
       { label: "مناديب المبيعات", to: "/settings/sales-reps", icon: UserCog },
       { label: "الضرائب والربط", to: "/settings/taxes", icon: Receipt },
+      { label: "الفوترة الإلكترونية ZATCA", to: "/settings/zatca", icon: Receipt },
       { label: "العملات وأسعار الصرف", to: "/settings/currencies", icon: Coins },
       { label: "طرق الدفع", to: "/settings/payment-methods", icon: CreditCard },
       { label: "الترقيم التلقائي", to: "/settings/numbering", icon: Hash },
@@ -262,6 +268,7 @@ export function Shell({ children }: { children: ReactNode }) {
 
         <div className="flex items-center gap-2 relative">
           <GlobalSearch />
+          <NotificationsBell />
           <Link to="/sales/invoices/new">
             <button className="flex items-center gap-2 bg-[#0f2a1d] text-white rounded-lg px-4 py-2 text-sm font-medium hover:bg-[#163a29]">
               <Plus className="w-4 h-4" />
@@ -514,8 +521,9 @@ export function Badge({ children, tone = "neutral" }: { children: ReactNode; ton
 }
 
 export function statusTone(status: string): "green" | "amber" | "red" | "neutral" | "blue" {
-  if (["مؤكد", "مدفوع", "مغلق", "نشط"].includes(status)) return "green";
-  if (["مسودة", "قيد الانتظار", "جديد"].includes(status)) return "amber";
+  if (["مؤكد", "مرحل", "معتمد", "مدفوع", "مغلق", "نشط"].includes(status)) return "green";
+  if (["مسودة", "قيد الانتظار", "مدفوع جزئياً", "جديد"].includes(status)) return "amber";
   if (["ملغي", "مرفوض", "متأخر"].includes(status)) return "red";
+  if (["مؤرشف"].includes(status)) return "neutral";
   return "neutral";
 }

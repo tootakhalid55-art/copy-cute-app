@@ -11,16 +11,16 @@ export const Route = createFileRoute("/api/public/hooks/finance-health")({
   server: {
     handlers: {
       POST: async ({ request }) => {
-        const apiKey = request.headers.get("apikey") ?? "";
-        const expected = process.env.SUPABASE_PUBLISHABLE_KEY ?? "";
-        if (!apiKey || apiKey !== expected) {
-          log.warn("finance_health.unauthorized", { has_key: !!apiKey });
+        const { verifyCronSecret } = await import("@/lib/cron-auth.server");
+        if (!verifyCronSecret(request)) {
+          log.warn("finance_health.unauthorized", {});
           return new Response(JSON.stringify({ error: "unauthorized" }), {
             status: 401, headers: { "Content-Type": "application/json" },
           });
         }
 
         const url = process.env.SUPABASE_URL!;
+        const apiKey = process.env.SUPABASE_PUBLISHABLE_KEY!;
         const admin = createClient(url, apiKey, {
           auth: { persistSession: false, autoRefreshToken: false },
           global: {

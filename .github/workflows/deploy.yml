@@ -3,7 +3,7 @@ name: Deploy to VPS
 on:
   workflow_dispatch: {}
   push:
-    branches: [claude/open-app-jqqvl9]
+    branches: [main]
 
 concurrency:
   group: deploy-vps
@@ -19,7 +19,7 @@ jobs:
           VPS_PASSWORD: ${{ secrets.VPS_PASSWORD }}
         run: |
           SSH_OPTS="-o StrictHostKeyChecking=accept-new -o ConnectTimeout=20"
-          CMD="DEPLOY_BRANCH='claude/open-app-jqqvl9' bash /opt/canar-accounting/scripts/vps-deploy.sh"
+          CMD="DEPLOY_BRANCH='${GITHUB_REF_NAME}' bash /opt/canar-accounting/scripts/vps-deploy.sh"
           if [ -n "$VPS_SSH_KEY" ]; then
             mkdir -p ~/.ssh && chmod 700 ~/.ssh
             printf '%s\n' "$VPS_SSH_KEY" > ~/.ssh/id_ed25519

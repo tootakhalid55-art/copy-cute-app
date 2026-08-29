@@ -1,4 +1,8 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { useOrg } from "@/lib/db/org";
+import { getAgingBuckets } from "@/lib/accounting/settlement";
 import { Shell, PrimaryBtn, OutlineBtn, money } from "@/components/haseem/Shell";
 import { useCollection, useKV } from "@/lib/haseem/store";
 import { useAuth } from "@/lib/haseem/auth";
@@ -20,9 +24,10 @@ function DashboardPage() {
   const { items: customers } = useCollection<any>("customers");
   const { items: items_ } = useCollection<any>("items");
 
-  const salesTotal = invoices.reduce((s, i) => s + Number(i.total || 0), 0);
-  const outstandingSales = invoices.filter((i) => i.status !== "مدفوع").reduce((s, i) => s + Number(i.total || 0), 0);
-  const purchasesTotal = bills.reduce((s, b) => s + Number(b.total || 0), 0);
+  const active = (r: any) => r.status !== "مسودة" && r.status !== "ملغي";
+  const salesTotal = invoices.filter(active).reduce((s, i) => s + Number(i.total || 0), 0);
+  const outstandingSales = invoices.filter((i) => active(i) && i.status !== "مدفوع").reduce((s, i) => s + Number(i.total || 0), 0);
+  const purchasesTotal = bills.filter(active).reduce((s, b) => s + Number(b.total || 0), 0);
   const cashIn = receipts.reduce((s, r) => s + Number(r.amount || 0), 0);
   const cashOut = payments.reduce((s, p) => s + Number(p.amount || 0), 0) + expenses.reduce((s, e) => s + Number(e.amount || 0), 0);
   const netCash = cashIn - cashOut;
@@ -56,6 +61,8 @@ function DashboardPage() {
         <KPI label="إجمالي المبيعات" value={money(salesTotal)} />
         <KPI label="صافي الربح" value={money(netProfit)} tone={netProfit >= 0 ? "text-[#0f6b3a]" : "text-[#c65b3c]"} />
       </section>
+
+      <OverdueWidget />
 
       {invoices.length === 0 && bills.length === 0 && (
         <section className="rounded-xl bg-[#fdfcf4] border border-dashed border-[#d9d3b8] p-6 space-y-4">
@@ -100,6 +107,54 @@ function DashboardPage() {
         </div>
       </section>
     </Shell>
+  );
+}
+
+function OverdueWidget() {
+  const { currentOrgId } = useOrg();
+  const [rows, setRows] = useState<Array<{ name: string; overdue: number; d91: number }>>([]);
+  useEffect(() => {
+    if (!currentOrgId) return;
+    Promise.all([
+      getAgingBuckets({ orgId: currentOrgId, partyType: "customer" }),
+      supabase.from("parties").select("id,name").eq("org_id", currentOrgId).then(({ data }) => data ?? []),
+    ])
+      .then(([aging, parties]) => {
+        const names = Object.fromEntries((parties as any[]).map((p) => [p.id, p.name]));
+        setRows(
+          aging
+            .map((r) => ({
+              name: names[r.party_id] ?? "—",
+              overdue: Number(r.d1_30 || 0) + Number(r.d31_60 || 0) + Number(r.d61_90 || 0) + Number(r.d91_plus || 0),
+              d91: Number(r.d91_plus || 0),
+            }))
+            .filter((r) => r.overdue > 0.009)
+            .sort((a, b) => b.overdue - a.overdue)
+            .slice(0, 5),
+        );
+      })
+      .catch(() => setRows([]));
+  }, [currentOrgId]);
+  const total = rows.reduce((s, r) => s + r.overdue, 0);
+  if (!rows.length) return null;
+  return (
+    <section className="rounded-xl bg-[#fdf6f2] border border-[#f0d9cc] p-5">
+      <div className="flex items-center justify-between">
+        <div>
+          <h3 className="font-semibold text-[#a3492c]">مستحقات متأخرة عن السداد</h3>
+          <p className="text-xs text-[#0f2a1d]/60 mt-0.5">تجاوزت تاريخ الاستحقاق — الإجمالي {money(total)}</p>
+        </div>
+        <Link to="/reports/aged-receivables" className="text-xs border border-[#f0d9cc] rounded-lg px-3 py-1.5">تقرير الأعمار</Link>
+      </div>
+      <ul className="divide-y divide-[#f0d9cc] mt-3">
+        {rows.map((r) => (
+          <li key={r.name} className="flex items-center justify-between py-2 text-sm">
+            <span>{r.name}{r.d91 > 0 && <span className="text-[10px] text-red-600 mr-2">(+90 يوم: {money(r.d91)})</span>}</span>
+            <span className="font-semibold tabular-nums text-[#a3492c]">{money(r.overdue)}</span>
+          </li>
+        ))}
+      </ul>
+    </section>
   );
 }
 

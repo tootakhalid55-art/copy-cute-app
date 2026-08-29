@@ -86,6 +86,9 @@ function toAnthropicContent(content: GatewayMessage["content"]) {
 export async function callAnthropicAI(opts: {
   model: string;
   messages: GatewayMessage[];
+  /** Accepted for call-site compatibility but never sent: current Claude
+   *  models (Sonnet 5 / Opus 5 and the 4.7+ family) reject sampling
+   *  parameters with a 400. */
   temperature?: number;
   maxTokens?: number;
 }): Promise<string> {
@@ -119,7 +122,6 @@ export async function callAnthropicAI(opts: {
       ...(system ? { system } : {}),
       messages,
       max_tokens: opts.maxTokens ?? 4096,
-      ...(opts.temperature != null ? { temperature: opts.temperature } : {}),
     }),
   });
 

@@ -237,14 +237,37 @@ export async function transitionStatus(
     throw new Error(`Illegal transition ${from} → ${next}`);
   }
 
-  const patch: any = { status: next, updated_by: uid };
-  const { data, error } = await (supabase.from("documents") as any)
-    .update(patch)
-    .eq("id", id)
-    .eq("org_id", orgId)
-    .select("*")
-    .single();
-  if (error) throw error;
+  let data: any;
+  if (next === "posted") {
+    // Atomic on the server: status transition + journal entry in one transaction.
+    const { error } = await supabase.rpc("post_document", { _org: orgId, _doc_id: id } as never);
+    if (error) throw error;
+  } else if (next === "cancelled") {
+    // Reverses the journal server-side when the document was posted.
+    const { error } = await supabase.rpc("cancel_document", {
+      _org: orgId,
+      _doc_id: id,
+      _reason: opts?.comment ?? null,
+    } as never);
+    if (error) throw error;
+  } else {
+    const patch: any = { status: next, updated_by: uid };
+    const { error } = await (supabase.from("documents") as any)
+      .update(patch)
+      .eq("id", id)
+      .eq("org_id", orgId);
+    if (error) throw error;
+  }
+  {
+    const { data: fresh, error: freshErr } = await supabase
+      .from("documents")
+      .select("*")
+      .eq("id", id)
+      .eq("org_id", orgId)
+      .single();
+    if (freshErr) throw freshErr;
+    data = fresh;
+  }
 
   const typeMap: Record<DocStatus, any> = {
     draft: "document.updated",

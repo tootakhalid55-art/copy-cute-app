@@ -30,7 +30,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: claude/open-app-jqqvl9
+          ref: main
 
       - name: Provision Supabase (project + migrations + keys + vault)
         env:

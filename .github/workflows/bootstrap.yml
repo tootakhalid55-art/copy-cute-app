@@ -22,7 +22,7 @@ jobs:
         with:
           # The deployable code lives on this branch regardless of the ref
           # the workflow was dispatched from.
-          ref: claude/open-app-jqqvl9
+          ref: main
 
       - name: Prepare SSH auth
         env:
