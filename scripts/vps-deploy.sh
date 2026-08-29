@@ -29,7 +29,7 @@ echo "== Restart"
 systemctl restart "$SERVICE"
 sleep 4
 
-code=$(curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:3000/ || echo 000)
+code=$(curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:3001/ || echo 000)
 echo "Local HTTP: $code"
 if [ "$code" != "200" ]; then
   echo "!! App did not answer 200 after restart"

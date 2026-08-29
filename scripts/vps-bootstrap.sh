@@ -88,7 +88,7 @@ After=network.target
 Type=simple
 WorkingDirectory=${APP_DIR}
 EnvironmentFile=${APP_DIR}/.env
-Environment=PORT=3000
+Environment=PORT=3001
 Environment=HOST=127.0.0.1
 Environment=NODE_ENV=production
 ExecStart=/usr/bin/node ${APP_DIR}/.output/server/index.mjs
@@ -103,7 +103,7 @@ systemctl daemon-reload
 systemctl enable --now "$SERVICE"
 sleep 3
 systemctl --no-pager --lines=5 status "$SERVICE" || true
-curl -s -o /dev/null -w "Local app HTTP: %{http_code}\n" http://127.0.0.1:3000/ || true
+curl -s -o /dev/null -w "Local app HTTP: %{http_code}\n" http://127.0.0.1:3001/ || true
 
 say "4/6 nginx + SSL (${DOMAIN})"
 cat > "/etc/nginx/sites-available/${DOMAIN}" <<NGINX
@@ -115,7 +115,7 @@ server {
     client_max_body_size 25m;
 
     location / {
-        proxy_pass http://127.0.0.1:3000;
+        proxy_pass http://127.0.0.1:3001;
         proxy_http_version 1.1;
         proxy_set_header Host \$host;
         proxy_set_header X-Real-IP \$remote_addr;
