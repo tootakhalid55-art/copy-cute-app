@@ -71,7 +71,15 @@ if [ "${CREATE_PROJECT:-1}" = "1" ] && [ -z "$REF" ]; then
   DB_PASS="$(openssl rand -base64 24 | tr -d '/+=' | cut -c1-24)"
   BODY=$(jq -n --arg org "$ORG" --arg pass "$DB_PASS" --arg region "${SUPABASE_REGION:-eu-central-1}" \
     '{name:"canar-accounting", organization_id:$org, db_pass:$pass, region:$region}')
-  REF=$(curl -fsS -X POST "${AUTH[@]}" "${JSON[@]}" -d "$BODY" "$API/v1/projects" | jq -r '.id')
+  PROJ_RESP=$(curl -sS -X POST "${AUTH[@]}" "${JSON[@]}" -d "$BODY" -w '\n%{http_code}' "$API/v1/projects")
+  PROJ_CODE=$(echo "$PROJ_RESP" | tail -1)
+  PROJ_BODY=$(echo "$PROJ_RESP" | sed '$d')
+  if [ "$PROJ_CODE" != "200" ] && [ "$PROJ_CODE" != "201" ]; then
+    echo "!! Project creation failed (HTTP $PROJ_CODE):"
+    echo "$PROJ_BODY"
+    exit 1
+  fi
+  REF=$(echo "$PROJ_BODY" | jq -r '.id')
   echo "Project ref: $REF (org $ORG)"
   echo "(database password was generated randomly; reset it from the dashboard if you ever need direct psql access)"
 fi
