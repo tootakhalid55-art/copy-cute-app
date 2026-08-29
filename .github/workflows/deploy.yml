@@ -1,0 +1,28 @@
+name: Deploy to VPS
+
+on:
+  workflow_dispatch: {}
+  push:
+    branches: [claude/open-app-jqqvl9]
+
+concurrency:
+  group: deploy-vps
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: SSH deploy
+        env:
+          VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+        run: |
+          if [ -z "$VPS_SSH_KEY" ]; then
+            echo "::warning::Secret VPS_SSH_KEY is not set — skipping deploy. Run scripts/vps-bootstrap.sh on the server, then add the printed key as a repo secret."
+            exit 0
+          fi
+          mkdir -p ~/.ssh
+          printf '%s\n' "$VPS_SSH_KEY" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ssh -o StrictHostKeyChecking=accept-new root@69.164.245.35 \
+            "DEPLOY_BRANCH='${GITHUB_REF_NAME}' bash /opt/canar-accounting/scripts/vps-deploy.sh"
