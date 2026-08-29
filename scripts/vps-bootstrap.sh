@@ -8,9 +8,7 @@
 #
 # What it does:
 #   1. Installs Node.js 22, git, nginx, certbot
-#   2. Generates a GitHub deploy key (prints it; add it to the repo:
-#      GitHub -> Settings -> Deploy keys -> Add, read-only)
-#   3. Clones the repo to /opt/canar-accounting and builds it
+#   2. Clones the repo to /opt/canar-accounting and builds it
 #   4. Creates .env from the template (edit it when prompted)
 #   5. Installs the systemd service + nginx vhost + SSL certificate
 #   6. Generates a key for GitHub Actions auto-deploy (prints private
@@ -18,7 +16,7 @@
 # ============================================================
 set -euo pipefail
 
-REPO_SSH="git@github.com:tootakhalid55-art/copy-cute-app.git"
+REPO_URL="https://github.com/tootakhalid55-art/copy-cute-app.git"
 APP_DIR="/opt/canar-accounting"
 DOMAIN="accounting.canarmodern.com"
 SERVICE="canar-accounting"
@@ -38,27 +36,9 @@ if ! command -v node >/dev/null || [ "$(node -v | cut -c2-3)" -lt "$NODE_MAJOR" 
 fi
 node -v && npm -v
 
-say "2/6 GitHub deploy key"
-if [ ! -f /root/.ssh/canar_deploy ]; then
-  mkdir -p /root/.ssh && chmod 700 /root/.ssh
-  ssh-keygen -t ed25519 -N "" -f /root/.ssh/canar_deploy -C "canar-vps-deploy"
-fi
-cat > /root/.ssh/config <<CFG
-Host github.com
-  IdentityFile /root/.ssh/canar_deploy
-  StrictHostKeyChecking accept-new
-CFG
-chmod 600 /root/.ssh/config
-echo
-echo ">>> أضف هذا المفتاح في GitHub: Settings -> Deploy keys -> Add deploy key (قراءة فقط):"
-echo "--------------------------------------------------------------"
-cat /root/.ssh/canar_deploy.pub
-echo "--------------------------------------------------------------"
-read -r -p "اضغط Enter بعد إضافة المفتاح في GitHub... " _
-
-say "3/6 Clone & build"
+say "2/6 Clone & build"
 if [ ! -d "$APP_DIR/.git" ]; then
-  git clone --branch claude/open-app-jqqvl9 "$REPO_SSH" "$APP_DIR"
+  git clone --branch claude/open-app-jqqvl9 "$REPO_URL" "$APP_DIR"
 fi
 cd "$APP_DIR"
 git fetch origin && git checkout claude/open-app-jqqvl9 && git pull
@@ -74,7 +54,7 @@ fi
 npm ci
 npm run build
 
-say "4/6 systemd service"
+say "3/6 systemd service"
 cat > "/etc/systemd/system/${SERVICE}.service" <<UNIT
 [Unit]
 Description=Canar Accounting (TanStack Start / Nitro node-server)
@@ -101,7 +81,7 @@ sleep 3
 systemctl --no-pager --lines=5 status "$SERVICE" || true
 curl -s -o /dev/null -w "Local app HTTP: %{http_code}\n" http://127.0.0.1:3000/ || true
 
-say "5/6 nginx + SSL (${DOMAIN})"
+say "4/6 nginx + SSL (${DOMAIN})"
 cat > "/etc/nginx/sites-available/${DOMAIN}" <<NGINX
 server {
     listen 80;
@@ -132,7 +112,7 @@ else
   echo "   certbot --nginx -d ${DOMAIN} --redirect"
 fi
 
-say "6/6 GitHub Actions auto-deploy key"
+say "5/6 GitHub Actions auto-deploy key"
 if [ ! -f /root/.ssh/canar_actions ]; then
   ssh-keygen -t ed25519 -N "" -f /root/.ssh/canar_actions -C "canar-actions-deploy"
   cat /root/.ssh/canar_actions.pub >> /root/.ssh/authorized_keys
