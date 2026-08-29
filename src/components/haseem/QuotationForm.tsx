@@ -13,7 +13,7 @@ import QRCode from "qrcode";
 import { DocumentSidePanel } from "./DocumentSidePanel";
 import { QuotationPreview } from "./QuotationPreview";
 import { useOrg } from "@/lib/db/org";
-import { syncDocumentToCloud, toDocKind } from "@/lib/db/document-bridge";
+import { toDocKind } from "@/lib/db/document-bridge";
 
 function fileToDataURL(f: File): Promise<string> {
   return new Promise((res, rej) => {
@@ -50,7 +50,7 @@ export function QuotationForm({ docId }: { docId?: string }) {
 
   const { items: parties, addAsync: addPartyAsync } = useCollection<any>(partyKey);
   const { items: products } = useCollection<any>("items");
-  const { items: docs, add, update } = useCollection<any>(storageKey);
+  const { items: docs, addAsync, update } = useCollection<any>(storageKey);
   const existing = docId ? docs.find((d) => d.id === docId) : null;
 
   const [org] = useKV<{ name: string; taxNumber: string }>("org", {
@@ -166,8 +166,8 @@ export function QuotationForm({ docId }: { docId?: string }) {
 
   const { currentOrgId } = useOrg();
   const cloudKind = useMemo(() => toDocKind("sales-quotation"), []);
-  const [dbId, setDbId] = useState<string | null>((existing as any)?.dbId ?? null);
-  useEffect(() => { setDbId((existing as any)?.dbId ?? null); }, [existing?.id]);
+  const [dbId, setDbId] = useState<string | null>((existing as any)?.dbId ?? existing?.id ?? null);
+  useEffect(() => { setDbId((existing as any)?.dbId ?? existing?.id ?? null); }, [existing?.id]);
   const [enablingCloud, setEnablingCloud] = useState(false);
   const [uploading, setUploading] = useState(false);
 
@@ -193,51 +193,18 @@ export function QuotationForm({ docId }: { docId?: string }) {
       status,
       dbId,
     };
-    let localId = existing?.id;
-    if (existing) update(existing.id, payload);
-    else {
-      const rec = add(payload);
-      localId = rec?.id;
+    // The collections adapter persists straight to the `documents` table now.
+    try {
+      if (existing) update(existing.id, payload);
+      else await addAsync(payload);
+      navigate({ to: backTo });
+    } catch (e: any) {
+      alert(`تعذّر الحفظ: ${e?.message ?? e}`);
     }
-    if (currentOrgId && dbId) {
-      try {
-        await syncDocumentToCloud(
-          currentOrgId,
-          cloudKind,
-          { ...payload, id: localId, dueDate: expiry },
-          dbId,
-        );
-      } catch (e: any) {
-        console.error("cloud sync failed", e);
-      }
-    }
-    navigate({ to: backTo });
   };
 
-  const enableCloud = async () => {
-    if (!currentOrgId) { alert("اختر منشأة أولاً لتفعيل التخزين السحابي"); return; }
-    if (!isValid) { alert(`لا يمكن التفعيل قبل استيفاء الحقول:\n- ${validation.join("\n- ")}`); return; }
-    setEnablingCloud(true);
-    try {
-      const newDbId = await syncDocumentToCloud(
-        currentOrgId,
-        cloudKind,
-        {
-          id: existing?.id, ref, date, dueDate: expiry,
-          partyId, partyName: party?.name ?? "—",
-          notes, lines, subtotal, tax, total,
-          poNumber, project,
-        },
-        null,
-      );
-      setDbId(newDbId);
-      if (existing) update(existing.id, { dbId: newDbId } as any);
-    } catch (e: any) {
-      alert(`تعذّر التفعيل: ${e.message ?? e}`);
-    } finally {
-      setEnablingCloud(false);
-    }
-  };
+  // Documents are cloud-native now — kept as a no-op for the side panel prop.
+  const enableCloud = async () => {};
 
   // New party quick-add
   const [newParty, setNewParty] = useState<any>({ name: "", taxNumber: "", email: "", phone: "" });

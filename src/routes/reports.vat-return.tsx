@@ -8,17 +8,29 @@ export const Route = createFileRoute("/reports/vat-return")({
   component: VAT,
 });
 
+// Only documents that actually hit the ledger count toward the VAT return.
+const COUNTED = new Set(["مرحل", "مؤكد", "مدفوع", "مدفوع جزئياً", "مؤرشف"]);
+
 function VAT() {
   const { items: invoices } = useCollection<any>("invoices");
   const { items: bills } = useCollection<any>("bills");
+  const { items: creditNotes } = useCollection<any>("credit-notes");
+  const { items: debitNotes } = useCollection<any>("debit-notes");
   const today = new Date().toISOString().slice(0, 10);
   const [from, setFrom] = useState(today.slice(0, 4) + "-01-01");
   const [to, setTo] = useState(today);
   const inR = (d: string) => (!from || d >= from) && (!to || d <= to);
-  const salesNet = invoices.filter((i) => inR(i.date)).reduce((s, i) => s + Number(i.subtotal || 0), 0);
-  const salesVat = invoices.filter((i) => inR(i.date)).reduce((s, i) => s + Number(i.tax || 0), 0);
-  const purchaseNet = bills.filter((b) => inR(b.date)).reduce((s, b) => s + Number(b.subtotal || 0), 0);
-  const purchaseVat = bills.filter((b) => inR(b.date)).reduce((s, b) => s + Number(b.tax || 0), 0);
+  const counted = (rows: any[]) => rows.filter((r) => inR(r.date) && COUNTED.has(String(r.status)));
+  const sum = (rows: any[], f: string) => rows.reduce((s, r) => s + Number(r[f] || 0), 0);
+  const inv = counted(invoices);
+  const cns = counted(creditNotes);
+  const bls = counted(bills);
+  const dns = counted(debitNotes);
+  // Credit notes reduce output VAT; debit notes reduce input VAT.
+  const salesNet = sum(inv, "subtotal") - sum(cns, "subtotal");
+  const salesVat = sum(inv, "tax") - sum(cns, "tax");
+  const purchaseNet = sum(bls, "subtotal") - sum(dns, "subtotal");
+  const purchaseVat = sum(bls, "tax") - sum(dns, "tax");
   const net = salesVat - purchaseVat;
   return (
     <ReportShell title="إقرار ضريبة القيمة المضافة" subtitle="ملخص الإقرار الضريبي حسب هيئة الزكاة"

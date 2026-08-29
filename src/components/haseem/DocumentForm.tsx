@@ -14,7 +14,7 @@ import { PurchasePreview } from "./PurchasePreview";
 
 import { DocumentSidePanel } from "./DocumentSidePanel";
 import { useOrg } from "@/lib/db/org";
-import { syncDocumentToCloud, toDocKind } from "@/lib/db/document-bridge";
+import { toDocKind } from "@/lib/db/document-bridge";
 import { buildVerifyUrl, signDoc } from "@/lib/haseem/docSignature";
 import { listAttachments, getSignedUrl } from "@/lib/db/attachments";
 
@@ -69,7 +69,7 @@ export function DocumentForm({
 }) {
   const navigate = useNavigate();
   const { items: parties, addAsync: addPartyAsync } = useCollection<any>(partyKey);
-  const { items: docs, add, update } = useCollection<any>(storageKey);
+  const { items: docs, addAsync, update } = useCollection<any>(storageKey);
   const existing = docId ? docs.find((d) => d.id === docId) : null;
   const [org] = useKV<{ name: string; taxNumber: string; address?: string }>("org", {
     name: "شركة كنار الحديثة للمقاولات",
@@ -388,9 +388,10 @@ export function DocumentForm({
   const updateLine = (i: number, patch: Partial<Line>) =>
     setLines((ls) => ls.map((l, idx) => (idx === i ? { ...l, ...patch } : l)));
 
-  const [dbId, setDbId] = useState<string | null>(existing?.dbId ?? null);
+  // Cloud-native documents: the record id IS the database id.
+  const [dbId, setDbId] = useState<string | null>(existing?.dbId ?? existing?.id ?? null);
   useEffect(() => {
-    setDbId(existing?.dbId ?? null);
+    setDbId(existing?.dbId ?? existing?.id ?? null);
   }, [existing?.id, existing?.dbId]);
   const [enablingCloud, setEnablingCloud] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -409,54 +410,26 @@ export function DocumentForm({
   const isValid = validation.length === 0;
 
   const save = async (finalStatus: string) => {
+    // The collections adapter persists to the `documents` table; when the
+    // status is "مؤكد" it also calls the atomic `post_document` RPC so the
+    // journal entry commits in the same server transaction.
     const payload: any = {
       ref, date, dueDate, partyId, partyName, notes,
       status: finalStatus, lines, subtotal, tax, total,
-      dbId,
       contractValue, previousCertified, retentionPct, advanceRecoveryPct,
     };
-    let localId = existing?.id;
-    if (existing) update(existing.id, payload);
-    else {
-      const rec = add(payload);
-      localId = rec?.id;
+    try {
+      if (existing) update(existing.id, payload);
+      else await addAsync(payload);
+      navigate({ to: backTo });
+    } catch (e: any) {
+      alert(`تعذّر الحفظ: ${e?.message ?? e}`);
     }
-    // Best-effort mirror to Supabase when cloud already enabled for this doc
-    if (currentOrgId && dbId) {
-      try {
-        await syncDocumentToCloud(currentOrgId, cloudKind, { ...payload, id: localId }, dbId);
-      } catch (e: any) {
-        console.error("cloud sync failed", e);
-      }
-    }
-    navigate({ to: backTo });
   };
 
-  const enableCloud = async () => {
-    if (!currentOrgId) {
-      alert("اختر منشأة أولاً لتفعيل التخزين السحابي");
-      return;
-    }
-    if (!isValid) {
-      alert(`لا يمكن التفعيل قبل استيفاء الحقول:\n- ${validation.join("\n- ")}`);
-      return;
-    }
-    setEnablingCloud(true);
-    try {
-      const newDbId = await syncDocumentToCloud(
-        currentOrgId,
-        cloudKind,
-        { id: existing?.id, ref, date, dueDate, partyId, partyName, notes, lines, subtotal, tax, total },
-        null,
-      );
-      setDbId(newDbId);
-      if (existing) update(existing.id, { dbId: newDbId } as any);
-    } catch (e: any) {
-      alert(`تعذّر التفعيل: ${e.message ?? e}`);
-    } finally {
-      setEnablingCloud(false);
-    }
-  };
+  // Documents are cloud-native now — the old per-document "enable cloud"
+  // opt-in is a no-op kept only so the layout below stays stable.
+  const enableCloud = async () => {};
 
   return (
     <Shell>

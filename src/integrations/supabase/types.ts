@@ -4981,6 +4981,14 @@ export type Database = {
         }
         Returns: string
       }
+      cancel_document: {
+        Args: { _org: string; _doc_id: string; _reason?: string | null }
+        Returns: Json
+      }
+      post_document: {
+        Args: { _org: string; _doc_id: string }
+        Returns: Json
+      }
       allocate_payment: {
         Args: { _org: string; _payload: Json }
         Returns: string[]

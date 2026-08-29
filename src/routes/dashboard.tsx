@@ -20,9 +20,10 @@ function DashboardPage() {
   const { items: customers } = useCollection<any>("customers");
   const { items: items_ } = useCollection<any>("items");
 
-  const salesTotal = invoices.reduce((s, i) => s + Number(i.total || 0), 0);
-  const outstandingSales = invoices.filter((i) => i.status !== "مدفوع").reduce((s, i) => s + Number(i.total || 0), 0);
-  const purchasesTotal = bills.reduce((s, b) => s + Number(b.total || 0), 0);
+  const active = (r: any) => r.status !== "مسودة" && r.status !== "ملغي";
+  const salesTotal = invoices.filter(active).reduce((s, i) => s + Number(i.total || 0), 0);
+  const outstandingSales = invoices.filter((i) => active(i) && i.status !== "مدفوع").reduce((s, i) => s + Number(i.total || 0), 0);
+  const purchasesTotal = bills.filter(active).reduce((s, b) => s + Number(b.total || 0), 0);
   const cashIn = receipts.reduce((s, r) => s + Number(r.amount || 0), 0);
   const cashOut = payments.reduce((s, p) => s + Number(p.amount || 0), 0) + expenses.reduce((s, e) => s + Number(e.amount || 0), 0);
   const netCash = cashIn - cashOut;

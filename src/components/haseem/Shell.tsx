@@ -514,8 +514,9 @@ export function Badge({ children, tone = "neutral" }: { children: ReactNode; ton
 }
 
 export function statusTone(status: string): "green" | "amber" | "red" | "neutral" | "blue" {
-  if (["مؤكد", "مدفوع", "مغلق", "نشط"].includes(status)) return "green";
-  if (["مسودة", "قيد الانتظار", "جديد"].includes(status)) return "amber";
+  if (["مؤكد", "مرحل", "معتمد", "مدفوع", "مغلق", "نشط"].includes(status)) return "green";
+  if (["مسودة", "قيد الانتظار", "مدفوع جزئياً", "جديد"].includes(status)) return "amber";
   if (["ملغي", "مرفوض", "متأخر"].includes(status)) return "red";
+  if (["مؤرشف"].includes(status)) return "neutral";
   return "neutral";
 }
