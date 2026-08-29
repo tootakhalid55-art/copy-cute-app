@@ -50,7 +50,7 @@ if [ "${CREATE_PROJECT:-1}" = "1" ] && [ -z "$REF" ]; then
       echo "   -> إذا كان 401: الرمز غير صالح أو منتهٍ — أنشئ رمزاً جديداً من supabase.com/dashboard/account/tokens"
       exit 1
     fi
-    ORG=$(echo "$ORG_BODY" | jq -r '(.[0].id // .[0].slug // empty)')
+    ORG=$(echo "$ORG_BODY" | jq -r 'if type=="array" then (.[0].id // .[0].slug // empty) else (.data[0].id // .data[0].slug // empty) end')
     if [ -z "$ORG" ]; then
       echo "No organization on this account — creating one via the Management API"
       CREATE_RESP=$(curl -sS -X POST "${AUTH[@]}" "${JSON[@]}" \
