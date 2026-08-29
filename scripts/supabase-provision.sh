@@ -30,7 +30,10 @@ MIGRATIONS_DIR="$(cd "$(dirname "$0")/.." && pwd)/supabase/migrations"
 
 say() { printf '\n\033[1;36m== %s\033[0m\n' "$*"; }
 
-command -v jq >/dev/null || { sudo apt-get update -y >/dev/null; sudo apt-get install -y jq >/dev/null; }
+if ! command -v jq >/dev/null; then
+  SUDO=""; [ "$(id -u)" -ne 0 ] && SUDO="sudo"
+  $SUDO apt-get update -y >/dev/null; $SUDO apt-get install -y jq >/dev/null
+fi
 
 REF="${SUPABASE_PROJECT_REF:-}"
 if [ "${CREATE_PROJECT:-1}" = "1" ] && [ -z "$REF" ]; then
