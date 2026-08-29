@@ -1,0 +1,76 @@
+name: Bootstrap VPS (full deploy)
+
+# Fully-automated first deployment to 69.164.245.35 / accounting.canarmodern.com.
+# Required repository secrets (Settings -> Secrets and variables -> Actions):
+#   VPS_SSH_KEY  (private key)  -- or --  VPS_PASSWORD (root password)
+#   SUPABASE_SERVICE_ROLE_KEY   Supabase -> Project Settings -> API -> service_role
+#   SUPABASE_DB_URL             Supabase -> Project Settings -> Database -> Connection string (URI + password)
+#   LOVABLE_API_KEY             optional (AI features)
+
+on:
+  workflow_dispatch: {}
+
+concurrency:
+  group: deploy-vps
+  cancel-in-progress: false
+
+jobs:
+  bootstrap:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Prepare SSH auth
+        env:
+          VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+          VPS_PASSWORD: ${{ secrets.VPS_PASSWORD }}
+        run: |
+          mkdir -p ~/.ssh && chmod 700 ~/.ssh
+          if [ -n "$VPS_SSH_KEY" ]; then
+            printf '%s\n' "$VPS_SSH_KEY" > ~/.ssh/id_ed25519
+            chmod 600 ~/.ssh/id_ed25519
+            echo "AUTH=key" >> "$GITHUB_ENV"
+          elif [ -n "$VPS_PASSWORD" ]; then
+            sudo apt-get update -y >/dev/null && sudo apt-get install -y sshpass >/dev/null
+            echo "AUTH=password" >> "$GITHUB_ENV"
+          else
+            echo "::error::Set either VPS_SSH_KEY or VPS_PASSWORD in repository secrets."
+            exit 1
+          fi
+
+      - name: Run bootstrap on the server
+        env:
+          VPS_PASSWORD: ${{ secrets.VPS_PASSWORD }}
+          SRK: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          DBURL: ${{ secrets.SUPABASE_DB_URL }}
+          LOVKEY: ${{ secrets.LOVABLE_API_KEY }}
+        run: |
+          if [ -z "$SRK" ]; then
+            echo "::error::Secret SUPABASE_SERVICE_ROLE_KEY is required."
+            exit 1
+          fi
+          {
+            echo "export NONINTERACTIVE=1"
+            printf 'export SUPABASE_SERVICE_ROLE_KEY=%q\n' "$SRK"
+            [ -n "$DBURL" ]  && printf 'export SUPABASE_DB_URL=%q\n' "$DBURL"
+            [ -n "$LOVKEY" ] && printf 'export LOVABLE_API_KEY=%q\n' "$LOVKEY"
+            cat scripts/vps-bootstrap.sh
+          } > /tmp/remote-bootstrap.sh
+
+          SSH_OPTS="-o StrictHostKeyChecking=accept-new -o ConnectTimeout=20"
+          if [ "$AUTH" = "key" ]; then
+            ssh $SSH_OPTS -i ~/.ssh/id_ed25519 root@69.164.245.35 'bash -s' < /tmp/remote-bootstrap.sh
+          else
+            sshpass -p "$VPS_PASSWORD" ssh $SSH_OPTS root@69.164.245.35 'bash -s' < /tmp/remote-bootstrap.sh
+          fi
+
+      - name: Verify site
+        run: |
+          sleep 5
+          code=$(curl -s -o /dev/null -w "%{http_code}" --max-time 30 -k "https://accounting.canarmodern.com/" || echo 000)
+          echo "https://accounting.canarmodern.com -> HTTP $code"
+          code80=$(curl -s -o /dev/null -w "%{http_code}" --max-time 30 "http://69.164.245.35/" -H "Host: accounting.canarmodern.com" || echo 000)
+          echo "http://69.164.245.35 (Host header) -> HTTP $code80"
+          if [ "$code" != "200" ] && [ "$code80" != "200" ] && [ "$code80" != "301" ]; then
+            echo "::warning::Site did not answer 200 yet — check the bootstrap log above."
+          fi

@@ -46,9 +46,19 @@ git fetch origin && git checkout claude/open-app-jqqvl9 && git pull
 if [ ! -f "$APP_DIR/.env" ]; then
   cp "$APP_DIR/scripts/env.production.example" "$APP_DIR/.env"
   chmod 600 "$APP_DIR/.env"
-  echo
-  echo ">>> افتح الملف $APP_DIR/.env واملأ القيم (خاصة SUPABASE_SERVICE_ROLE_KEY و CRON_HOOK_SECRET)"
-  read -r -p "اضغط Enter بعد تعبئة .env ... " _
+  if [ "${NONINTERACTIVE:-}" = "1" ]; then
+    # CI mode: fill the secret values from the workflow-provided environment.
+    CRON="${CRON_HOOK_SECRET:-$(openssl rand -hex 32)}"
+    sed -i "s|^SUPABASE_SERVICE_ROLE_KEY=.*|SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY:-}|" "$APP_DIR/.env"
+    sed -i "s|^CRON_HOOK_SECRET=.*|CRON_HOOK_SECRET=${CRON}|" "$APP_DIR/.env"
+    if [ -n "${LOVABLE_API_KEY:-}" ]; then
+      sed -i "s|^LOVABLE_API_KEY=.*|LOVABLE_API_KEY=${LOVABLE_API_KEY}|" "$APP_DIR/.env"
+    fi
+  else
+    echo
+    echo ">>> افتح الملف $APP_DIR/.env واملأ القيم (خاصة SUPABASE_SERVICE_ROLE_KEY و CRON_HOOK_SECRET)"
+    read -r -p "اضغط Enter بعد تعبئة .env ... " _
+  fi
 fi
 
 npm ci
@@ -113,18 +123,28 @@ else
 fi
 
 say "5/6 GitHub Actions auto-deploy key"
-if [ ! -f /root/.ssh/canar_actions ]; then
+if [ "${NONINTERACTIVE:-}" = "1" ]; then
+  echo "(CI mode: future deploys reuse the same workflow credentials — no key printed)"
+elif [ ! -f /root/.ssh/canar_actions ]; then
   ssh-keygen -t ed25519 -N "" -f /root/.ssh/canar_actions -C "canar-actions-deploy"
   cat /root/.ssh/canar_actions.pub >> /root/.ssh/authorized_keys
   chmod 600 /root/.ssh/authorized_keys
+  echo
+  echo ">>> أضف المفتاح الخاص التالي في GitHub: Settings -> Secrets and variables -> Actions -> New secret"
+  echo ">>> Name: VPS_SSH_KEY   (يُعرض مرة واحدة هنا — لا تشاركه مع أي جهة أخرى)"
+  echo "--------------------------------------------------------------"
+  cat /root/.ssh/canar_actions
+  echo "--------------------------------------------------------------"
+  echo
 fi
-echo
-echo ">>> أضف المفتاح الخاص التالي في GitHub: Settings -> Secrets and variables -> Actions -> New secret"
-echo ">>> Name: VPS_SSH_KEY   (يُعرض مرة واحدة هنا — لا تشاركه مع أي جهة أخرى)"
-echo "--------------------------------------------------------------"
-cat /root/.ssh/canar_actions
-echo "--------------------------------------------------------------"
-echo
+
+if [ "${NONINTERACTIVE:-}" = "1" ] && [ -n "${SUPABASE_DB_URL:-}" ]; then
+  say "6/6 Database migrations + Vault secrets"
+  SUPABASE_DB_URL="$SUPABASE_DB_URL" bash "$APP_DIR/scripts/apply-migrations.sh"
+fi
+
 say "تم! التطبيق يعمل على https://${DOMAIN}"
-echo "خطوة متبقية على قاعدة بيانات Supabase (مرة واحدة):"
-echo "  bash ${APP_DIR}/scripts/apply-migrations.sh   # يطبّق آخر الهجرات ويضبط أسرار Vault"
+if [ "${NONINTERACTIVE:-}" != "1" ]; then
+  echo "خطوة متبقية على قاعدة بيانات Supabase (مرة واحدة):"
+  echo "  bash ${APP_DIR}/scripts/apply-migrations.sh   # يطبّق آخر الهجرات ويضبط أسرار Vault"
+fi

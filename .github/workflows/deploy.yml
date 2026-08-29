@@ -16,13 +16,19 @@ jobs:
       - name: SSH deploy
         env:
           VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+          VPS_PASSWORD: ${{ secrets.VPS_PASSWORD }}
         run: |
-          if [ -z "$VPS_SSH_KEY" ]; then
-            echo "::warning::Secret VPS_SSH_KEY is not set — skipping deploy. Run scripts/vps-bootstrap.sh on the server, then add the printed key as a repo secret."
+          SSH_OPTS="-o StrictHostKeyChecking=accept-new -o ConnectTimeout=20"
+          CMD="DEPLOY_BRANCH='${GITHUB_REF_NAME}' bash /opt/canar-accounting/scripts/vps-deploy.sh"
+          if [ -n "$VPS_SSH_KEY" ]; then
+            mkdir -p ~/.ssh && chmod 700 ~/.ssh
+            printf '%s\n' "$VPS_SSH_KEY" > ~/.ssh/id_ed25519
+            chmod 600 ~/.ssh/id_ed25519
+            ssh $SSH_OPTS -i ~/.ssh/id_ed25519 root@69.164.245.35 "$CMD"
+          elif [ -n "$VPS_PASSWORD" ]; then
+            sudo apt-get update -y >/dev/null && sudo apt-get install -y sshpass >/dev/null
+            sshpass -p "$VPS_PASSWORD" ssh $SSH_OPTS root@69.164.245.35 "$CMD"
+          else
+            echo "::warning::No VPS_SSH_KEY or VPS_PASSWORD secret set — skipping deploy. Run the 'Bootstrap VPS' workflow first."
             exit 0
           fi
-          mkdir -p ~/.ssh
-          printf '%s\n' "$VPS_SSH_KEY" > ~/.ssh/id_ed25519
-          chmod 600 ~/.ssh/id_ed25519
-          ssh -o StrictHostKeyChecking=accept-new root@69.164.245.35 \
-            "DEPLOY_BRANCH='${GITHUB_REF_NAME}' bash /opt/canar-accounting/scripts/vps-deploy.sh"
