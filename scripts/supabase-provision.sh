@@ -36,6 +36,19 @@ if ! command -v jq >/dev/null; then
 fi
 
 REF="${SUPABASE_PROJECT_REF:-}"
+
+# Auto-discover an existing project named canar-accounting (e.g. one the
+# user created from the dashboard) before trying to create anything.
+if [ -z "$REF" ]; then
+  LIST=$(curl -sS "${AUTH[@]}" "$API/v1/projects" || echo '[]')
+  REF=$(echo "$LIST" | jq -r 'if type=="array" then . else (.data // []) end
+    | [.[] | select(.name=="canar-accounting")][0].id // empty')
+  if [ -n "$REF" ]; then
+    echo "Found existing project 'canar-accounting': $REF"
+    CREATE_PROJECT=0
+  fi
+fi
+
 if [ "${CREATE_PROJECT:-1}" = "1" ] && [ -z "$REF" ]; then
   say "Creating a new Supabase project"
   if [ -n "${SUPABASE_ORG_ID:-}" ]; then
