@@ -3,9 +3,9 @@
 
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { callLovableAI, type GatewayMessage } from "@/lib/ai-gateway.server";
+import { callAnthropicAI, type GatewayMessage } from "@/lib/ai-gateway.server";
 
-const MODEL = "google/gemini-3.6-flash";
+const MODEL = "claude-opus-5";
 
 type Lang = "ar" | "en";
 
@@ -59,7 +59,7 @@ async function ask(system: string, userText: string, lang: Lang): Promise<string
     { role: "system", content: `${system}\n\n${langInstruction(lang)}` },
     { role: "user", content: userText },
   ];
-  return await callLovableAI({ model: MODEL, messages, temperature: 0.2 });
+  return await callAnthropicAI({ model: MODEL, messages });
 }
 
 async function askJSON<T = any>(system: string, userText: string, lang: Lang): Promise<T> {
@@ -67,9 +67,8 @@ async function askJSON<T = any>(system: string, userText: string, lang: Lang): P
     { role: "system", content: `${system}\n\n${langInstruction(lang)}\nReturn ONLY valid JSON.` },
     { role: "user", content: userText },
   ];
-  const raw = await callLovableAI({
-    model: MODEL, messages, temperature: 0.1,
-    response_format: { type: "json_object" },
+  const raw = await callAnthropicAI({
+    model: MODEL, messages, maxTokens: 8192,
   });
   try { return JSON.parse(raw) as T; } catch { return {} as T; }
 }
@@ -456,7 +455,7 @@ export const copilotChat = createServerFn({ method: "POST" })
       { role: "system", content: `${sys}\n\n${langInstruction(lang)}${intakeCtx ? `\n\nCurrent invoice context:\n${JSON.stringify(intakeCtx)}` : ""}` },
       ...data.messages.map((m) => ({ role: m.role, content: m.content } as GatewayMessage)),
     ];
-    const answer = await callLovableAI({ model: MODEL, messages, temperature: 0.3 });
+    const answer = await callAnthropicAI({ model: MODEL, messages });
     const question = data.messages.filter((m) => m.role === "user").slice(-1)[0]?.content ?? "";
     await record(context, {
       orgId: data.orgId, intakeId: data.intakeId ?? null, kind: "chat",

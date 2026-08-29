@@ -3,9 +3,9 @@
 
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { callLovableAI, type GatewayMessage } from "@/lib/ai-gateway.server";
+import { callAnthropicAI, type GatewayMessage } from "@/lib/ai-gateway.server";
 
-const MODEL = "google/gemini-3.6-flash";
+const MODEL = "claude-opus-5";
 
 type Lang = "ar" | "en";
 export type Citation = {
@@ -26,8 +26,8 @@ function langInstruction(lang: Lang) {
 }
 
 async function ask(system: string, user: string, lang: Lang, temperature = 0.2): Promise<string> {
-  return await callLovableAI({
-    model: MODEL, temperature,
+  return await callAnthropicAI({
+    model: MODEL,
     messages: [
       { role: "system", content: `${system}\n\n${langInstruction(lang)}` },
       { role: "user", content: user },
@@ -36,9 +36,8 @@ async function ask(system: string, user: string, lang: Lang, temperature = 0.2):
 }
 
 async function askJSON<T = any>(system: string, user: string, lang: Lang): Promise<T> {
-  const raw = await callLovableAI({
-    model: MODEL, temperature: 0.1,
-    response_format: { type: "json_object" },
+  const raw = await callAnthropicAI({
+    model: MODEL, maxTokens: 8192,
     messages: [
       { role: "system", content: `${system}\n\n${langInstruction(lang)}\nReturn ONLY valid JSON.` },
       { role: "user", content: user },
@@ -608,7 +607,7 @@ export const erpChat = createServerFn({ method: "POST" })
       { role: "system", content: `${sys}\n\n${langInstruction(lang)}${enriched}` },
       ...data.messages.map((m) => ({ role: m.role, content: m.content } as GatewayMessage)),
     ];
-    const answer = await callLovableAI({ model: MODEL, messages, temperature: 0.3 });
+    const answer = await callAnthropicAI({ model: MODEL, messages });
 
     let follow_ups: string[] = [];
     try {

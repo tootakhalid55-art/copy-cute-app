@@ -7,8 +7,8 @@ export type IntakeStatus =
 
 const AUTO_POST_THRESHOLD = 0.9;
 const REVIEW_THRESHOLD = 0.7;
-const PRIMARY_MODEL = "google/gemini-2.5-flash";
-const FALLBACK_MODEL = "google/gemini-2.5-pro";
+const PRIMARY_MODEL = "claude-sonnet-5";
+const FALLBACK_MODEL = "claude-opus-5";
 
 // ---------- notification helper ----------
 async function notify(supabase: any, orgId: string, kind: string, title: string, body: string, ref: string | null = null) {
@@ -69,15 +69,15 @@ export const createIntakeFromUpload = createServerFn({ method: "POST" })
 
 // ---------- extraction (primary + fallback) ----------
 async function callExtraction(model: string, fileDataUrl: string, filename: string, hints: string) {
-  const { callLovableAI } = await import("@/lib/ai-gateway.server");
+  const { callAnthropicAI } = await import("@/lib/ai-gateway.server");
   const isPdf = fileDataUrl.startsWith("data:application/pdf");
   const content: any = [
     { type: "text", text: `Extract this supplier invoice as strict JSON.${hints ? `\nHints from previous invoices of this supplier:\n${hints}` : ""}` },
     isPdf ? { type: "file", file: { filename, file_data: fileDataUrl } }
           : { type: "image_url", image_url: { url: fileDataUrl } },
   ];
-  const raw = await callLovableAI({
-    model, response_format: { type: "json_object" }, temperature: 0.1,
+  const raw = await callAnthropicAI({
+    model, maxTokens: 8192,
     messages: [
       { role: "system", content: "Return JSON with keys: supplierName, supplierNameAr, supplierVatNumber, invoiceNumber, invoiceDate (YYYY-MM-DD), dueDate, currency, subtotal, vat, grandTotal, lines[{description, qty, price, lineTotal, tax}], confidence{supplierName, invoiceNumber, invoiceDate, grandTotal, vat, lines}, ocr_boxes[{field,key,text,page,left,top,width,height,units}]. Confidence values are 0..100. Support Arabic and English. If a field is unknown, use null and confidence 0. For ocr_boxes, return best-effort coordinates as percentages (units=percent) or pixels." },
       { role: "user", content },
