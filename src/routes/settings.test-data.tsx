@@ -602,7 +602,9 @@ function TestDataPage() {
         ref: entry.ref,
         entry_date: entry.entry_date,
         memo: entry.memo,
-        status: "posted",
+        // The je_guard trigger requires entries to be inserted as draft and
+        // to have balanced lines matching header totals before posting.
+        status: "draft",
         source_module: "seed",
         meta: { seed: tag },
       }));
@@ -626,6 +628,12 @@ function TestDataPage() {
           }))
         );
         if (error) throw error;
+        const totalDebit = entry.lines.reduce((s, l) => s + Number(l.debit || 0), 0);
+        const totalCredit = entry.lines.reduce((s, l) => s + Number(l.credit || 0), 0);
+        const { error: postErr } = await (supabase.from("journal_entries") as any)
+          .update({ status: "posted", total_debit: totalDebit, total_credit: totalCredit })
+          .eq("id", saved.id);
+        if (postErr) throw postErr;
       }
       push("تم تجهيز القيود اليومية والدفتر العام");
 

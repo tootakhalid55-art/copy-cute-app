@@ -14,9 +14,8 @@ export const Route = createFileRoute("/api/public/hooks/ap-intake-process")({
   server: {
     handlers: {
       POST: async ({ request }) => {
-        const apiKey = request.headers.get("apikey") ?? "";
-        const expected = process.env.SUPABASE_PUBLISHABLE_KEY ?? "";
-        if (!apiKey || apiKey !== expected) {
+        const { verifyCronSecret } = await import("@/lib/cron-auth.server");
+        if (!verifyCronSecret(request)) {
           return new Response(JSON.stringify({ error: "unauthorized" }), { status: 401 });
         }
         const admin = await adminClient();
