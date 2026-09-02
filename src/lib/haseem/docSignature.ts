@@ -66,3 +66,17 @@ export function buildVerifyUrl(kind: string, ref: string, token: string): string
   const q = new URLSearchParams({ k: kind, r: ref, t: token });
   return `${origin}/verify?${q.toString()}`;
 }
+
+/** Server-verified URL (no `k` param): the verify page resolves it through
+ *  /api/public/verify against the document's stored verify_token, so the QR
+ *  works from any device — not just the issuing browser. */
+export function buildTokenVerifyUrl(ref: string, token: string): string {
+  const origin = isBrowser() ? window.location.origin : "";
+  const q = new URLSearchParams({ r: ref, t: token });
+  return `${origin}/verify?${q.toString()}`;
+}
+
+/** Stable per-document verification token (UUID). */
+export function newVerifyToken(): string {
+  return globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(36).slice(2, 12)}`;
+}

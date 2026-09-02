@@ -43,6 +43,38 @@ const DOC_STATUS_TO_UI: Record<string, string> = {
   archived: "مؤرشف",
 };
 
+// Kinds that never hit the ledger — "confirm/send" means transition to
+// 'issued', never post_document (which would reject them).
+const NON_POSTABLE_KINDS = new Set(["sales_quotation", "purchase_order"]);
+
+/** Transition a draft document to 'issued' (quotations, purchase orders,
+ *  or an explicit "sent" without posting). No journal entry is created. */
+export async function issueCloudDocument(orgId: string, docId: string) {
+  const { data: cur } = await supabase
+    .from("documents")
+    .select("status")
+    .eq("id", docId)
+    .eq("org_id", orgId)
+    .single();
+  if (!cur || (cur as any).status !== "draft") return; // already issued/posted — nothing to do
+  const { error } = await (supabase.from("documents") as any)
+    .update({ status: "issued" })
+    .eq("id", docId)
+    .eq("org_id", orgId);
+  if (error) throw error;
+}
+
+/** Apply the UI-chosen status after a document insert/update. */
+async function applyDocStatus(key: string, orgId: string, docId: string, uiStatus: unknown) {
+  const s = String(uiStatus ?? "");
+  const nonPostable = NON_POSTABLE_KINDS.has(DOC_KEYS[key]);
+  if (s === "مرسل" || ((s === "مؤكد" || s === "مرحل") && nonPostable)) {
+    await issueCloudDocument(orgId, docId);
+  } else if (s === "مؤكد" || s === "مرحل") {
+    await postCloudDocument(orgId, docId);
+  }
+}
+
 /** Post a document's journal atomically on the server (documents only). */
 export async function postCloudDocument(orgId: string, docId: string) {
   const { data, error } = await supabase.rpc("post_document", {
@@ -192,10 +224,14 @@ function mapDocRow(r: any) {
     tax: Number(r.vat_total ?? 0),
     total: Number(r.grand_total ?? 0),
     amount: Number(r.grand_total ?? 0),
-    status: DOC_STATUS_TO_UI[r.status] ?? r.status,
+    status:
+      r.status === "issued" && NON_POSTABLE_KINDS.has(String(r.kind))
+        ? "مرسل"
+        : DOC_STATUS_TO_UI[r.status] ?? r.status,
     dbStatus: r.status,
     currency: r.currency ?? "SAR",
     lines,
+    verifyToken: meta.verify_token ?? undefined,
     createdAt: r.created_at,
     ...meta,
   };
@@ -206,8 +242,10 @@ function toDocPayload(key: string, input: any, orgId: string) {
     id: _id, dbId: _db, createdAt: _c, dbStatus: _ds,
     ref, date, dueDate, partyId, partyName, notes, subtotal, tax, total, amount,
     lines, status: _status, currency, customer, supplier, description, category,
+    verifyToken, verify_token: legacyVerifyToken,
     ...rest
   } = input ?? {};
+  const vToken = verifyToken ?? legacyVerifyToken;
   const amt = Number(total ?? amount ?? 0);
   const linesPayload = Array.isArray(lines)
     ? lines.map((l: any, i: number) => {
@@ -240,7 +278,13 @@ function toDocPayload(key: string, input: any, orgId: string) {
     subtotal: Number(subtotal ?? amt ?? 0),
     vat_total: Number(tax ?? 0),
     grand_total: amt,
-    meta: { ...rest, ...(category ? { category } : {}), ...(supplier ? { supplier } : {}), ...(partyName ? { partyName } : {}) },
+    meta: {
+      ...rest,
+      ...(category ? { category } : {}),
+      ...(supplier ? { supplier } : {}),
+      ...(partyName ? { partyName } : {}),
+      ...(vToken ? { verify_token: vToken } : {}),
+    },
     lines: linesPayload,
   };
 }
@@ -387,9 +431,7 @@ async function insertOne(key: string, orgId: string, input: any) {
     const { createDocument } = await import("./documents");
     const { org_id: _o, ...payload } = toDocPayload(key, input, orgId);
     const doc = await createDocument({ orgId, ...payload } as any);
-    if (input?.status === "مؤكد" || input?.status === "مرحل") {
-      await postCloudDocument(orgId, doc.id);
-    }
+    await applyDocStatus(key, orgId, doc.id, input?.status);
     return fetchDocRow(orgId, doc.id);
   }
   if (key === "accounts") {
@@ -462,9 +504,7 @@ async function updateOne(key: string, orgId: string, id: string, patch: any) {
     if (!patch?.ref) delete (payload as any).doc_number;
     if (!patch?.date) delete (payload as any).issue_date;
     await updateDocument(id, orgId, { ...payload, ...(lines ? { lines } : {}) } as any);
-    if (patch?.status === "مؤكد" || patch?.status === "مرحل") {
-      await postCloudDocument(orgId, id);
-    }
+    await applyDocStatus(key, orgId, id, patch?.status);
     return;
   }
   if (key === "accounts") {

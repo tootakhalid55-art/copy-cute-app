@@ -4,7 +4,7 @@ import { Plus, Trash2, Printer, Eye, X, Pencil, Upload, Check } from "lucide-rea
 import QRCode from "qrcode";
 import { Shell, PrimaryBtn, OutlineBtn } from "./Shell";
 import { useCollection, useKV } from "@/lib/haseem/store";
-import { type DocKind, CONTENT_VARIANTS, type ContentVariant, contrastColorFor, tintColorFor } from "@/lib/haseem/templates";
+import { type DocKind, CONTENT_VARIANTS, type ContentVariant, contrastColorFor, tintColorFor, useInvoiceTemplates } from "@/lib/haseem/templates";
 import { makeZatcaQrPayload, printDoc, DOC_STRUCTURES } from "@/lib/haseem/printDoc";
 import { resolveDocTitle, docTimestamp } from "@/lib/haseem/zatca";
 import { InvoicePreview } from "./InvoicePreview";
@@ -15,7 +15,7 @@ import { PurchasePreview } from "./PurchasePreview";
 import { DocumentSidePanel } from "./DocumentSidePanel";
 import { useOrg } from "@/lib/db/org";
 import { toDocKind } from "@/lib/db/document-bridge";
-import { buildVerifyUrl, signDoc } from "@/lib/haseem/docSignature";
+import { buildTokenVerifyUrl, newVerifyToken } from "@/lib/haseem/docSignature";
 import { listAttachments, getSignedUrl } from "@/lib/db/attachments";
 
 // Read a File as base64 data URL
@@ -112,6 +112,7 @@ export function DocumentForm({
       setPreviousCertified(existing.previousCertified ?? 0);
       setRetentionPct(existing.retentionPct ?? 10);
       setAdvanceRecoveryPct(existing.advanceRecoveryPct ?? 0);
+      if (existing.verifyToken) setVerifyToken(existing.verifyToken);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [docId, existing?.id]);
@@ -119,7 +120,7 @@ export function DocumentForm({
   const [partyModalOpen, setPartyModalOpen] = useState(false);
   const [qrDataUrl, setQrDataUrl] = useState<string>("");
   const [verifyQrDataUrl, setVerifyQrDataUrl] = useState<string>("");
-  const [verifyToken, setVerifyToken] = useState<string>("");
+  const [verifyToken, setVerifyToken] = useState<string>(() => existing?.verifyToken ?? newVerifyToken());
   const printRef = useRef<HTMLDivElement>(null);
   const emptyParty = {
     // Basic
@@ -204,17 +205,18 @@ export function DocumentForm({
   const [structureId, setStructureId] = useKV<string>(`doc-structure:${kindForKV}`, "boxed");
   const structure = structureId as "boxed" | "banner" | "minimal" | "corporate" | "thermal";
   const [docColor, setDocColor] = useKV<string>(`doc-color:${kindForKV}`, DEFAULT_DOC_COLOR[kindForKV] ?? "#1b6ea8");
+  // Per-kind named templates (settings → قوالب المستندات) — quotations get
+  // quotation templates, invoices invoice templates, and so on.
+  const { all: tplList, selected: selectedTpl, selectedId: tplId, setSelectedId: setTplId } = useInvoiceTemplates(printKind);
+  const [tplMode, setTplMode] = useKV<"template" | "custom">(`doc-tpl-mode:${kindForKV}`, "custom");
   // Content variant (progress billing / supply / services) only makes sense
   // where line items represent billable work — invoices and purchase bills.
   const supportsContentVariant = kind === "invoice" || kind === "bill";
   const [contentVariant, setContentVariant] = useKV<ContentVariant>(`doc-content-variant:${kindForKV}`, "standard");
-  const tpl = {
-    name: "مخصص",
-    accent: docColor,
-    onAccent: contrastColorFor(docColor),
-    soft: tintColorFor(docColor),
-    layoutVariant: supportsContentVariant && contentVariant !== "standard" ? contentVariant : undefined,
-  };
+  const layoutVariant = supportsContentVariant && contentVariant !== "standard" ? contentVariant : undefined;
+  const tpl = tplMode === "custom" || !selectedTpl
+    ? { name: "مخصص", accent: docColor, onAccent: contrastColorFor(docColor), soft: tintColorFor(docColor), layoutVariant }
+    : { name: selectedTpl.name, accent: selectedTpl.accent, onAccent: selectedTpl.onAccent, soft: selectedTpl.soft, layoutVariant: selectedTpl.layoutVariant ?? layoutVariant };
   // ZATCA QR is exclusive to sales invoices (usesZatcaQr) and purchase bills
   // (usesSupplierZatcaQr below) — every other document kind (quotations, POs,
   // credit/debit notes, vouchers) must never show it.
@@ -300,12 +302,7 @@ export function DocumentForm({
       setVerifyToken("");
       return;
     }
-    signDoc({ kind: cloudKind, ref, total })
-      .then((token) => {
-        setVerifyToken(token);
-        return buildVerifyUrl(cloudKind, ref, token);
-      })
-      .then((verifyUrl) => QRCode.toDataURL(verifyUrl, { margin: 1, width: 180 }))
+    QRCode.toDataURL(buildTokenVerifyUrl(ref, verifyToken), { margin: 1, width: 180 })
       .then(setVerifyQrDataUrl)
       .catch(() => setVerifyQrDataUrl(""));
   }, [org.name, org.taxNumber, date, total, tax, usesZatcaQr, usesSupplierZatcaQr, party?.name, party?.taxNumber, usesVerifyQr, cloudKind, ref]);
@@ -320,9 +317,9 @@ export function DocumentForm({
   // exact same QR + verification URL instead of two separately-assembled ones.
   const verify = useMemo(
     () => (usesVerifyQr && verifyQrDataUrl && verifyToken
-      ? { qrDataUrl: verifyQrDataUrl, url: buildVerifyUrl(cloudKind, ref, verifyToken), label: "التحقق من المستند · Verify Document" }
+      ? { qrDataUrl: verifyQrDataUrl, url: buildTokenVerifyUrl(ref, verifyToken), label: "التحقق من المستند · Verify Document" }
       : undefined),
-    [usesVerifyQr, verifyQrDataUrl, verifyToken, cloudKind, ref],
+    [usesVerifyQr, verifyQrDataUrl, verifyToken, ref],
   );
   const issuedAtIso = useMemo(() => docTimestamp(date, existing?.issuedAt), [date, existing?.issuedAt]);
   const partyAddress = useMemo(() => {
@@ -417,6 +414,7 @@ export function DocumentForm({
       ref, date, dueDate, partyId, partyName, notes,
       status: finalStatus, lines, subtotal, tax, total,
       contractValue, previousCertified, retentionPct, advanceRecoveryPct,
+      verifyToken,
     };
     try {
       if (existing) update(existing.id, payload);
@@ -448,6 +446,23 @@ export function DocumentForm({
           </div>
         </div>
         <div className="flex gap-2 flex-wrap items-center">
+          <div className="flex items-center gap-1.5 border border-[#eceae2] rounded-lg px-2 py-1 bg-white">
+            <span className="text-xs text-[#0f2a1d]/60">القالب:</span>
+            <select
+              value={tplMode === "custom" ? "__custom" : tplId}
+              onChange={(e) => {
+                if (e.target.value === "__custom") { setTplMode("custom"); return; }
+                setTplId(e.target.value); setTplMode("template");
+              }}
+              className="bg-transparent text-sm outline-none max-w-[190px]"
+              title="قوالب هذا النوع من المستندات (تُدار من الإعدادات ← قوالب المستندات)"
+            >
+              {tplList.map((t) => (
+                <option key={t.id} value={t.id}>{t.name}</option>
+              ))}
+              <option value="__custom">مخصص (لون يدوي)</option>
+            </select>
+          </div>
           <div className="flex items-center gap-1.5 border border-[#eceae2] rounded-lg px-2 py-1 bg-white">
             <span className="text-xs text-[#0f2a1d]/60">الهيكل:</span>
             <select
@@ -484,7 +499,7 @@ export function DocumentForm({
             <input
               type="color"
               value={docColor}
-              onChange={(e) => setDocColor(e.target.value)}
+              onChange={(e) => { setDocColor(e.target.value); setTplMode("custom"); }}
               className="w-6 h-6 rounded border border-[#eceae2] cursor-pointer bg-transparent p-0"
             />
           </label>

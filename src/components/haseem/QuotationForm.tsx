@@ -6,9 +6,9 @@ import {
 } from "lucide-react";
 import { Shell, PrimaryBtn, OutlineBtn } from "./Shell";
 import { useCollection, useKV } from "@/lib/haseem/store";
-import { contrastColorFor, tintColorFor } from "@/lib/haseem/templates";
+import { contrastColorFor, tintColorFor, useInvoiceTemplates } from "@/lib/haseem/templates";
 import { printDoc, DOC_STRUCTURES } from "@/lib/haseem/printDoc";
-import { signDoc, buildVerifyUrl } from "@/lib/haseem/docSignature";
+import { buildTokenVerifyUrl, newVerifyToken } from "@/lib/haseem/docSignature";
 import QRCode from "qrcode";
 import { DocumentSidePanel } from "./DocumentSidePanel";
 import { QuotationPreview } from "./QuotationPreview";
@@ -126,7 +126,12 @@ export function QuotationForm({ docId }: { docId?: string }) {
   const [structureId, setStructureId] = useKV<string>("doc-structure:quotation", "boxed");
   const structure = structureId as "boxed" | "banner" | "minimal" | "corporate" | "thermal";
   const [docColor, setDocColor] = useKV<string>("doc-color:quotation", "#0d9488");
-  const tpl = { name: "مخصص", accent: docColor, onAccent: contrastColorFor(docColor), soft: tintColorFor(docColor) };
+  // Quotation-specific templates (settings → قوالب المستندات، تبويب عروض الأسعار)
+  const { all: tplList, selected: selectedTpl, selectedId: tplId, setSelectedId: setTplId } = useInvoiceTemplates("quotation");
+  const [tplMode, setTplMode] = useKV<"template" | "custom">("doc-tpl-mode:quotation", "template");
+  const tpl = tplMode === "custom" || !selectedTpl
+    ? { name: "مخصص", accent: docColor, onAccent: contrastColorFor(docColor), soft: tintColorFor(docColor) }
+    : { name: selectedTpl.name, accent: selectedTpl.accent, onAccent: selectedTpl.onAccent, soft: selectedTpl.soft };
 
   // Math
   const r2 = (n: number) => Math.round((n + Number.EPSILON) * 100) / 100;
@@ -168,6 +173,25 @@ export function QuotationForm({ docId }: { docId?: string }) {
   const cloudKind = useMemo(() => toDocKind("sales-quotation"), []);
   const [dbId, setDbId] = useState<string | null>((existing as any)?.dbId ?? existing?.id ?? null);
   useEffect(() => { setDbId((existing as any)?.dbId ?? existing?.id ?? null); }, [existing?.id]);
+
+  // Server-verifiable stamp: a stable per-document token stored with the
+  // document; the QR resolves through /api/public/verify from any device.
+  const [verifyToken, setVerifyToken] = useState<string>(() => (existing as any)?.verifyToken ?? newVerifyToken());
+  useEffect(() => {
+    const t = (existing as any)?.verifyToken;
+    if (t) setVerifyToken(t);
+  }, [existing?.id]);
+  const verifyUrl = useMemo(() => buildTokenVerifyUrl(ref, verifyToken), [ref, verifyToken]);
+  const [verifyQrDataUrl, setVerifyQrDataUrl] = useState("");
+  useEffect(() => {
+    QRCode.toDataURL(verifyUrl, { margin: 1, width: 220 })
+      .then(setVerifyQrDataUrl)
+      .catch(() => setVerifyQrDataUrl(""));
+  }, [verifyUrl]);
+  const verify = useMemo(
+    () => (verifyQrDataUrl ? { qrDataUrl: verifyQrDataUrl, url: verifyUrl, label: "التحقق من المستند · Verify Document" } : undefined),
+    [verifyQrDataUrl, verifyUrl],
+  );
   const [enablingCloud, setEnablingCloud] = useState(false);
   const [uploading, setUploading] = useState(false);
 
@@ -192,6 +216,7 @@ export function QuotationForm({ docId }: { docId?: string }) {
       discount, discountEnabled, shipping, shippingEnabled,
       status,
       dbId,
+      verifyToken,
     };
     // The collections adapter persists straight to the `documents` table now.
     try {
@@ -227,9 +252,7 @@ export function QuotationForm({ docId }: { docId?: string }) {
   // Printing
   const handlePrint = async () => {
     try {
-      const token = await signDoc({ kind: "quotation", ref, total });
-      const verifyUrl = buildVerifyUrl("quotation", ref, token);
-      const verifyQr = await QRCode.toDataURL(verifyUrl, { margin: 1, width: 220 });
+      const verifyQr = verifyQrDataUrl || (await QRCode.toDataURL(verifyUrl, { margin: 1, width: 220 }));
       printDoc({
         kind: "quotation",
         title: "عرض سعر",
@@ -249,7 +272,7 @@ export function QuotationForm({ docId }: { docId?: string }) {
         reference: optCols.reference ? reference : undefined,
         project: optCols.project ? project : undefined,
         bilingual: true,
-        verify: { qrDataUrl: verifyQr, url: verifyUrl, label: "التوقيع الرقمي — Digital Signature" },
+        verify: { qrDataUrl: verifyQr, url: verifyUrl, label: "التحقق من المستند · Verify Document" },
         structure,
       });
     } catch (error) {
@@ -297,6 +320,23 @@ export function QuotationForm({ docId }: { docId?: string }) {
         </div>
         <div className="flex items-center gap-2 flex-wrap">
           <div className="flex items-center gap-1.5 border border-[#eceae2] rounded px-2 py-1">
+            <span className="text-xs text-[#0f2a1d]/60">القالب:</span>
+            <select
+              value={tplMode === "custom" ? "__custom" : tplId}
+              onChange={(e) => {
+                if (e.target.value === "__custom") { setTplMode("custom"); return; }
+                setTplId(e.target.value); setTplMode("template");
+              }}
+              className="bg-transparent text-sm outline-none max-w-[190px]"
+              title="قوالب عروض الأسعار (تُدار من الإعدادات ← قوالب المستندات)"
+            >
+              {tplList.map((t) => (
+                <option key={t.id} value={t.id}>{t.name}</option>
+              ))}
+              <option value="__custom">مخصص (لون يدوي)</option>
+            </select>
+          </div>
+          <div className="flex items-center gap-1.5 border border-[#eceae2] rounded px-2 py-1">
             <span className="text-xs text-[#0f2a1d]/60">الهيكل:</span>
             <select
               value={structureId}
@@ -314,7 +354,7 @@ export function QuotationForm({ docId }: { docId?: string }) {
             <input
               type="color"
               value={docColor}
-              onChange={(e) => setDocColor(e.target.value)}
+              onChange={(e) => { setDocColor(e.target.value); setTplMode("custom"); }}
               className="w-6 h-6 rounded border border-[#eceae2] cursor-pointer bg-transparent p-0"
             />
           </label>
@@ -327,6 +367,8 @@ export function QuotationForm({ docId }: { docId?: string }) {
             <Printer className="w-4 h-4" /> طباعة / تنزيل
           </button>
           <button type="button"
+            onClick={() => document.getElementById("doc-attachments")?.scrollIntoView({ behavior: "smooth", block: "start" })}
+            title="الانتقال إلى قسم المرفقات أسفل الصفحة"
             className="inline-flex items-center gap-1 text-sm px-2 py-1.5 rounded hover:bg-[#f7f6f0]">
             <Paperclip className="w-4 h-4" /> مرفقات
           </button>
@@ -669,6 +711,7 @@ export function QuotationForm({ docId }: { docId?: string }) {
                 terms={notes}
                 currency={CUR}
                 structure={structure}
+                verify={verify}
               />
               <div className="flex items-center justify-center pt-2">
                 <button type="button"
@@ -742,14 +785,14 @@ export function QuotationForm({ docId }: { docId?: string }) {
               <QuotationPreview
                 tpl={tpl} org={org} party={party} ref_={ref} date={date} dueDate={expiry}
                 lines={lines} lineCalcs={lineCalcs} subtotal={subtotal} tax={tax}
-                total={total} notes={notes} terms={notes} currency={CUR} structure={structure}
+                total={total} notes={notes} terms={notes} currency={CUR} structure={structure} verify={verify}
               />
             </div>
           </div>
         </div>
       )}
 
-      <div className="mt-6">
+      <div className="mt-6" id="doc-attachments">
         <DocumentSidePanel
           orgId={currentOrgId}
           dbDocId={dbId}
