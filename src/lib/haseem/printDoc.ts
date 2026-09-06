@@ -109,7 +109,10 @@ const fmt = (n: number) =>
 
 export function buildDocHtml(d: PrintDocData): string {
   const tpl = d.tpl ?? { name: "Default", accent: "#0f2a1d", onAccent: "#ffffff", soft: "#fafaf7" };
-  const org = d.org ?? { name: "", taxNumber: "", address: "" };
+  const orgRaw = (d.org ?? { name: "", taxNumber: "", address: "" }) as { name: string; taxNumber: string; address?: string; commercialReg?: string; cr?: string };
+  // The organization settings page stores the CR under `cr`; normalize so the
+  // header's "السجل التجاري · CR No." line always finds it.
+  const org = { ...orgRaw, commercialReg: orgRaw.commercialReg ?? orgRaw.cr };
   const party = d.party ?? null;
   const lines = Array.isArray(d.lines) ? d.lines : [];
   const lineCalcs = Array.isArray(d.lineCalcs) ? d.lineCalcs : [];
@@ -660,9 +663,12 @@ export async function printDoc(d: PrintDocData & { attachment?: { url: string; m
     : "";
   const isThermal = d.structure === "thermal";
   const thermalRollMm = d.thermalWidth === "57mm" ? 57 : 80;
+  // margin: 0 suppresses the browser's own print header/footer (date, page
+  // URL) — those are drawn inside the page margins; the visual margin moves
+  // to a body padding below instead.
   const pageRule = isThermal
     ? `@page { size: ${thermalRollMm}mm auto; margin: 0; }`
-    : `@page { size: A4; margin: 10mm 12mm; }`;
+    : `@page { size: A4; margin: 0; }`;
   // A4 structures reset .doc to full page width on print; a thermal receipt
   // must keep its narrow roll width instead, or it prints stretched to A4.
   const docPrintWidthRule = isThermal
@@ -681,7 +687,7 @@ export async function printDoc(d: PrintDocData & { attachment?: { url: string; m
       ${pageRule}
       .avoid-break{break-inside:avoid;page-break-inside:avoid}
       @media print {
-        body{padding:0}
+        body{padding:${isThermal ? "0" : "10mm 12mm"}}
         ${docPrintWidthRule}
         thead{display:table-header-group}
         tfoot{display:table-footer-group}
@@ -747,6 +753,9 @@ export async function printDoc(d: PrintDocData & { attachment?: { url: string; m
   w.document.write(doc);
   w.document.close();
   const trigger = () => {
+    const prevTitle = document.title;
+    document.title = `${safeDoc.title} ${safeDoc.ref}`.trim();
+    setTimeout(() => { document.title = prevTitle; }, 4000);
     try {
       w.focus();
       w.print();
