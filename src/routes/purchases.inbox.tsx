@@ -10,6 +10,9 @@ import {
 import { Shell, PageHeader, PrimaryBtn, OutlineBtn, EmptyState } from "@/components/haseem/Shell";
 import { useCollection, useKV } from "@/lib/haseem/store";
 import { scanInvoice, type ScanResult } from "@/lib/haseem/scan.functions";
+import { logClientEvent } from "@/lib/db/collections";
+import { uploadAttachment } from "@/lib/db/attachments";
+import { useOrg } from "@/lib/db/org";
 
 export const Route = createFileRoute("/purchases/inbox")({
   head: () => ({ meta: [
@@ -79,9 +82,10 @@ function fmtTime(t: number) {
 function InboxPage() {
   const scan = useServerFn(scanInvoice);
   const navigate = useNavigate();
+  const { currentOrgId } = useOrg();
   const { items: docs, add, update, remove } = useCollection<IncomingDoc>("incoming-docs");
-  const { items: bills, add: addBill } = useCollection<any>("bills");
-  const { items: suppliers, add: addSupplier } = useCollection<any>("suppliers");
+  const { items: bills, addAsync: addBillAsync } = useCollection<any>("bills");
+  const { items: suppliers, addAsync: addSupplierAsync } = useCollection<any>("suppliers");
 
   const [settings, setSettings] = useKV("inbox-settings", {
     autoScan: true,
@@ -163,38 +167,56 @@ function InboxPage() {
     return c;
   }, [docs]);
 
-  const approve = useCallback((doc: IncomingDoc) => {
+  const approve = useCallback(async (doc: IncomingDoc) => {
     if (!doc.result) return;
     const r = doc.result;
-    // Match supplier
-    let supplier = suppliers.find((s: any) => s.name?.trim() === r.supplierName?.trim());
-    if (!supplier && r.supplierName) {
-      supplier = { id: newId(), name: r.supplierName, taxNumber: r.supplierVatNumber || "", type: "supplier" };
-      addSupplier(supplier);
+    logClientEvent("inbox-approve", `attempt org=${currentOrgId ? "yes" : "MISSING"}`);
+    try {
+      // Await real DB rows: the fire-and-forget add() returned optimistic
+      // stubs with locally-made ids, so the bill link (and later navigation)
+      // pointed at rows that never existed and the save looked broken.
+      let supplier = suppliers.find((s: any) => s.name?.trim() === r.supplierName?.trim());
+      if (!supplier && r.supplierName) {
+        supplier = await addSupplierAsync({
+          name: r.supplierName, taxNumber: r.supplierVatNumber || "", type: "supplier",
+        });
+      }
+      const bill = await addBillAsync({
+        docKind: "bill",
+        ref: r.invoiceNumber || `PO-${Date.now()}`,
+        supplierRef: r.invoiceNumber,
+        date: r.invoiceDate || new Date().toISOString().slice(0, 10),
+        partyId: supplier?.id,
+        partyName: r.supplierName,
+        status: "مسودة",
+        lines: (r.lines || []).map((l: any) => ({
+          description: l.description, qty: l.qty, price: l.unitPrice,
+          tax: l.taxRate ?? 15, total: l.total,
+        })),
+        subtotal: r.subtotal || 0,
+        tax: r.vat || 0,
+        total: r.grandTotal || 0,
+        notes: `مستورد من ${SOURCE_META[doc.source].label}`,
+      });
+      // Store the original file in cloud storage, linked to the bill, so the
+      // Live View shows it as extra pages and print merges it.
+      if (currentOrgId && bill?.id && !String(bill.id).startsWith("tmp_") && doc.dataUrl) {
+        try {
+          const blob = await (await fetch(doc.dataUrl)).blob();
+          const file = new File([blob], doc.filename || "scan", { type: doc.mime || blob.type });
+          uploadAttachment(file, { orgId: currentOrgId, entityType: "document", entityId: bill.id });
+        } catch (e) {
+          console.warn("[inbox] failed to upload original file", e);
+        }
+      }
+      update(doc.id, { status: "approved", billId: bill.id });
+      logClientEvent("inbox-approve", `success id=${bill?.id ?? "?"}`);
+      setReviewId(null);
+    } catch (e) {
+      // Adapter toast already shows the reason; keep the review open.
+      logClientEvent("inbox-approve", `failed: ${e instanceof Error ? e.message : String(e)}`);
     }
-    const bill = {
-      id: newId(),
-      docKind: "bill",
-      ref: r.invoiceNumber || `PO-${Date.now()}`,
-      supplierRef: r.invoiceNumber,
-      date: r.invoiceDate || new Date().toISOString().slice(0, 10),
-      partyId: supplier?.id,
-      partyName: r.supplierName,
-      lines: (r.lines || []).map((l: any) => ({
-        id: newId(), description: l.description, qty: l.qty, price: l.unitPrice,
-        tax: l.taxRate ?? 15, total: l.total,
-      })),
-      subtotal: r.subtotal || 0,
-      tax: r.vat || 0,
-      total: r.grandTotal || 0,
-      notes: `مستورد من ${SOURCE_META[doc.source].label}`,
-      attachment: { dataUrl: doc.dataUrl, filename: doc.filename },
-      createdAt: Date.now(),
-    };
-    addBill(bill);
-    update(doc.id, { status: "approved", billId: bill.id });
-    setReviewId(null);
-  }, [suppliers, addSupplier, addBill, update]);
+  }, [suppliers, addSupplierAsync, addBillAsync, update, currentOrgId]);
 
   const shareUrl = typeof window !== "undefined"
     ? `${window.location.origin}/inbox-upload/${settings.shareToken}`

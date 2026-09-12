@@ -10,7 +10,7 @@ import { Shell, PageHeader, PrimaryBtn, OutlineBtn, EmptyState } from "@/compone
 import { useCollection, useKV } from "@/lib/haseem/store";
 import { scanInvoice, type ScanResult, type ScanLine as SLine } from "@/lib/haseem/scan.functions";
 import { useOrg } from "@/lib/db/org";
-import { syncDocumentToCloud } from "@/lib/db/document-bridge";
+import { logClientEvent } from "@/lib/db/collections";
 import { uploadAttachment } from "@/lib/db/attachments";
 
 export const Route = createFileRoute("/purchases/scan")({
@@ -49,7 +49,7 @@ function newId() {
 function ScanPage() {
   const scan = useServerFn(scanInvoice);
   const { currentOrgId } = useOrg();
-  const { items: bills, add: addBill, update: updateBill } = useCollection<any>("bills");
+  const { items: bills, addAsync: addBillAsync } = useCollection<any>("bills");
   const { items: suppliers, addAsync: addSupplierAsync } = useCollection<any>("suppliers");
   const { items: scanHistory, add: addHistory, remove: removeHistory } = useCollection<any>("invoice-scans");
   const [org] = useKV<{ name: string; taxNumber: string }>("org", {
@@ -281,45 +281,44 @@ function ScanPage() {
                 type: "company",
               });
             }
-            const bill = addBill({
-              ref: payload.invoiceNumber || `BILL-${Math.floor(100000 + Math.random() * 900000)}`,
-              supplierRef: payload.invoiceNumber,
-              date: payload.invoiceDate || new Date().toISOString().slice(0, 10),
-              dueDate: payload.dueDate || payload.invoiceDate || new Date().toISOString().slice(0, 10),
-              partyId: supplier?.id || "",
-              partyName: supplier?.name || payload.supplierName,
-              notes: `تم إنشاؤها بالمسح الذكي · PO: ${payload.purchaseOrderNumber || "—"}`,
-              status: "مسودة",
-              lines: payload.lines,
-              subtotal: payload.subtotal,
-              tax: payload.vat,
-              total: payload.grandTotal,
-              currency: payload.currency,
-              source: "ai-scan",
-            });
+            // Create the bill ONCE through the cloud adapter and WAIT for the
+            // real database row. The old flow used the fire-and-forget add()
+            // (optimistic tmp_ id, errors swallowed) plus a second insert via
+            // syncDocumentToCloud, then navigated to the tmp_ id — the bill
+            // page found nothing and the save looked like it never happened.
+            logClientEvent("scan-save", `attempt org=${currentOrgId ? "yes" : "MISSING"} lines=${payload.lines?.length ?? 0}`);
+            let bill: any;
+            try {
+              bill = await addBillAsync({
+                ref: payload.invoiceNumber || `BILL-${Math.floor(100000 + Math.random() * 900000)}`,
+                supplierRef: payload.invoiceNumber,
+                date: payload.invoiceDate || new Date().toISOString().slice(0, 10),
+                dueDate: payload.dueDate || payload.invoiceDate || new Date().toISOString().slice(0, 10),
+                partyId: supplier?.id || "",
+                partyName: supplier?.name || payload.supplierName,
+                notes: `تم إنشاؤها بالمسح الذكي · PO: ${payload.purchaseOrderNumber || "—"}`,
+                status: "مسودة",
+                lines: payload.lines,
+                subtotal: payload.subtotal,
+                tax: payload.vat,
+                total: payload.grandTotal,
+                currency: payload.currency,
+                source: "ai-scan",
+              });
+            } catch (e) {
+              // The adapter already toasts the Arabic reason; keep the modal
+              // open so nothing reviewed is lost, and log for remote diagnosis.
+              logClientEvent("scan-save", `failed: ${e instanceof Error ? e.message : String(e)}`);
+              return;
+            }
+            logClientEvent("scan-save", `success id=${bill?.id ?? "?"}`);
 
             // Persist the original scanned file to Supabase Storage (not
             // localStorage — an 8MB base64 blob per bill would blow the
-            // browser storage quota fast) so it's linked by the bill's cloud
-            // document id and picked up automatically by the attachment
-            // viewer (DocumentSidePanel) and the merged print output.
-            if (currentOrgId) {
-              try {
-                const dbId = await syncDocumentToCloud(
-                  currentOrgId,
-                  "purchase_invoice",
-                  {
-                    id: bill.id, ref: bill.ref, date: bill.date, dueDate: bill.dueDate,
-                    partyId: bill.partyId, partyName: bill.partyName, notes: bill.notes,
-                    lines: bill.lines, subtotal: bill.subtotal, tax: bill.tax, total: bill.total,
-                  },
-                  null,
-                );
-                updateBill(bill.id, { dbId });
-                uploadAttachment(reviewJob.file, { orgId: currentOrgId, entityType: "document", entityId: dbId });
-              } catch (e) {
-                console.error("[scan] failed to sync bill / upload original to cloud", e);
-              }
+            // browser storage quota fast). For cloud documents the record id
+            // IS the database id, so the attachment links directly.
+            if (currentOrgId && bill?.id && !String(bill.id).startsWith("tmp_")) {
+              uploadAttachment(reviewJob.file, { orgId: currentOrgId, entityType: "document", entityId: bill.id });
             }
 
             addHistory({

@@ -15,6 +15,7 @@ import { useOrg } from "@/lib/db/org";
 import { BRAND } from "@/lib/brand";
 import { useKV } from "@/lib/haseem/store";
 import { GlobalSearch } from "./GlobalSearch";
+import { logClientEvent } from "@/lib/db/collections";
 import { useServerFn } from "@tanstack/react-start";
 import { getPlatformAdminStatus } from "@/lib/platform-admin.functions";
 
@@ -182,6 +183,23 @@ export function Shell({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (ready && !user) navigate({ to: "/auth" });
   }, [ready, user, navigate]);
+
+  // Global crash reporter: any uncaught error or rejected promise on any
+  // page lands in the server drop box (error text only), so failures are
+  // diagnosable remotely even on screens without their own instrumentation.
+  useEffect(() => {
+    const w = window as any;
+    if (w.__canarErrHook) return;
+    w.__canarErrHook = true;
+    const onErr = (e: ErrorEvent) =>
+      logClientEvent("window-error", `${e.message} @ ${e.filename ?? "?"}:${e.lineno ?? 0} | ${location.pathname}`);
+    const onRej = (e: PromiseRejectionEvent) => {
+      const r: any = e.reason;
+      logClientEvent("unhandled-rejection", `${r?.message ?? String(r ?? "?")} | ${location.pathname}`);
+    };
+    window.addEventListener("error", onErr);
+    window.addEventListener("unhandledrejection", onRej);
+  }, []);
 
   useEffect(() => {
     if (ready && user && orgReady && orgs.length === 0 && pathname !== "/select-organization") {
