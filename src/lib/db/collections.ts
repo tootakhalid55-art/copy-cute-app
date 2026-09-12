@@ -610,6 +610,22 @@ const ERROR_AR: Array<[RegExp, string]> = [
   [/forbidden|not_authorized/i, "لا تملك صلاحية لهذه العملية"],
 ];
 
+/** Structured client-side breadcrumb (no document data) — lands in the same
+ *  server drop box as errors so save flows are traceable remotely. */
+export function logClientEvent(context: string, message: string) {
+  try {
+    if (!isBrowser() || !message) return;
+    void fetch("/api/public/client-log", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ message, context }),
+      keepalive: true,
+    }).catch(() => undefined);
+  } catch {
+    // Diagnostics must never break the app.
+  }
+}
+
 /** Ship the raw failure reason (error text only, never document data) to the
  *  server drop box so save failures are diagnosable remotely. */
 function reportClientError(err: unknown, context: string) {
@@ -649,6 +665,10 @@ export function useCloudCollection<T extends Rec = Rec>(key: string) {
     enabled,
     staleTime: 30_000,
   });
+
+  useEffect(() => {
+    if (q.error) reportClientError(q.error, `fetch:${key}`);
+  }, [q.error, key]);
 
   useEffect(() => {
     if (!isBrowser() || !enabled) return;

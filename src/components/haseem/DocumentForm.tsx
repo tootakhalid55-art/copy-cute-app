@@ -17,6 +17,7 @@ import { useOrg } from "@/lib/db/org";
 import { toDocKind } from "@/lib/db/document-bridge";
 import { buildTokenVerifyUrl, newVerifyToken } from "@/lib/haseem/docSignature";
 import { listAttachments, getSignedUrl } from "@/lib/db/attachments";
+import { logClientEvent } from "@/lib/db/collections";
 
 // Read a File as base64 data URL
 function fileToDataURL(f: File): Promise<string> {
@@ -444,6 +445,10 @@ export function DocumentForm({
   const save = async (finalStatus: string) => {
     if (saving) return;
     setSaving(true);
+    logClientEvent(
+      "save",
+      `attempt key=${storageKey} status=${finalStatus} org=${currentOrgId ? "yes" : "MISSING"} existing=${existing ? "yes" : "no"} valid=${isValid} lines=${lines.length}`,
+    );
     // The collections adapter persists to the `documents` table; when the
     // status is "مؤكد" it also calls the atomic `post_document` RPC so the
     // journal entry commits in the same server transaction.
@@ -456,6 +461,7 @@ export function DocumentForm({
     try {
       if (existing) await updateAsync(existing.id, payload);
       else await addAsync(payload);
+      logClientEvent("save", `success key=${storageKey} status=${finalStatus}`);
       navigate({ to: backTo });
     } catch {
       // Error toast already surfaced by the collections adapter — stay on
