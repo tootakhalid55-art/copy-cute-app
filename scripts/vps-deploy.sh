@@ -7,6 +7,27 @@ set -euo pipefail
 APP_DIR="/opt/canar-accounting"
 SERVICE="canar-accounting"
 BRANCH="${DEPLOY_BRANCH:-main}"
+LOG="/tmp/canar-deploy.log"
+
+# Mirror everything to a log and, on exit, publish a redacted tail to the
+# running app's static dir so the deploy outcome is readable remotely at
+# https://<site>/deploy-status.txt (secrets filtered; the sandbox that
+# develops this app cannot SSH in to read journalctl).
+exec > >(tee "$LOG") 2>&1
+publish_status() {
+  local rc=$?
+  local out="$APP_DIR/.output/public/deploy-status.txt"
+  if [ -d "$APP_DIR/.output/public" ]; then
+    {
+      echo "exit_code=$rc"
+      echo "finished_at=$(date -u +%FT%TZ)"
+      echo "head=$(git -C "$APP_DIR" rev-parse HEAD 2>/dev/null || echo '?')"
+      echo "---- last 80 log lines ----"
+      tail -n 80 "$LOG" | grep -viE 'key|secret|token|password'
+    } > "$out" 2>/dev/null || true
+  fi
+}
+trap publish_status EXIT
 
 cd "$APP_DIR"
 echo "== Fetching $BRANCH"

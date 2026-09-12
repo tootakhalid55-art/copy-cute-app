@@ -16,6 +16,20 @@ jobs:
           echo '== Page head =='
           head -c 400 /tmp/page.html 2>/dev/null || echo '(no body)'
           echo
+          echo '== Deployed commit (/version.txt) =='
+          curl -sS --max-time 30 "https://accounting.canarmodern.com/version.txt" || echo '(missing — build predates version stamping or deploy failed)'
+          echo
+          echo '== Last deploy status (/deploy-status.txt) =='
+          curl -sS --max-time 30 "https://accounting.canarmodern.com/deploy-status.txt" || echo '(missing — deploy script predates status publishing)'
+          echo
+          echo '== Old trial banner still in served bundles? =='
+          FOUND=no
+          for A in $(grep -o '/_build/assets/[A-Za-z0-9_.-]*\.js\|/assets/[A-Za-z0-9_.-]*\.js' /tmp/page.html | sort -u | head -10); do
+            if curl -sS --max-time 30 "https://accounting.canarmodern.com$A" | grep -q '14 يوم متبقي'; then
+              echo "banner marker FOUND in $A (old build still served)"; FOUND=yes
+            fi
+          done
+          [ "$FOUND" = no ] && echo 'banner marker not found in entry bundles'
           echo '== Public Supabase values baked into the bundle =='
           ASSET=$(grep -o '/assets/[A-Za-z0-9_.-]*\.js' /tmp/page.html | head -1 || true)
           echo "asset: $ASSET"
