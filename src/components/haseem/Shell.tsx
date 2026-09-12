@@ -247,10 +247,6 @@ export function Shell({ children }: { children: ReactNode }) {
           </span>
         </div>
       )}
-      <div className="bg-[#f5a524] text-[#0f2a1d] text-center text-sm py-2 px-4 font-medium">
-        14 يوم متبقي · <Link to="/settings/billing" className="underline mx-1">اشترك الآن</Link> وحلّ أمورك المالية تحت السيطرة.
-      </div>
-
       <header className="flex items-center justify-between px-6 py-3 bg-white border-b border-[#eceae2] sticky top-0 z-30">
         <div className="flex items-center gap-3">
           <Link to="/dashboard" className="w-10 h-10 rounded-lg bg-[#0f2a1d] flex items-center justify-center">

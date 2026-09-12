@@ -50,7 +50,7 @@ export function QuotationForm({ docId }: { docId?: string }) {
 
   const { items: parties, addAsync: addPartyAsync } = useCollection<any>(partyKey);
   const { items: products } = useCollection<any>("items");
-  const { items: docs, addAsync, update } = useCollection<any>(storageKey);
+  const { items: docs, addAsync, updateAsync } = useCollection<any>(storageKey);
   const existing = docId ? docs.find((d) => d.id === docId) : null;
 
   const [org] = useKV<{ name: string; taxNumber: string }>("org", {
@@ -207,7 +207,10 @@ export function QuotationForm({ docId }: { docId?: string }) {
   }, [partyId, lines]);
   const isValid = validation.length === 0;
 
+  const [saving, setSaving] = useState(false);
   const save = async (status: string) => {
+    if (saving) return;
+    setSaving(true);
     const payload: any = {
       ref, date, expiry, dueDate: expiry, partyId,
       partyName: party?.name ?? "—",
@@ -220,11 +223,14 @@ export function QuotationForm({ docId }: { docId?: string }) {
     };
     // The collections adapter persists straight to the `documents` table now.
     try {
-      if (existing) update(existing.id, payload);
+      if (existing) await updateAsync(existing.id, payload);
       else await addAsync(payload);
       navigate({ to: backTo });
-    } catch (e: any) {
-      alert(`تعذّر الحفظ: ${e?.message ?? e}`);
+    } catch {
+      // Error toast already surfaced by the collections adapter — stay on
+      // the form so nothing typed is lost and the user can retry.
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -372,16 +378,16 @@ export function QuotationForm({ docId }: { docId?: string }) {
             className="inline-flex items-center gap-1 text-sm px-2 py-1.5 rounded hover:bg-[#f7f6f0]">
             <Paperclip className="w-4 h-4" /> مرفقات
           </button>
-          <button type="button" onClick={() => save("مسودة")}
-            className="inline-flex items-center gap-1 text-sm px-3 py-1.5 rounded border border-[#eceae2] hover:bg-[#f7f6f0]">
+          <button type="button" onClick={() => save("مسودة")} disabled={saving}
+            className="inline-flex items-center gap-1 text-sm px-3 py-1.5 rounded border border-[#eceae2] hover:bg-[#f7f6f0] disabled:opacity-50">
             <Bookmark className="w-4 h-4" /> حفظ
           </button>
           <PrimaryBtn
             onClick={() => save("مرسل")}
-            disabled={!isValid || uploading}
+            disabled={!isValid || uploading || saving}
             title={!isValid ? validation.join(" · ") : uploading ? "يوجد مرفقات قيد الرفع" : undefined}
           >
-            <Send className="w-4 h-4" /> احفظ ثم أرسل
+            <Send className="w-4 h-4" /> {saving ? "جارٍ الحفظ…" : "احفظ ثم أرسل"}
           </PrimaryBtn>
         </div>
       </div>

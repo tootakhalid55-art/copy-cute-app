@@ -69,7 +69,7 @@ export function DocumentForm({
 }) {
   const navigate = useNavigate();
   const { items: parties, addAsync: addPartyAsync } = useCollection<any>(partyKey);
-  const { items: docs, addAsync, update } = useCollection<any>(storageKey);
+  const { items: docs, addAsync, updateAsync } = useCollection<any>(storageKey);
   const existing = docId ? docs.find((d) => d.id === docId) : null;
   const [org] = useKV<{ name: string; taxNumber: string; address?: string }>("org", {
     name: "شركة كنار الحديثة للمقاولات",
@@ -440,7 +440,10 @@ export function DocumentForm({
   }, [partyId, partyLabel, lines]);
   const isValid = validation.length === 0;
 
+  const [saving, setSaving] = useState(false);
   const save = async (finalStatus: string) => {
+    if (saving) return;
+    setSaving(true);
     // The collections adapter persists to the `documents` table; when the
     // status is "مؤكد" it also calls the atomic `post_document` RPC so the
     // journal entry commits in the same server transaction.
@@ -451,11 +454,14 @@ export function DocumentForm({
       verifyToken,
     };
     try {
-      if (existing) update(existing.id, payload);
+      if (existing) await updateAsync(existing.id, payload);
       else await addAsync(payload);
       navigate({ to: backTo });
-    } catch (e: any) {
-      alert(`تعذّر الحفظ: ${e?.message ?? e}`);
+    } catch {
+      // Error toast already surfaced by the collections adapter — stay on
+      // the form so nothing typed is lost and the user can retry.
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -564,14 +570,14 @@ export function DocumentForm({
           >
             مشاركة واتساب
           </OutlineBtn>
-          <OutlineBtn type="button" onClick={() => save("مسودة")}>
+          <OutlineBtn type="button" onClick={() => save("مسودة")} disabled={saving}>
             حفظ كمسودة
           </OutlineBtn>
           <PrimaryBtn
             onClick={() => save("مؤكد")}
-            disabled={!isValid || uploading}
+            disabled={!isValid || uploading || saving}
             title={!isValid ? validation.join(" · ") : uploading ? "يوجد مرفقات قيد الرفع" : undefined}
-          >حفظ واعتماد</PrimaryBtn>
+          >{saving ? "جارٍ الحفظ…" : "حفظ واعتماد"}</PrimaryBtn>
         </div>
       </div>
 

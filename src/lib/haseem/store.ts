@@ -78,10 +78,15 @@ export function useCollection<T extends Rec = Rec>(key: string) {
       add: cloud.add,
       addAsync: cloud.addAsync,
       update: cloud.update,
+      updateAsync: cloud.updateAsync,
       remove: cloud.remove,
     };
   }
-  return { ...local, addAsync: async (item: Omit<T, "id">) => local.add(item) };
+  return {
+    ...local,
+    addAsync: async (item: Omit<T, "id">) => local.add(item),
+    updateAsync: async (id: string, patch: Partial<T>) => local.update(id, patch),
+  };
 }
 
 

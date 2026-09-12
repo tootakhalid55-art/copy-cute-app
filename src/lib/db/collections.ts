@@ -64,6 +64,13 @@ export async function issueCloudDocument(orgId: string, docId: string) {
   if (error) throw error;
 }
 
+// Posting failures caused by an org that was never initialized (fresh
+// Supabase project): missing posting rules, account determinations, or an
+// open accounting period. All three are repaired by seeding the accounting
+// foundation, so "حفظ واعتماد" self-heals instead of failing.
+const FOUNDATION_MISSING_RE =
+  /no_posting_rule_for_event|missing_account_determination|no_period_for_date/i;
+
 /** Apply the UI-chosen status after a document insert/update. */
 async function applyDocStatus(key: string, orgId: string, docId: string, uiStatus: unknown) {
   const s = String(uiStatus ?? "");
@@ -71,7 +78,15 @@ async function applyDocStatus(key: string, orgId: string, docId: string, uiStatu
   if (s === "مرسل" || ((s === "مؤكد" || s === "مرحل") && nonPostable)) {
     await issueCloudDocument(orgId, docId);
   } else if (s === "مؤكد" || s === "مرحل") {
-    await postCloudDocument(orgId, docId);
+    try {
+      await postCloudDocument(orgId, docId);
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e ?? "");
+      if (!FOUNDATION_MISSING_RE.test(msg)) throw e;
+      const { seedAccountingFoundation } = await import("@/lib/accounting/defaults");
+      await seedAccountingFoundation(orgId);
+      await postCloudDocument(orgId, docId);
+    }
   }
 }
 
@@ -431,7 +446,15 @@ async function insertOne(key: string, orgId: string, input: any) {
     const { createDocument } = await import("./documents");
     const { org_id: _o, ...payload } = toDocPayload(key, input, orgId);
     const doc = await createDocument({ orgId, ...payload } as any);
-    await applyDocStatus(key, orgId, doc.id, input?.status);
+    // The document is already saved — a posting failure must not roll the UI
+    // back (that made "حفظ واعتماد" look broken and retries create duplicates).
+    // Surface the reason and return the saved draft instead.
+    try {
+      await applyDocStatus(key, orgId, doc.id, input?.status);
+    } catch (e) {
+      surfaceError(e);
+      toast.warning("تم حفظ المستند، لكن تعذّر اعتماده — راجع السبب أعلاه ثم أعد المحاولة من صفحة المستند");
+    }
     return fetchDocRow(orgId, doc.id);
   }
   if (key === "accounts") {
@@ -504,7 +527,12 @@ async function updateOne(key: string, orgId: string, id: string, patch: any) {
     if (!patch?.ref) delete (payload as any).doc_number;
     if (!patch?.date) delete (payload as any).issue_date;
     await updateDocument(id, orgId, { ...payload, ...(lines ? { lines } : {}) } as any);
-    await applyDocStatus(key, orgId, id, patch?.status);
+    try {
+      await applyDocStatus(key, orgId, id, patch?.status);
+    } catch (e) {
+      surfaceError(e);
+      toast.warning("تم حفظ التعديلات، لكن تعذّر الاعتماد — راجع السبب أعلاه ثم أعد المحاولة");
+    }
     return;
   }
   if (key === "accounts") {
@@ -689,8 +717,18 @@ export function useCloudCollection<T extends Rec = Rec>(key: string) {
     [addAsync],
   );
   const update = useCallback((id: string, patch: Partial<T>) => updateM.mutate({ id, patch }), [updateM]);
+  // Awaitable variant — callers that navigate after saving use this so a
+  // failed save keeps them on the form (the fire-and-forget `update` made
+  // errors invisible: the page had already navigated away).
+  const updateAsync = useCallback(
+    async (id: string, patch: Partial<T>) => {
+      await updateM.mutateAsync({ id, patch });
+      await qc.invalidateQueries({ queryKey: ["coll", key, currentOrgId] });
+    },
+    [updateM, qc, key, currentOrgId],
+  );
   const remove = useCallback((id: string) => removeM.mutate(id), [removeM]);
 
-  return { items, add, addAsync, update, remove, loading: q.isLoading, error: q.error, enabled };
+  return { items, add, addAsync, update, updateAsync, remove, loading: q.isLoading, error: q.error, enabled };
 }
 
