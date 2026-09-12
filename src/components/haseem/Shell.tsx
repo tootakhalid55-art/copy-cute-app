@@ -456,7 +456,7 @@ export function PageHeader({
 
 export function PrimaryBtn({ children, className = "", ...rest }: React.ButtonHTMLAttributes<HTMLButtonElement>) {
   return (
-    <button {...rest} className={`inline-flex items-center gap-2 bg-[#0f2a1d] text-white rounded-lg px-4 py-2 text-sm font-medium hover:bg-[#163a29] ${className}`}>
+    <button {...rest} className={`inline-flex items-center gap-2 bg-[#0f2a1d] text-white rounded-lg px-4 py-2 text-sm font-medium hover:bg-[#163a29] disabled:opacity-50 disabled:cursor-not-allowed ${className}`}>
       {children}
     </button>
   );
@@ -464,7 +464,7 @@ export function PrimaryBtn({ children, className = "", ...rest }: React.ButtonHT
 
 export function OutlineBtn({ children, className = "", ...rest }: React.ButtonHTMLAttributes<HTMLButtonElement>) {
   return (
-    <button {...rest} className={`inline-flex items-center gap-2 bg-white border border-[#eceae2] text-[#0f2a1d] rounded-lg px-4 py-2 text-sm hover:bg-[#f7f6f0] ${className}`}>
+    <button {...rest} className={`inline-flex items-center gap-2 bg-white border border-[#eceae2] text-[#0f2a1d] rounded-lg px-4 py-2 text-sm hover:bg-[#f7f6f0] disabled:opacity-50 disabled:cursor-not-allowed ${className}`}>
       {children}
     </button>
   );

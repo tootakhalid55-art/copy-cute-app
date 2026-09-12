@@ -297,7 +297,9 @@ function ScanPage() {
                 partyId: supplier?.id || "",
                 partyName: supplier?.name || payload.supplierName,
                 notes: `تم إنشاؤها بالمسح الذكي · PO: ${payload.purchaseOrderNumber || "—"}`,
-                status: "مسودة",
+                // "مؤكد" posts the invoice to the ledger server-side (the
+                // adapter falls back to a saved draft with a toast on failure).
+                status: payload.finalStatus || "مسودة",
                 lines: payload.lines,
                 subtotal: payload.subtotal,
                 tax: payload.vat,
@@ -403,7 +405,7 @@ function StatusBadge({ status }: { status: Status }) {
   );
 }
 
-type ReviewPayload = ScanResult & { createSupplier: boolean };
+type ReviewPayload = ScanResult & { createSupplier: boolean; finalStatus: string };
 
 function ReviewModal({
   job, suppliers, onClose, onSave,
@@ -411,11 +413,21 @@ function ReviewModal({
   job: Job;
   suppliers: any[];
   onClose: () => void;
-  onSave: (v: ReviewPayload) => void;
+  onSave: (v: ReviewPayload) => void | Promise<void>;
 }) {
   const r = job.result!;
   const [form, setForm] = useState<ScanResult>(() => JSON.parse(JSON.stringify(r)));
   const [createSupplier, setCreateSupplier] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const submit = async (finalStatus: string) => {
+    if (saving) return;
+    setSaving(true);
+    try {
+      await onSave({ ...form, createSupplier, finalStatus });
+    } finally {
+      setSaving(false);
+    }
+  };
 
   useEffect(() => { setForm(JSON.parse(JSON.stringify(r))); }, [r]);
 
@@ -659,9 +671,12 @@ function ReviewModal({
             المستوى العام للثقة: <strong>{averageConfidence(form)}%</strong>
           </div>
           <div className="flex gap-2">
-            <OutlineBtn onClick={onClose}>إلغاء</OutlineBtn>
-            <PrimaryBtn onClick={() => onSave({ ...form, createSupplier })}>
-              <Check className="w-4 h-4" /> إنشاء فاتورة الشراء
+            <OutlineBtn onClick={onClose} disabled={saving}>إلغاء</OutlineBtn>
+            <OutlineBtn onClick={() => submit("مسودة")} disabled={saving}>
+              حفظ كمسودة
+            </OutlineBtn>
+            <PrimaryBtn onClick={() => submit("مؤكد")} disabled={saving}>
+              <Check className="w-4 h-4" /> {saving ? "جارٍ الحفظ…" : "حفظ واعتماد"}
             </PrimaryBtn>
           </div>
         </div>

@@ -188,7 +188,8 @@ function InboxPage() {
         date: r.invoiceDate || new Date().toISOString().slice(0, 10),
         partyId: supplier?.id,
         partyName: r.supplierName,
-        status: "مسودة",
+        // The button says "اعتماد وإنشاء فاتورة شراء" — post it, not a draft.
+        status: "مؤكد",
         lines: (r.lines || []).map((l: any) => ({
           description: l.description, qty: l.qty, price: l.unitPrice,
           tax: l.taxRate ?? 15, total: l.total,
