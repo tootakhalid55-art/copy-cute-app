@@ -11,7 +11,8 @@ import { useCollection, useKV } from "@/lib/haseem/store";
 import { scanInvoice, type ScanResult, type ScanLine as SLine } from "@/lib/haseem/scan.functions";
 import { useOrg } from "@/lib/db/org";
 import { logClientEvent } from "@/lib/db/collections";
-import { uploadAttachment } from "@/lib/db/attachments";
+import { uploadAttachmentAndWait } from "@/lib/db/attachments";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/purchases/scan")({
   head: () => ({ meta: [{ title: "مسح الفواتير بالذكاء الاصطناعي — كنار المحاسبية" }] }),
@@ -317,10 +318,17 @@ function ScanPage() {
 
             // Persist the original scanned file to Supabase Storage (not
             // localStorage — an 8MB base64 blob per bill would blow the
-            // browser storage quota fast). For cloud documents the record id
-            // IS the database id, so the attachment links directly.
+            // browser storage quota fast). Await the terminal state so the
+            // bill page opens with the original already linked; a silent
+            // fire-and-forget lost the race (and hid upload failures).
             if (currentOrgId && bill?.id && !String(bill.id).startsWith("tmp_")) {
-              uploadAttachment(reviewJob.file, { orgId: currentOrgId, entityType: "document", entityId: bill.id });
+              const up = await uploadAttachmentAndWait(reviewJob.file, {
+                orgId: currentOrgId, entityType: "document", entityId: bill.id,
+              });
+              if (up.status !== "done") {
+                logClientEvent("scan-save", `attachment upload ${up.status}: ${up.error ?? "?"}`);
+                toast.error("تم حفظ الفاتورة، لكن تعذّر رفع الملف الأصلي — سيُعاد رفعه من صفحة الفاتورة عبر زر المرفقات");
+              }
             }
 
             addHistory({

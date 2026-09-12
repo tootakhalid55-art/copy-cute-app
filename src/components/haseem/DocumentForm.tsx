@@ -410,17 +410,25 @@ export function DocumentForm({
       return;
     }
     (async () => {
-      try {
-        const atts = await listAttachments(currentOrgId, "document", dbId);
-        const scans: { id: string; url: string; mime: string; filename: string }[] = [];
-        for (const att of atts) {
-          const url = await getSignedUrl(att.storage_path);
-          if (url) scans.push({ id: att.id, url, mime: att.mime_type ?? "", filename: att.filename ?? "scan" });
+      // A few bounded retries: right after a scan-save the upload may land a
+      // moment after this page mounts, so an empty first read isn't final.
+      for (const delay of [0, 2500, 7000]) {
+        if (delay) await new Promise((r) => setTimeout(r, delay));
+        if (!alive) return;
+        try {
+          const atts = await listAttachments(currentOrgId, "document", dbId);
+          const scans: { id: string; url: string; mime: string; filename: string }[] = [];
+          for (const att of atts) {
+            const url = await getSignedUrl(att.storage_path);
+            if (url) scans.push({ id: att.id, url, mime: att.mime_type ?? "", filename: att.filename ?? "scan" });
+          }
+          if (!alive) return;
+          setSourceScans(scans);
+          if (scans.length) return;
+        } catch (e) {
+          console.error("[live-view] failed to load original scanned file", e);
+          if (alive) setSourceScans([]);
         }
-        if (alive) setSourceScans(scans);
-      } catch (e) {
-        console.error("[live-view] failed to load original scanned file", e);
-        if (alive) setSourceScans([]);
       }
     })();
     return () => { alive = false; };

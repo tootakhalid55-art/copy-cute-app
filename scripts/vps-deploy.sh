@@ -57,4 +57,8 @@ if [ "$code" != "200" ]; then
   journalctl -u "$SERVICE" --no-pager --lines=30
   exit 1
 fi
+echo "== Ensure storage buckets"
+curl -s --max-time 30 http://127.0.0.1:3001/api/public/ensure-storage || true
+echo
+
 echo "== Deployed $(git rev-parse --short HEAD) OK"

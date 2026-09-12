@@ -248,6 +248,21 @@ export function uploadAttachment(file: File, opts: UploadOpts): UploadHandle {
   return handle;
 }
 
+/** Like uploadAttachment, but resolves when the upload reaches a terminal
+ *  state (done/failed/cancelled) — for flows that must not navigate away
+ *  before the file is actually stored. Never rejects; check handle.status. */
+export function uploadAttachmentAndWait(file: File, opts: UploadOpts): Promise<UploadHandle> {
+  return new Promise((resolve) => {
+    uploadAttachment(file, {
+      ...opts,
+      onProgress: (h) => {
+        opts.onProgress?.(h);
+        if (h.status === "done" || h.status === "failed" || h.status === "cancelled") resolve(h);
+      },
+    });
+  });
+}
+
 /** List attachments for an entity, cheap (no signed URLs). */
 export async function listAttachments(orgId: string, entityType: string, entityId: string) {
   const { data, error } = await supabase

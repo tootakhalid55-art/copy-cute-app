@@ -11,7 +11,7 @@ import { Shell, PageHeader, PrimaryBtn, OutlineBtn, EmptyState } from "@/compone
 import { useCollection, useKV } from "@/lib/haseem/store";
 import { scanInvoice, type ScanResult } from "@/lib/haseem/scan.functions";
 import { logClientEvent } from "@/lib/db/collections";
-import { uploadAttachment } from "@/lib/db/attachments";
+import { uploadAttachmentAndWait } from "@/lib/db/attachments";
 import { useOrg } from "@/lib/db/org";
 
 export const Route = createFileRoute("/purchases/inbox")({
@@ -205,7 +205,8 @@ function InboxPage() {
         try {
           const blob = await (await fetch(doc.dataUrl)).blob();
           const file = new File([blob], doc.filename || "scan", { type: doc.mime || blob.type });
-          uploadAttachment(file, { orgId: currentOrgId, entityType: "document", entityId: bill.id });
+          const up = await uploadAttachmentAndWait(file, { orgId: currentOrgId, entityType: "document", entityId: bill.id });
+          if (up.status !== "done") logClientEvent("inbox-approve", `attachment upload ${up.status}: ${up.error ?? "?"}`);
         } catch (e) {
           console.warn("[inbox] failed to upload original file", e);
         }

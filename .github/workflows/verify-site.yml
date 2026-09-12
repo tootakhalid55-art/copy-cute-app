@@ -19,6 +19,9 @@ jobs:
           echo '== Deployed commit (/version.txt) =='
           curl -sS --max-time 30 "https://accounting.canarmodern.com/version.txt" || echo '(missing — build predates version stamping or deploy failed)'
           echo
+          echo '== Storage buckets =='
+          curl -sS --max-time 30 "https://accounting.canarmodern.com/api/public/ensure-storage" || echo '(endpoint not deployed yet)'
+          echo
           echo '== Recent client-side save errors =='
           curl -sS --max-time 30 "https://accounting.canarmodern.com/api/public/client-log" | tail -60 || echo '(endpoint not deployed yet)'
           echo
