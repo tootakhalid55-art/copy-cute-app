@@ -19,11 +19,11 @@ jobs:
           echo '== Deployed commit (/version.txt) =='
           curl -sS --max-time 30 "https://accounting.canarmodern.com/version.txt" || echo '(missing — build predates version stamping or deploy failed)'
           echo
-          echo '== Recent client-side save errors (/client-errors.txt) =='
-          curl -sS --max-time 30 "https://accounting.canarmodern.com/client-errors.txt" | head -60 || echo '(none reported yet)'
+          echo '== Recent client-side save errors =='
+          curl -sS --max-time 30 "https://accounting.canarmodern.com/api/public/client-log" | tail -60 || echo '(endpoint not deployed yet)'
           echo
-          echo '== Last deploy status (/deploy-status.txt) =='
-          curl -sS --max-time 30 "https://accounting.canarmodern.com/deploy-status.txt" || echo '(missing — deploy script predates status publishing)'
+          echo '== Last deploy log tail =='
+          curl -sS --max-time 30 "https://accounting.canarmodern.com/api/public/client-log?what=deploy" | tail -40 || echo '(endpoint not deployed yet)'
           echo
           echo '== Old trial banner still in served bundles? =='
           FOUND=no
