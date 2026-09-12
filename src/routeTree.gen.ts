@@ -93,6 +93,7 @@ import { Route as SettingsTestDataRouteImport } from './routes/settings.test-dat
 import { Route as SettingsUsersRouteImport } from './routes/settings.users'
 import { Route as SettingsWorkflowsRouteImport } from './routes/settings.workflows'
 import { Route as SettingsZatcaRouteImport } from './routes/settings.zatca'
+import { Route as ApiPublicClientLogRouteImport } from './routes/api/public/client-log'
 import { Route as ApiPublicVerifyRouteImport } from './routes/api/public/verify'
 import { Route as PurchasesBillsIndexRouteImport } from './routes/purchases.bills.index'
 import { Route as PurchasesBillsIdRouteImport } from './routes/purchases.bills.$id'
@@ -541,6 +542,11 @@ const SettingsZatcaRoute = SettingsZatcaRouteImport.update({
   path: '/settings/zatca',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicClientLogRoute = ApiPublicClientLogRouteImport.update({
+  id: '/api/public/client-log',
+  path: '/api/public/client-log',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicVerifyRoute = ApiPublicVerifyRouteImport.update({
   id: '/api/public/verify',
   path: '/api/public/verify',
@@ -750,6 +756,7 @@ export interface FileRoutesByFullPath {
   '/settings/users': typeof SettingsUsersRoute
   '/settings/workflows': typeof SettingsWorkflowsRoute
   '/settings/zatca': typeof SettingsZatcaRoute
+  '/api/public/client-log': typeof ApiPublicClientLogRoute
   '/api/public/verify': typeof ApiPublicVerifyRoute
   '/purchases/bills/$id': typeof PurchasesBillsIdRoute
   '/purchases/bills/new': typeof PurchasesBillsNewRoute
@@ -853,6 +860,7 @@ export interface FileRoutesByTo {
   '/settings/users': typeof SettingsUsersRoute
   '/settings/workflows': typeof SettingsWorkflowsRoute
   '/settings/zatca': typeof SettingsZatcaRoute
+  '/api/public/client-log': typeof ApiPublicClientLogRoute
   '/api/public/verify': typeof ApiPublicVerifyRoute
   '/purchases/bills/$id': typeof PurchasesBillsIdRoute
   '/purchases/bills/new': typeof PurchasesBillsNewRoute
@@ -963,6 +971,7 @@ export interface FileRoutesById {
   '/settings/users': typeof SettingsUsersRoute
   '/settings/workflows': typeof SettingsWorkflowsRoute
   '/settings/zatca': typeof SettingsZatcaRoute
+  '/api/public/client-log': typeof ApiPublicClientLogRoute
   '/api/public/verify': typeof ApiPublicVerifyRoute
   '/purchases/bills/$id': typeof PurchasesBillsIdRoute
   '/purchases/bills/new': typeof PurchasesBillsNewRoute
@@ -1074,6 +1083,7 @@ export interface FileRouteTypes {
     | '/settings/users'
     | '/settings/workflows'
     | '/settings/zatca'
+    | '/api/public/client-log'
     | '/api/public/verify'
     | '/purchases/bills/$id'
     | '/purchases/bills/new'
@@ -1177,6 +1187,7 @@ export interface FileRouteTypes {
     | '/settings/users'
     | '/settings/workflows'
     | '/settings/zatca'
+    | '/api/public/client-log'
     | '/api/public/verify'
     | '/purchases/bills/$id'
     | '/purchases/bills/new'
@@ -1286,6 +1297,7 @@ export interface FileRouteTypes {
     | '/settings/users'
     | '/settings/workflows'
     | '/settings/zatca'
+    | '/api/public/client-log'
     | '/api/public/verify'
     | '/purchases/bills/$id'
     | '/purchases/bills/new'
@@ -1382,6 +1394,7 @@ export interface RootRouteChildren {
   SettingsUsersRoute: typeof SettingsUsersRoute
   SettingsWorkflowsRoute: typeof SettingsWorkflowsRoute
   SettingsZatcaRoute: typeof SettingsZatcaRoute
+  ApiPublicClientLogRoute: typeof ApiPublicClientLogRoute
   ApiPublicVerifyRoute: typeof ApiPublicVerifyRoute
   ApiPublicHooksApIntakeEmailRoute: typeof ApiPublicHooksApIntakeEmailRoute
   ApiPublicHooksApIntakeProcessRoute: typeof ApiPublicHooksApIntakeProcessRoute
@@ -1979,6 +1992,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SettingsZatcaRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/client-log': {
+      id: '/api/public/client-log'
+      path: '/api/public/client-log'
+      fullPath: '/api/public/client-log'
+      preLoaderRoute: typeof ApiPublicClientLogRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/verify': {
       id: '/api/public/verify'
       path: '/api/public/verify'
@@ -2375,6 +2395,7 @@ const rootRouteChildren: RootRouteChildren = {
   SettingsUsersRoute: SettingsUsersRoute,
   SettingsWorkflowsRoute: SettingsWorkflowsRoute,
   SettingsZatcaRoute: SettingsZatcaRoute,
+  ApiPublicClientLogRoute: ApiPublicClientLogRoute,
   ApiPublicVerifyRoute: ApiPublicVerifyRoute,
   ApiPublicHooksApIntakeEmailRoute: ApiPublicHooksApIntakeEmailRoute,
   ApiPublicHooksApIntakeProcessRoute: ApiPublicHooksApIntakeProcessRoute,

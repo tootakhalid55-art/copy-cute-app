@@ -19,6 +19,9 @@ jobs:
           echo '== Deployed commit (/version.txt) =='
           curl -sS --max-time 30 "https://accounting.canarmodern.com/version.txt" || echo '(missing — build predates version stamping or deploy failed)'
           echo
+          echo '== Recent client-side save errors (/client-errors.txt) =='
+          curl -sS --max-time 30 "https://accounting.canarmodern.com/client-errors.txt" | head -60 || echo '(none reported yet)'
+          echo
           echo '== Last deploy status (/deploy-status.txt) =='
           curl -sS --max-time 30 "https://accounting.canarmodern.com/deploy-status.txt" || echo '(missing — deploy script predates status publishing)'
           echo

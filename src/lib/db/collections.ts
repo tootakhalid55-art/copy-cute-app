@@ -610,10 +610,31 @@ const ERROR_AR: Array<[RegExp, string]> = [
   [/forbidden|not_authorized/i, "لا تملك صلاحية لهذه العملية"],
 ];
 
-function surfaceError(err: unknown) {
+/** Ship the raw failure reason (error text only, never document data) to the
+ *  server drop box so save failures are diagnosable remotely. */
+function reportClientError(err: unknown, context: string) {
+  try {
+    const e = err as any;
+    const message = [e?.code, e?.message ?? String(err ?? ""), e?.details, e?.hint]
+      .filter(Boolean)
+      .join(" | ");
+    if (!message || !isBrowser()) return;
+    void fetch("/api/public/client-log", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ message, context }),
+      keepalive: true,
+    }).catch(() => undefined);
+  } catch {
+    // Diagnostics must never break the app.
+  }
+}
+
+function surfaceError(err: unknown, context?: string) {
   const msg = err instanceof Error ? err.message : String(err ?? "");
   const hit = ERROR_AR.find(([re]) => re.test(msg));
   toast.error(hit ? hit[1] : `تعذر تنفيذ العملية: ${msg.slice(0, 140)}`);
+  reportClientError(err, context ?? (isBrowser() ? window.location.pathname : "ssr"));
 }
 
 export function useCloudCollection<T extends Rec = Rec>(key: string) {
