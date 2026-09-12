@@ -64,6 +64,13 @@ export async function issueCloudDocument(orgId: string, docId: string) {
   if (error) throw error;
 }
 
+/** Robust error text: Supabase/Postgrest errors are often plain objects, so
+ *  prefer .message over String(e) (which yields "[object Object]"). */
+function errText(e: unknown): string {
+  const any = e as any;
+  return String(any?.message ?? (e instanceof Error ? e.message : e ?? ""));
+}
+
 // Posting failures caused by an org that was never initialized (fresh
 // Supabase project): missing posting rules, account determinations, or an
 // open accounting period. All three are repaired by seeding the accounting
@@ -81,10 +88,15 @@ async function applyDocStatus(key: string, orgId: string, docId: string, uiStatu
     try {
       await postCloudDocument(orgId, docId);
     } catch (e) {
-      const msg = e instanceof Error ? e.message : String(e ?? "");
+      // Supabase errors can be plain objects (not Error instances), so read
+      // .message directly — String(e) gives "[object Object]" and silently
+      // skipped the auto-seed path.
+      const msg = errText(e);
       if (!FOUNDATION_MISSING_RE.test(msg)) throw e;
+      logClientEvent("auto-seed", `start after: ${msg.slice(0, 80)}`);
       const { seedAccountingFoundation } = await import("@/lib/accounting/defaults");
       await seedAccountingFoundation(orgId);
+      logClientEvent("auto-seed", "done — retrying post");
       await postCloudDocument(orgId, docId);
     }
   }
@@ -647,7 +659,7 @@ function reportClientError(err: unknown, context: string) {
 }
 
 function surfaceError(err: unknown, context?: string) {
-  const msg = err instanceof Error ? err.message : String(err ?? "");
+  const msg = errText(err);
   const hit = ERROR_AR.find(([re]) => re.test(msg));
   toast.error(hit ? hit[1] : `تعذر تنفيذ العملية: ${msg.slice(0, 140)}`);
   reportClientError(err, context ?? (isBrowser() ? window.location.pathname : "ssr"));
