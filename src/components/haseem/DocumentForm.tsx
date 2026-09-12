@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useMemo } from "react";
 import { useNavigate } from "@tanstack/react-router";
-import { Plus, Trash2, Printer, Eye, X, Pencil, Upload, Check } from "lucide-react";
+import { Plus, Trash2, Printer, Eye, X, Pencil, Upload, Check, Download } from "lucide-react";
 import QRCode from "qrcode";
 import { Shell, PrimaryBtn, OutlineBtn } from "./Shell";
 import { useCollection, useKV } from "@/lib/haseem/store";
@@ -335,7 +335,11 @@ export function DocumentForm({
       // one is linked in cloud storage) so it prints merged after the
       // generated digital invoice — one combined job for audit/review.
       let attachment: { url: string; mime?: string; label?: string } | undefined;
-      if (printKind === "bill" && currentOrgId && dbId) {
+      if (printKind === "bill" && sourceScans.length) {
+        // Same signed URLs the Live View shows — print output matches it.
+        const latest = sourceScans[0];
+        attachment = { url: latest.url, mime: latest.mime || undefined, label: `النسخة الأصلية · ${latest.filename}` };
+      } else if (printKind === "bill" && currentOrgId && dbId) {
         try {
           const atts = await listAttachments(currentOrgId, "document", dbId);
           const latest = atts[0];
@@ -390,6 +394,36 @@ export function DocumentForm({
   useEffect(() => {
     setDbId(existing?.dbId ?? existing?.id ?? null);
   }, [existing?.id, existing?.dbId]);
+
+  // Original scanned source files (AI-scanned purchase invoices): the scan
+  // flow uploads the supplier's original file as a "document" attachment, so
+  // for bills we surface it inside the Live View as extra pages after the
+  // system-generated invoice, with a download action.
+  const [sourceScans, setSourceScans] = useState<
+    { id: string; url: string; mime: string; filename: string }[]
+  >([]);
+  useEffect(() => {
+    let alive = true;
+    if (printKind !== "bill" || !currentOrgId || !dbId) {
+      setSourceScans([]);
+      return;
+    }
+    (async () => {
+      try {
+        const atts = await listAttachments(currentOrgId, "document", dbId);
+        const scans: { id: string; url: string; mime: string; filename: string }[] = [];
+        for (const att of atts) {
+          const url = await getSignedUrl(att.storage_path);
+          if (url) scans.push({ id: att.id, url, mime: att.mime_type ?? "", filename: att.filename ?? "scan" });
+        }
+        if (alive) setSourceScans(scans);
+      } catch (e) {
+        console.error("[live-view] failed to load original scanned file", e);
+        if (alive) setSourceScans([]);
+      }
+    })();
+    return () => { alive = false; };
+  }, [printKind, currentOrgId, dbId]);
   const [enablingCloud, setEnablingCloud] = useState(false);
   const [uploading, setUploading] = useState(false);
 
@@ -586,6 +620,7 @@ export function DocumentForm({
           progressBilling={tpl.layoutVariant === "contracting" ? progressBilling : undefined}
           structure={structure}
         />
+        <SourceScanPages scans={sourceScans} />
       </div>
 
 
@@ -972,6 +1007,7 @@ export function DocumentForm({
                 progressBilling={tpl.layoutVariant === "contracting" ? progressBilling : undefined}
                 structure={structure}
               />
+              <SourceScanPages scans={sourceScans} />
             </div>
           </div>
         </div>
@@ -1331,6 +1367,71 @@ function DocumentLivePreview({
     }} />;
   }
   return <InvoicePreview {...{ tpl, org, party, partyName, partyLabel, partyAddress, ref_, date, dueDate, issuedAtIso, lines, lineCalcs, subtotal, tax, total, notes, branding, qrDataUrl, usesZatcaQr, docTitle, currency, layoutVariant, progressBilling, structure }} />;
+}
+
+// Extra Live-View pages for AI-scanned purchase invoices: page 1 is the
+// system-generated invoice above; each original scanned file follows as its
+// own page with a download action (signed URL, fetched as a blob so the
+// browser saves it instead of navigating).
+function SourceScanPages({ scans }: { scans: { id: string; url: string; mime: string; filename: string }[] }) {
+  if (!scans.length) return null;
+  const download = async (scan: { url: string; filename: string }) => {
+    try {
+      const res = await fetch(scan.url);
+      if (!res.ok) throw new Error(`http ${res.status}`);
+      const blob = await res.blob();
+      const objUrl = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = objUrl;
+      a.download = scan.filename || "original-invoice";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(objUrl), 4000);
+    } catch {
+      window.open(scan.url, "_blank", "noopener");
+    }
+  };
+  return (
+    <>
+      {scans.map((scan, i) => {
+        const isPdf = (scan.mime || "").includes("pdf") || /\.pdf$/i.test(scan.filename);
+        return (
+          <div key={scan.id} className="mt-6 border-t-2 border-dashed border-[#eceae2] pt-5">
+            <div className="flex items-center justify-between gap-3 flex-wrap mb-3">
+              <div>
+                <div className="text-sm font-bold text-[#0f2a1d]">
+                  الفاتورة الأصلية الممسوحة ضوئياً · Original Scanned Invoice
+                </div>
+                <div className="text-[11px] text-[#0f2a1d]/60">
+                  صفحة {i + 2} · {scan.filename}
+                </div>
+              </div>
+              <OutlineBtn type="button" onClick={() => download(scan)}>
+                <Download className="w-4 h-4" /> تنزيل الأصل
+              </OutlineBtn>
+            </div>
+            <div className="rounded-lg border border-[#eceae2] bg-[#faf9f4] p-2 print:border-0 print:p-0">
+              {isPdf ? (
+                <iframe
+                  src={scan.url}
+                  title={scan.filename}
+                  className="w-full rounded bg-white"
+                  style={{ height: "80vh", minHeight: 480, border: 0 }}
+                />
+              ) : (
+                <img
+                  src={scan.url}
+                  alt={scan.filename}
+                  className="w-full h-auto rounded bg-white object-contain"
+                />
+              )}
+            </div>
+          </div>
+        );
+      })}
+    </>
+  );
 }
 
 function FormField({
