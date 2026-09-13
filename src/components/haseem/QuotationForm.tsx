@@ -76,6 +76,7 @@ export function QuotationForm({ docId }: { docId?: string }) {
   const [ref, setRef] = useState<string>(existing?.ref ?? nextNumber);
   const [date, setDate] = useState<string>(existing?.date ?? today);
   const [expiry, setExpiry] = useState<string>(existing?.expiry ?? today);
+  const [intro, setIntro] = useState<string>(existing?.intro ?? "");
   const [partyId, setPartyId] = useState<string>(existing?.partyId ?? "");
   const [notes, setNotes] = useState<string>(existing?.notes ?? "");
   const [poNumber, setPoNumber] = useState<string>(existing?.poNumber ?? "");
@@ -105,6 +106,7 @@ export function QuotationForm({ docId }: { docId?: string }) {
       setRef(existing.ref);
       setDate(existing.date);
       setExpiry(existing.expiry ?? existing.dueDate ?? today);
+      setIntro(existing.intro ?? "");
       setPartyId(existing.partyId ?? "");
       setNotes(existing.notes ?? "");
       setLines(existing.lines ?? [{ description: "", qty: 1, price: 0, tax: 15 }]);
@@ -212,7 +214,7 @@ export function QuotationForm({ docId }: { docId?: string }) {
     if (saving) return;
     setSaving(true);
     const payload: any = {
-      ref, date, expiry, dueDate: expiry, partyId,
+      ref, date, expiry, dueDate: expiry, partyId, intro,
       partyName: party?.name ?? "—",
       notes, lines, subtotal, tax, total,
       poNumber, reference, project, currency, priceMode, optCols,
@@ -270,6 +272,7 @@ export function QuotationForm({ docId }: { docId?: string }) {
         discAmt, shipAmt,
         notes,
         terms: notes,
+        intro,
         partyRole: "العميل",
         currency: CUR,
         branding,
@@ -295,6 +298,7 @@ export function QuotationForm({ docId }: { docId?: string }) {
         shipAmt: 0,
         notes,
         terms: notes,
+        intro,
         partyRole: "العميل",
         currency: CUR,
         branding,
@@ -501,6 +505,17 @@ export function QuotationForm({ docId }: { docId?: string }) {
                     className="border border-[#eceae2] rounded-lg px-3 py-2" />
                 </FormField>
               )}
+            </div>
+            <div className="mt-4">
+              <FormField label="مقدمة العرض">
+                <textarea
+                  value={intro}
+                  onChange={(e) => setIntro(e.target.value)}
+                  rows={3}
+                  placeholder="نص تمهيدي يظهر في العرض أسفل التاريخ والصلاحية وقبل جدول البنود — مثل: يسرنا تقديم عرض السعر التالي بناءً على طلبكم…"
+                  className="border border-[#eceae2] rounded-lg px-3 py-2 w-full resize-y"
+                />
+              </FormField>
             </div>
           </div>
 
@@ -715,6 +730,7 @@ export function QuotationForm({ docId }: { docId?: string }) {
                 total={total}
                 notes={notes}
                 terms={notes}
+                intro={intro}
                 currency={CUR}
                 structure={structure}
                 verify={verify}
@@ -791,7 +807,7 @@ export function QuotationForm({ docId }: { docId?: string }) {
               <QuotationPreview
                 tpl={tpl} org={org} party={party} ref_={ref} date={date} dueDate={expiry}
                 lines={lines} lineCalcs={lineCalcs} subtotal={subtotal} tax={tax}
-                total={total} notes={notes} terms={notes} currency={CUR} structure={structure} verify={verify}
+                total={total} notes={notes} terms={notes} intro={intro} currency={CUR} structure={structure} verify={verify}
               />
             </div>
           </div>

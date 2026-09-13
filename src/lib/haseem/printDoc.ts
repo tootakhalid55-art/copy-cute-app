@@ -62,6 +62,8 @@ export type PrintDocData = {
   shipAmt?: number;
   notes?: string;
   terms?: string;
+  /** Free-text introduction shown above the items table (quotations). */
+  intro?: string;
   reason?: string;
   originalRef?: string;
   currency: string;           // "ر.س" | "$" | ...
@@ -311,6 +313,17 @@ export function buildDocHtml(d: PrintDocData): string {
     </div>`;
   })() : "";
 
+  // Introduction paragraph — sits below the date/validity meta row and above
+  // the items table in every structure.
+  const introHtml = d.intro?.trim()
+    ? `<div style="padding:0 32px 20px">
+        <div style="border:1px solid ${line};border-radius:12px;padding:14px 18px;background:${soft};font-size:12px;color:${ink};line-height:1.9">
+          <div style="font-size:9.5px;color:${muted};font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-bottom:6px">مقدمة · Introduction</div>
+          ${esc(d.intro.trim()).replace(/\n/g, "<br/>")}
+        </div>
+      </div>`
+    : "";
+
   const verifyHtml = d.verify ? `
     <div style="margin:0 32px 22px;padding:16px 18px;border:1px solid ${line};border-radius:12px;background:linear-gradient(135deg, ${soft} 0%, #fff 100%);display:flex;align-items:center;gap:16px;justify-content:space-between">
       <div style="display:flex;align-items:center;gap:14px">
@@ -408,6 +421,7 @@ export function buildDocHtml(d: PrintDocData): string {
       </div>
     </div>
     <div style="padding:0 32px 22px;display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px">${metaGrid}</div>
+    ${introHtml}
     <div class="avoid-break" style="padding:0 32px 22px">${itemsTable("boxed")}</div>
     ${extrasHtml}
     <div class="avoid-break" style="padding:0 32px 22px;display:grid;grid-template-columns:170px 1fr 320px;gap:18px;align-items:start">
@@ -447,7 +461,8 @@ export function buildDocHtml(d: PrintDocData): string {
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;align-content:start;border-bottom:1px solid ${line};padding-bottom:14px">${metaGrid}</div>
     </div>
-    <div class="avoid-break" style="padding:22px 32px 22px">${itemsTable("boxed")}</div>
+    ${introHtml ? `<div style="padding-top:22px">${introHtml}</div>` : ""}
+    <div class="avoid-break" style="padding:${introHtml ? "0" : "22px"} 32px 22px">${itemsTable("boxed")}</div>
     ${extrasHtml}
     <div class="avoid-break" style="padding:0 32px 22px;display:grid;grid-template-columns:170px 1fr 320px;gap:18px;align-items:start">
       <div>${qrBlock}${stampBlock ? `<div style="margin-top:10px;text-align:center">${stampBlock}</div>` : ""}</div>
@@ -480,6 +495,7 @@ export function buildDocHtml(d: PrintDocData): string {
       <div>${esc(recipientLabel)}: <strong style="color:${ink}">${esc(recipientParty?.name || "—")}</strong>${recipientParty?.taxNumber ? ` · VAT ${esc(recipientParty.taxNumber)}` : ""}${(recipientParty as any)?.commercialReg ? ` · CR ${esc((recipientParty as any).commercialReg)}` : ""}</div>
       <div>${d.dueDate || d.expiry ? `${d.expiry ? "الصلاحية" : "الاستحقاق"}: <strong style="color:${ink}">${esc(d.expiry || d.dueDate)}</strong>` : ""}</div>
     </div>
+    ${introHtml.replace(/padding:0 32px 20px/g, "padding:16px 8px 4px")}
     <div class="avoid-break" style="padding:20px 8px">${itemsTable("lines")}</div>
     ${extrasHtml.replace(/padding:0 32px 22px/g, "padding:0 8px 20px")}
     <div class="avoid-break" style="padding:8px 8px 20px;display:grid;grid-template-columns:1fr 240px;gap:24px;align-items:start">
@@ -524,7 +540,8 @@ export function buildDocHtml(d: PrintDocData): string {
         ${d.poNumber ? `<div>أمر الشراء: <strong>${esc(d.poNumber)}</strong></div>` : ""}
       </div>
     </div>
-    <div class="avoid-break" style="padding:20px 32px">${itemsTable("grid")}</div>
+    ${introHtml ? `<div style="padding-top:18px">${introHtml}</div>` : ""}
+    <div class="avoid-break" style="padding:${introHtml ? "0" : "20px"} 32px 20px">${itemsTable("grid")}</div>
     ${extrasHtml}
     <div class="avoid-break" style="padding:0 32px 20px;display:grid;grid-template-columns:170px 1fr 320px;gap:18px;align-items:start">
       <div>${qrBlock}${stampBlock ? `<div style="margin-top:10px;text-align:center">${stampBlock}</div>` : ""}</div>

@@ -7,7 +7,7 @@ import { buildDocHtml, type PrintDocData } from "@/lib/haseem/printDoc";
 export function QuotationPreview(props: any) {
   const {
     tpl, org, party, partyAddress, ref_, date, dueDate, issuedAtIso,
-    lines, lineCalcs, subtotal, tax, total, notes, terms, branding, currency,
+    lines, lineCalcs, subtotal, tax, total, notes, terms, intro, branding, currency,
     verify, structure,
   } = props;
 
@@ -30,6 +30,7 @@ export function QuotationPreview(props: any) {
       total,
       notes,
       terms,
+      intro,
       currency,
       verify,
       branding,
@@ -39,7 +40,7 @@ export function QuotationPreview(props: any) {
     return buildDocHtml(data);
   }, [
     tpl, org, party, partyAddress, ref_, date, dueDate, issuedAtIso,
-    lines, lineCalcs, subtotal, tax, total, notes, terms, branding, currency,
+    lines, lineCalcs, subtotal, tax, total, notes, terms, intro, branding, currency,
     verify, structure,
   ]);
 
