@@ -216,7 +216,7 @@ function InboxPage() {
       setReviewId(null);
     } catch (e) {
       // Adapter toast already shows the reason; keep the review open.
-      logClientEvent("inbox-approve", `failed: ${e instanceof Error ? e.message : String(e)}`);
+      logClientEvent("inbox-approve", `failed: ${String((e as any)?.message ?? e ?? "").slice(0, 140)}`);
     }
   }, [suppliers, addSupplierAsync, addBillAsync, update, currentOrgId]);
 

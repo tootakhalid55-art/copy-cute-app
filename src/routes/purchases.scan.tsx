@@ -292,6 +292,19 @@ function ScanPage() {
             // syncDocumentToCloud, then navigated to the tmp_ id — the bill
             // page found nothing and the save looked like it never happened.
             logClientEvent("scan-save", `attempt org=${currentOrgId ? "yes" : "MISSING"} lines=${payload.lines?.length ?? 0}`);
+            // Same invoice number already in the system? Say so up front with
+            // a jump-to link instead of letting the DB unique constraint fail.
+            if (payload.invoiceNumber) {
+              const dup = bills.find((b: any) => b.ref === payload.invoiceNumber || b.supplierRef === payload.invoiceNumber);
+              if (dup) {
+                logClientEvent("scan-save", `duplicate pre-check hit ref=${payload.invoiceNumber}`);
+                toast.error(`فاتورة برقم "${payload.invoiceNumber}" محفوظة مسبقاً — لا يمكن حفظها مرتين`, {
+                  duration: 8000,
+                  action: { label: "فتح الفاتورة المحفوظة", onClick: () => navigate({ to: "/purchases/bills/$id", params: { id: dup.id } }) },
+                });
+                return;
+              }
+            }
             let bill: any;
             try {
               bill = await addBillAsync({
@@ -313,9 +326,24 @@ function ScanPage() {
                 source: "ai-scan",
               });
             } catch (e) {
-              // The adapter already toasts the Arabic reason; keep the modal
-              // open so nothing reviewed is lost, and log for remote diagnosis.
-              logClientEvent("scan-save", `failed: ${e instanceof Error ? e.message : String(e)}`);
+              // Keep the modal open so nothing reviewed is lost, and log the
+              // real message (Supabase errors are plain objects — String(e)
+              // yields "[object Object]").
+              const msg = String((e as any)?.message ?? e ?? "");
+              logClientEvent("scan-save", `failed: ${msg.slice(0, 140)}`);
+              if (/duplicate key.*doc_number|documents_org_id_kind_doc_number/i.test(msg)) {
+                // Same supplier invoice number already saved — almost always a
+                // re-scan of an invoice that exists. Point at it instead of a
+                // bare "number in use" error.
+                const dupRef = payload.invoiceNumber || "";
+                const existingBill = bills.find((b: any) => b.ref === dupRef || b.supplierRef === dupRef);
+                toast.error(`فاتورة برقم "${dupRef}" محفوظة مسبقاً — لا يمكن حفظها مرتين`, {
+                  duration: 8000,
+                  ...(existingBill
+                    ? { action: { label: "فتح الفاتورة المحفوظة", onClick: () => navigate({ to: "/purchases/bills/$id", params: { id: existingBill.id } }) } }
+                    : {}),
+                });
+              }
               return;
             }
             logClientEvent("scan-save", `success id=${bill?.id ?? "?"}`);

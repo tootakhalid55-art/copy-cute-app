@@ -448,6 +448,10 @@ export function DocumentForm({
     return errs;
   }, [partyId, partyLabel, lines]);
   const isValid = validation.length === 0;
+  // A posted document is financially immutable server-side — saving it again
+  // only produces a "posted_document_is_immutable" error, so say that on the
+  // disabled buttons instead of letting the click fail.
+  const isPostedDoc = existing?.status === "مرحل" || existing?.dbStatus === "posted";
 
   const [saving, setSaving] = useState(false);
   const save = async (finalStatus: string) => {
@@ -584,14 +588,19 @@ export function DocumentForm({
           >
             مشاركة واتساب
           </OutlineBtn>
-          <OutlineBtn type="button" onClick={() => save("مسودة")} disabled={saving}>
+          <OutlineBtn
+            type="button"
+            onClick={() => save("مسودة")}
+            disabled={saving || isPostedDoc}
+            title={isPostedDoc ? "المستند مرحّل ولا يمكن تعديله — استخدم الإلغاء أو أنشئ إشعاراً" : undefined}
+          >
             حفظ كمسودة
           </OutlineBtn>
           <PrimaryBtn
             onClick={() => save("مؤكد")}
-            disabled={!isValid || uploading || saving}
-            title={!isValid ? validation.join(" · ") : uploading ? "يوجد مرفقات قيد الرفع" : undefined}
-          >{saving ? "جارٍ الحفظ…" : "حفظ واعتماد"}</PrimaryBtn>
+            disabled={!isValid || uploading || saving || isPostedDoc}
+            title={isPostedDoc ? "المستند مرحّل بالفعل — لا حاجة لاعتماده مرة أخرى" : !isValid ? validation.join(" · ") : uploading ? "يوجد مرفقات قيد الرفع" : undefined}
+          >{saving ? "جارٍ الحفظ…" : isPostedDoc ? "مرحّل ✓" : "حفظ واعتماد"}</PrimaryBtn>
         </div>
       </div>
 
