@@ -141,11 +141,26 @@ export function buildDocHtml(d: PrintDocData): string {
   // issuing party in the header (with its VAT/CR), and our own org as the
   // recipient — the reverse of every other document kind.
   const headerOrg = isBill && party
-    ? { name: party.name || org.name, taxNumber: party.taxNumber || "", address: party.address || "", commercialReg: party.commercialReg }
+    ? {
+        name: party.name || org.name,
+        taxNumber: party.taxNumber || "",
+        address: party.address || "",
+        commercialReg: party.commercialReg ?? (party as any).cr_number,
+        phone: party.phone,
+        email: party.email,
+      }
     : org;
   const recipientParty = isBill
-    ? { name: org.name, taxNumber: org.taxNumber, address: org.address, phone: undefined, email: undefined, commercialReg: org.commercialReg }
+    ? { name: org.name, taxNumber: org.taxNumber, address: org.address, phone: (org as any).phone, email: (org as any).email, commercialReg: org.commercialReg }
     : party;
+  // On a bill the header carries the SELLER (supplier) and the party box the
+  // BUYER (our org) — label both explicitly so the roles are unambiguous.
+  const headerRoleLabel = isBill
+    ? `<div style="font-size:9.5px;color:${muted};font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-bottom:4px">البائع · Seller</div>`
+    : "";
+  const headerContactLine = isBill && (headerOrg as any).phone
+    ? `<div style="font-size:11px;color:${muted}">الجوال · Phone ${esc((headerOrg as any).phone)}${(headerOrg as any).email ? ` · ${esc((headerOrg as any).email)}` : ""}</div>`
+    : "";
   const useDetailedTaxTable = isInvoice || isBill;
   const isSupply = d.layoutVariant === "supply";
   const isServices = d.layoutVariant === "services";
@@ -161,13 +176,18 @@ export function buildDocHtml(d: PrintDocData): string {
     ? `<div style="font-size:14px;font-weight:700;color:${ink};margin-bottom:6px;letter-spacing:.01em">${esc(recipientParty.name || "—")}</div>
        <div style="display:grid;gap:3px;font-size:11px;color:${muted}">
          ${recipientParty.taxNumber ? `<div><span style="color:${accent};font-weight:600">الرقم الضريبي · VAT No. </span>${esc(recipientParty.taxNumber)}</div>` : ""}
+         ${(recipientParty as any).commercialReg ? `<div><span style="color:${accent};font-weight:600">السجل التجاري · CR No. </span>${esc((recipientParty as any).commercialReg)}</div>` : ""}
          ${!simplified && recipientParty.address ? `<div><span style="color:${accent};font-weight:600">العنوان · Address </span>${esc(recipientParty.address)}</div>` : ""}
          ${recipientParty.phone ? `<div><span style="color:${accent};font-weight:600">الجوال · Phone </span>${esc(recipientParty.phone)}</div>` : ""}
          ${!simplified && recipientParty.email ? `<div><span style="color:${accent};font-weight:600">البريد · Email </span>${esc(recipientParty.email)}</div>` : ""}
        </div>`
     : `<span style="color:#b7bdb2">${simplified ? "عميل نقدي · Cash customer" : "—"}</span>`;
 
-  const partyRole = d.partyRole || (isBill ? "العميل" : isPurchase ? "المورد" : "الطرف");
+  const partyRole = d.partyRole || (isBill ? "المشتري" : isPurchase ? "المورد" : "الطرف");
+  // The recipient box label: on a bill it holds OUR org (the buyer), so the
+  // caller-supplied partyLabel ("المورد") would mislabel it.
+  const recipientLabel = isBill ? "المشتري" : (d.partyLabel || partyRole);
+  const recipientLabelEn = isBill ? "Buyer" : "Bill To";
   const headerBadges = [
     d.statusLabel ? `<span style="display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:999px;background:${soft};color:${accent};font-size:10px;font-weight:700;border:1px solid ${accent}33">${esc(d.statusLabel)}</span>` : "",
     d.approvalLabel ? `<span style="display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:999px;background:#fff;color:${ink};font-size:10px;font-weight:700;border:1px solid ${line}">${esc(d.approvalLabel)}</span>` : "",
@@ -369,10 +389,12 @@ export function buildDocHtml(d: PrintDocData): string {
     <div style="padding:28px 32px 22px;display:flex;justify-content:space-between;align-items:flex-start;gap:24px">
       <div style="max-width:60%">
         ${logoBlock}
+        ${headerRoleLabel}
         <div style="font-size:19px;font-weight:800;color:${ink};letter-spacing:-.01em">${esc(headerOrg.name)}</div>
         <div style="font-size:11px;color:${muted};margin-top:4px">الرقم الضريبي · VAT No. ${esc(headerOrg.taxNumber)}</div>
         ${headerOrg.commercialReg ? `<div style="font-size:11px;color:${muted}">السجل التجاري · CR No. ${esc(headerOrg.commercialReg)}</div>` : ""}
         <div style="font-size:11px;color:${muted}">${esc(headerOrg.address || "المملكة العربية السعودية")}</div>
+        ${headerContactLine}
       </div>
       <div style="text-align:left;min-width:220px">
         <div style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:13px;color:${accent};font-weight:700;letter-spacing:.02em">${esc(d.ref)}</div>
@@ -381,7 +403,7 @@ export function buildDocHtml(d: PrintDocData): string {
     </div>
     <div style="padding:0 32px 20px">
       <div style="border:1px solid ${line};border-radius:12px;padding:16px 18px;background:#fff">
-        <div style="font-size:9.5px;color:${muted};font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-bottom:8px">${esc(d.partyLabel || partyRole)}${B ? " · Bill To" : ""}</div>
+        <div style="font-size:9.5px;color:${muted};font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-bottom:8px">${esc(recipientLabel)}${B ? ` · ${recipientLabelEn}` : ""}</div>
         ${partyBlock}
       </div>
     </div>
@@ -407,8 +429,10 @@ export function buildDocHtml(d: PrintDocData): string {
       <div style="display:flex;align-items:center;gap:12px">
         ${branding?.logo && !isBill ? `<img src="${esc(branding.logo)}" alt="logo" style="max-height:48px;object-fit:contain;filter:brightness(0) invert(1);opacity:.95" />` : `<div style="width:40px;height:40px;border-radius:8px;background:${tpl.onAccent}22;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:16px">${esc((headerOrg.name || "H").trim().charAt(0))}</div>`}
         <div>
+          ${isBill ? `<div style="font-size:9px;opacity:.85;font-weight:700;letter-spacing:.08em">البائع · SELLER</div>` : ""}
           <div style="font-size:18px;font-weight:800">${esc(headerOrg.name)}</div>
           <div style="font-size:10.5px;opacity:.85">VAT ${esc(headerOrg.taxNumber)}${headerOrg.commercialReg ? ` · CR ${esc(headerOrg.commercialReg)}` : ""}</div>
+          ${isBill && (headerOrg.address || (headerOrg as any).phone) ? `<div style="font-size:10px;opacity:.8">${esc(headerOrg.address || "")}${(headerOrg as any).phone ? ` · ${esc((headerOrg as any).phone)}` : ""}</div>` : ""}
         </div>
       </div>
       <div style="text-align:left">
@@ -418,7 +442,7 @@ export function buildDocHtml(d: PrintDocData): string {
     </div>
     <div style="padding:22px 32px 0;display:grid;grid-template-columns:1fr 1fr;gap:16px">
       <div style="border-bottom:1px solid ${line};padding-bottom:14px">
-        <div style="font-size:9.5px;color:${muted};font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-bottom:6px">${esc(d.partyLabel || partyRole)}</div>
+        <div style="font-size:9.5px;color:${muted};font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-bottom:6px">${esc(recipientLabel)}${B ? ` · ${recipientLabelEn}` : ""}</div>
         ${partyBlock}
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;align-content:start;border-bottom:1px solid ${line};padding-bottom:14px">${metaGrid}</div>
@@ -442,16 +466,18 @@ export function buildDocHtml(d: PrintDocData): string {
   <div class="doc" style="max-width:820px;margin:0 auto;color:${ink};background:#fff">
     <div style="padding:30px 8px 20px;display:flex;justify-content:space-between;align-items:flex-start;gap:24px;border-bottom:2px solid ${ink}">
       <div>
+        ${headerRoleLabel}
         <div style="font-size:17px;font-weight:700;color:${ink}">${esc(headerOrg.name)}</div>
         <div style="font-size:10.5px;color:${muted};margin-top:3px">VAT ${esc(headerOrg.taxNumber)}${headerOrg.commercialReg ? ` · CR ${esc(headerOrg.commercialReg)}` : ""}</div>
         <div style="font-size:10.5px;color:${muted}">${esc(headerOrg.address || "")}</div>
+        ${headerContactLine}
       </div>
       <div style="text-align:left">
         <div style="font-family:ui-monospace,monospace;font-size:11px;color:${muted};margin-top:2px">${esc(d.ref)} · ${esc(d.date)}</div>
       </div>
     </div>
     <div style="padding:16px 8px;display:flex;justify-content:space-between;gap:24px;font-size:11px;color:${muted};border-bottom:1px solid ${line}">
-      <div>${esc(d.partyLabel || partyRole)}: <strong style="color:${ink}">${esc(recipientParty?.name || "—")}</strong>${recipientParty?.taxNumber ? ` · VAT ${esc(recipientParty.taxNumber)}` : ""}</div>
+      <div>${esc(recipientLabel)}: <strong style="color:${ink}">${esc(recipientParty?.name || "—")}</strong>${recipientParty?.taxNumber ? ` · VAT ${esc(recipientParty.taxNumber)}` : ""}${(recipientParty as any)?.commercialReg ? ` · CR ${esc((recipientParty as any).commercialReg)}` : ""}</div>
       <div>${d.dueDate || d.expiry ? `${d.expiry ? "الصلاحية" : "الاستحقاق"}: <strong style="color:${ink}">${esc(d.expiry || d.dueDate)}</strong>` : ""}</div>
     </div>
     <div class="avoid-break" style="padding:20px 8px">${itemsTable("lines")}</div>
@@ -479,15 +505,17 @@ export function buildDocHtml(d: PrintDocData): string {
   <div class="doc" style="max-width:820px;margin:0 auto;color:${ink};background:#fff;border:3px double ${ink};padding:4px">
     <div style="border:1px solid ${line};padding:26px 32px 20px;text-align:center">
       ${branding?.logo && !isBill ? `<img src="${esc(branding.logo)}" alt="logo" style="max-height:52px;object-fit:contain;margin:0 auto 8px" />` : ""}
+      ${isBill ? `<div style="font-size:9.5px;color:${muted};font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-bottom:4px">البائع · Seller</div>` : ""}
       <div style="font-size:20px;font-weight:800;color:${ink}">${esc(headerOrg.name)}</div>
       <div style="font-size:10.5px;color:${muted};margin-top:4px">VAT ${esc(headerOrg.taxNumber)}${headerOrg.commercialReg ? ` · CR ${esc(headerOrg.commercialReg)}` : ""}</div>
       <div style="font-size:10.5px;color:${muted}">${esc(headerOrg.address || "المملكة العربية السعودية")}</div>
+      ${headerContactLine}
       <div style="margin:16px auto 0;width:64px;height:2px;background:${accent}"></div>
       <div style="font-family:ui-monospace,monospace;font-size:12px;color:${muted};margin-top:12px">${esc(d.ref)}</div>
     </div>
     <div style="padding:18px 32px;display:grid;grid-template-columns:1fr 1fr;border:1px solid ${line};border-top:0">
       <div style="padding-inline-end:16px;border-inline-end:1px solid ${line}">
-        <div style="font-size:9.5px;color:${muted};font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-bottom:8px">${esc(d.partyLabel || partyRole)}</div>
+        <div style="font-size:9.5px;color:${muted};font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-bottom:8px">${esc(recipientLabel)}${B ? ` · ${recipientLabelEn}` : ""}</div>
         ${partyBlock}
       </div>
       <div style="padding-inline-start:16px;display:grid;gap:6px;font-size:11px;color:${ink}">

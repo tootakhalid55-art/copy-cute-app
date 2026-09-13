@@ -278,6 +278,10 @@ function ScanPage() {
               supplier = await addSupplierAsync({
                 name: payload.supplierName,
                 taxNumber: payload.supplierVatNumber,
+                cr_number: payload.supplierCrNumber || undefined,
+                address: payload.supplierAddress || undefined,
+                phone: payload.supplierPhone || undefined,
+                email: payload.supplierEmail || undefined,
                 currency: payload.currency || "SAR",
                 type: "company",
               });

@@ -15,6 +15,10 @@ export type ScanLine = {
 export type ScanResult = {
   supplierName: string;
   supplierVatNumber: string;
+  supplierCrNumber: string;
+  supplierAddress: string;
+  supplierPhone: string;
+  supplierEmail: string;
   invoiceNumber: string;
   invoiceDate: string; // YYYY-MM-DD
   dueDate: string;
@@ -38,6 +42,10 @@ Return ONLY a JSON object matching this TypeScript type exactly, no markdown, no
 {
   "supplierName": string,
   "supplierVatNumber": string,   // 15 digits if Saudi VAT, else best guess
+  "supplierCrNumber": string,    // commercial registration (السجل التجاري) if printed
+  "supplierAddress": string,     // full address line as printed on the invoice
+  "supplierPhone": string,
+  "supplierEmail": string,
   "invoiceNumber": string,
   "invoiceDate": string,         // ISO YYYY-MM-DD; empty string if unknown
   "dueDate": string,             // ISO YYYY-MM-DD; empty string if unknown
@@ -142,6 +150,10 @@ async function extract(fileDataUrl: string, filename: string): Promise<ScanResul
   const result: ScanResult = {
     supplierName: str(parsed.supplierName),
     supplierVatNumber: str(parsed.supplierVatNumber),
+    supplierCrNumber: str(parsed.supplierCrNumber),
+    supplierAddress: str(parsed.supplierAddress),
+    supplierPhone: str(parsed.supplierPhone),
+    supplierEmail: str(parsed.supplierEmail),
     invoiceNumber: str(parsed.invoiceNumber),
     invoiceDate: str(parsed.invoiceDate),
     dueDate: str(parsed.dueDate),

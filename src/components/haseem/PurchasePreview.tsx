@@ -7,12 +7,18 @@ import { buildDocHtml, type PrintDocData } from "@/lib/haseem/printDoc";
 // already reverses seller/buyer roles for bills (the supplier issues the bill).
 export function PurchasePreview(props: any) {
   const {
-    tpl, org, party, partyLabel, partyAddress, ref_, date, dueDate, issuedAtIso,
+    tpl, org, party: partyProp, partyName, partyLabel, partyAddress, ref_, date, dueDate, issuedAtIso,
     lines, lineCalcs, subtotal, tax, total, notes, branding, currency, kind,
     qrDataUrl, usesZatcaQr, verify, layoutVariant, progressBilling, structure,
   } = props;
 
   const isBill = kind === "bill";
+  // Older scanned bills stored only a supplier name (no linked party record);
+  // fall back to it so the seller block never silently shows our own org.
+  const party = useMemo(
+    () => partyProp ?? (partyName ? { name: partyName } : undefined),
+    [partyProp, partyName],
+  );
 
   const html = useMemo(() => {
     const data: PrintDocData = {

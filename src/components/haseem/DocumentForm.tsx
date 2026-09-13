@@ -363,7 +363,7 @@ export function DocumentForm({
         expiry: printKind === "quotation" ? dueDate : undefined,
         terms: printKind === "quotation" ? notes : undefined,
         org,
-        party: party ? { ...party, address: partyAddress } : party,
+        party: party ? { ...party, address: partyAddress } : (partyName ? { name: partyName } : party),
         partyLabel,
         lines, lineCalcs,
         subtotal, tax, total,
