@@ -316,7 +316,6 @@ export function buildDocHtml(d: PrintDocData): string {
   const introHtml = d.intro?.trim()
     ? `<div style="padding:0 32px 20px">
         <div style="border:1px solid ${line};border-radius:12px;padding:14px 18px;background:${soft};font-size:12px;color:${ink};line-height:1.9">
-          <div style="font-size:9.5px;color:${muted};font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-bottom:6px">مقدمة · Introduction</div>
           ${esc(d.intro.trim()).replace(/\n/g, "<br/>")}
         </div>
       </div>`
