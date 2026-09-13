@@ -716,6 +716,20 @@ export async function printDoc(d: PrintDocData & { attachment?: { url: string; m
   const docPrintWidthRule = isThermal
     ? `.doc{box-shadow:none;max-width:${thermalRollMm}mm}`
     : `.doc{box-shadow:none;border-radius:0;max-width:none}`;
+  // The "corporate" structure draws a double-line frame around the document;
+  // in flowing HTML that frame wraps ALL pages as one tall box. For print we
+  // strip it and draw a position:fixed frame instead — fixed elements repeat
+  // on every printed page, so each A4 sheet gets its own separate frame.
+  const framePerPage = !isThermal && safeDoc.structure === "corporate";
+  // Vertical page margins via a repeating table header/footer spacer: body
+  // padding only pads the first/last page, while thead/tfoot repeat on every
+  // page — so page 2+ no longer start flush with the paper edge.
+  const printBody = isThermal
+    ? `${inner}${attachmentHtml}`
+    : `${framePerPage ? '<div class="page-frame"></div>' : ""}
+      <table class="print-layout"><thead><tr><td><div class="page-spacer"></div></td></tr></thead>
+      <tbody><tr class="pl-row"><td>${inner}${attachmentHtml}</td></tr></tbody>
+      <tfoot><tr><td><div class="page-spacer"></div></td></tr></tfoot></table>`;
   const doc = `<!doctype html><html dir="rtl" lang="ar"><head>
     <meta charset="utf-8" />
     <title>${esc(safeDoc.title)} ${esc(safeDoc.ref)}</title>
@@ -728,16 +742,25 @@ export async function printDoc(d: PrintDocData & { attachment?: { url: string; m
       body{font-family:Cairo,"Segoe UI",Tahoma,system-ui,sans-serif;padding:${isThermal ? "0" : "18px"};color:#0f2a1d;font-size:12px;line-height:1.5;-webkit-print-color-adjust:exact;print-color-adjust:exact}
       ${pageRule}
       .avoid-break{break-inside:avoid;page-break-inside:avoid}
+      .print-layout{width:100%;border-collapse:collapse}
+      .print-layout>thead>tr>td,.print-layout>tbody>tr>td,.print-layout>tfoot>tr>td{padding:0}
+      .page-spacer{height:0}
+      .page-frame{display:none}
       @media print {
-        body{padding:${isThermal ? "0" : "10mm 12mm"}}
+        body{padding:${isThermal ? "0" : "0 12mm"}}
         ${docPrintWidthRule}
         thead{display:table-header-group}
         tfoot{display:table-footer-group}
         tr{break-inside:avoid;page-break-inside:avoid}
         table{break-inside:auto;page-break-inside:auto}
+        .print-layout>tbody>.pl-row{break-inside:auto !important;page-break-inside:auto !important}
+        .page-spacer{height:10mm}
+        ${framePerPage ? `
+        .page-frame{display:block;position:fixed;top:4mm;bottom:4mm;left:6mm;right:6mm;border:3px double #0f1a14;pointer-events:none}
+        .doc{border:none !important;padding:0 !important}` : ""}
       }
     </style>
-  </head><body>${inner}${attachmentHtml}</body></html>`;
+  </head><body>${printBody}</body></html>`;
 
   const openInNewWindow = () => {
     const win = window.open("", "_blank", "width=900,height=1000");
