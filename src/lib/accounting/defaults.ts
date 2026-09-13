@@ -314,6 +314,37 @@ export async function ensureCurrentFiscalYear(orgId: string) {
   return data.id;
 }
 
+/** Ensure a fiscal year (and, via the DB trigger, its monthly open periods)
+ *  exists for the year of the given date — needed when posting historical
+ *  documents (e.g. an AI-scanned 2023 supplier invoice) whose year predates
+ *  the seeded current fiscal year. */
+export async function ensureFiscalYearForDate(orgId: string, isoDate: string) {
+  const y = Number(String(isoDate).slice(0, 4));
+  if (!Number.isFinite(y) || y < 1990 || y > 2100) return null;
+  const existing = await supabase
+    .from("fiscal_years")
+    .select("id")
+    .eq("org_id", orgId)
+    .lte("start_date", `${y}-12-31`)
+    .gte("end_date", `${y}-01-01`)
+    .limit(1)
+    .maybeSingle();
+  if (existing.data) return existing.data.id;
+  const { data, error } = await supabase
+    .from("fiscal_years")
+    .insert({
+      org_id: orgId,
+      name: String(y),
+      start_date: `${y}-01-01`,
+      end_date: `${y}-12-31`,
+      is_current: y === new Date().getFullYear(),
+    })
+    .select("id")
+    .single();
+  if (error) throw error;
+  return data.id;
+}
+
 export async function seedAccountingFoundation(orgId: string) {
   const coa = await seedDefaultCoA(orgId);
   const determinations = await seedDefaultDeterminations(orgId);

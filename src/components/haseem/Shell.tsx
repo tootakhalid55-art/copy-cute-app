@@ -199,6 +199,20 @@ export function Shell({ children }: { children: ReactNode }) {
     };
     window.addEventListener("error", onErr);
     window.addEventListener("unhandledrejection", onRej);
+    // After a redeploy, chunks from the previous build no longer exist; when
+    // a lazy import fails, reload once so the browser picks up the new build
+    // instead of leaving the user on a half-broken stale bundle.
+    window.addEventListener("vite:preloadError", () => {
+      try {
+        // At most one auto-reload per minute so a truly broken asset can't
+        // put the tab in a reload loop.
+        const last = Number(sessionStorage.getItem("canar-reload-ts") || 0);
+        if (Date.now() - last < 60_000) return;
+        sessionStorage.setItem("canar-reload-ts", String(Date.now()));
+      } catch { /* private mode — still reload */ }
+      logClientEvent("stale-bundle", "chunk missing after redeploy — reloading");
+      window.location.reload();
+    });
   }, []);
 
   useEffect(() => {

@@ -7,6 +7,10 @@ import { useCallback, useEffect } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrg } from "./org";
+// Static import on purpose: a dynamic import() here fetched a chunk that no
+// longer exists after a redeploy ("Failed to fetch dynamically imported
+// module"), which broke the posting self-heal exactly when it was needed.
+import { seedAccountingFoundation, ensureFiscalYearForDate } from "@/lib/accounting/defaults";
 
 // Legacy storage key -> documents.kind
 export const DOC_KEYS: Record<string, string> = {
@@ -94,8 +98,11 @@ async function applyDocStatus(key: string, orgId: string, docId: string, uiStatu
       const msg = errText(e);
       if (!FOUNDATION_MISSING_RE.test(msg)) throw e;
       logClientEvent("auto-seed", `start after: ${msg.slice(0, 80)}`);
-      const { seedAccountingFoundation } = await import("@/lib/accounting/defaults");
       await seedAccountingFoundation(orgId);
+      // Historical document (e.g. a scanned 2023 supplier invoice): its year
+      // needs its own fiscal year + open periods, not just the current one.
+      const noPeriodDate = msg.match(/no_period_for_date:\s*(\d{4}-\d{2}-\d{2})/)?.[1];
+      if (noPeriodDate) await ensureFiscalYearForDate(orgId, noPeriodDate);
       logClientEvent("auto-seed", "done — retrying post");
       await postCloudDocument(orgId, docId);
     }
