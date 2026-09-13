@@ -24,6 +24,13 @@ function fileToDataURL(f: File): Promise<string> {
   });
 }
 
+const DEFAULT_QUOTE_TERMS = [
+  "مدة التنفيذ / التوريد: 14 يوم عمل من تاريخ اعتماد العرض.",
+  "شروط الدفع: دفعة مقدمة 50% عند الاعتماد، والمتبقي 50% عند التسليم.",
+  "الأسعار شاملة ضريبة القيمة المضافة 15% ما لم يُذكر خلاف ذلك.",
+  "يسري هذا العرض حتى تاريخ الصلاحية الموضح أعلاه.",
+].join("\n");
+
 type Line = {
   description: string;
   qty: number;
@@ -77,6 +84,7 @@ export function QuotationForm({ docId }: { docId?: string }) {
   const [date, setDate] = useState<string>(existing?.date ?? today);
   const [expiry, setExpiry] = useState<string>(existing?.expiry ?? today);
   const [intro, setIntro] = useState<string>(existing?.intro ?? "");
+  const [terms, setTerms] = useState<string>(existing?.terms ?? DEFAULT_QUOTE_TERMS);
   const [partyId, setPartyId] = useState<string>(existing?.partyId ?? "");
   const [notes, setNotes] = useState<string>(existing?.notes ?? "");
   const [poNumber, setPoNumber] = useState<string>(existing?.poNumber ?? "");
@@ -107,6 +115,7 @@ export function QuotationForm({ docId }: { docId?: string }) {
       setDate(existing.date);
       setExpiry(existing.expiry ?? existing.dueDate ?? today);
       setIntro(existing.intro ?? "");
+      setTerms(existing.terms ?? DEFAULT_QUOTE_TERMS);
       setPartyId(existing.partyId ?? "");
       setNotes(existing.notes ?? "");
       setLines(existing.lines ?? [{ description: "", qty: 1, price: 0, tax: 15 }]);
@@ -214,7 +223,7 @@ export function QuotationForm({ docId }: { docId?: string }) {
     if (saving) return;
     setSaving(true);
     const payload: any = {
-      ref, date, expiry, dueDate: expiry, partyId, intro,
+      ref, date, expiry, dueDate: expiry, partyId, intro, terms,
       partyName: party?.name ?? "—",
       notes, lines, subtotal, tax, total,
       poNumber, reference, project, currency, priceMode, optCols,
@@ -271,7 +280,7 @@ export function QuotationForm({ docId }: { docId?: string }) {
         subtotal, tax, total,
         discAmt, shipAmt,
         notes,
-        terms: notes,
+        terms,
         intro,
         partyRole: "العميل",
         currency: CUR,
@@ -297,7 +306,7 @@ export function QuotationForm({ docId }: { docId?: string }) {
         discAmt: 0,
         shipAmt: 0,
         notes,
-        terms: notes,
+        terms,
         intro,
         partyRole: "العميل",
         currency: CUR,
@@ -517,6 +526,16 @@ export function QuotationForm({ docId }: { docId?: string }) {
                 />
               </FormField>
             </div>
+            <div className="mt-4">
+              <FormField label="الشروط والأحكام (المدة الزمنية وشروط الدفع)">
+                <textarea
+                  value={terms}
+                  onChange={(e) => setTerms(e.target.value)}
+                  rows={4}
+                  className="border border-[#eceae2] rounded-lg px-3 py-2 w-full resize-y"
+                />
+              </FormField>
+            </div>
           </div>
 
           {/* Items */}
@@ -729,7 +748,7 @@ export function QuotationForm({ docId }: { docId?: string }) {
                 tax={tax}
                 total={total}
                 notes={notes}
-                terms={notes}
+                terms={terms}
                 intro={intro}
                 currency={CUR}
                 structure={structure}
@@ -807,7 +826,7 @@ export function QuotationForm({ docId }: { docId?: string }) {
               <QuotationPreview
                 tpl={tpl} org={org} party={party} ref_={ref} date={date} dueDate={expiry}
                 lines={lines} lineCalcs={lineCalcs} subtotal={subtotal} tax={tax}
-                total={total} notes={notes} terms={notes} intro={intro} currency={CUR} structure={structure} verify={verify}
+                total={total} notes={notes} terms={terms} intro={intro} currency={CUR} structure={structure} verify={verify}
               />
             </div>
           </div>

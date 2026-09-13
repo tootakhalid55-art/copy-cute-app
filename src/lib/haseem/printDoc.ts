@@ -271,11 +271,9 @@ export function buildDocHtml(d: PrintDocData): string {
       </div>` : "",
     isQuotation ? `
       <div style="border:1px solid ${line};border-radius:12px;padding:14px 18px;background:${soft}">
-        <div style="font-size:9.5px;color:${muted};font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-bottom:8px">تفاصيل العرض · Quote Terms</div>
-        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;font-size:12px;color:${ink}">
-          <div><span style="color:${muted};font-size:10px">صلاحية العرض</span><div style="font-weight:700">${esc(d.expiry || d.dueDate || "—")}</div></div>
-          <div><span style="color:${muted};font-size:10px">الشروط</span><div style="font-weight:700">${esc(d.terms || d.notes || "—")}</div></div>
-        </div>
+        <div style="font-size:9.5px;color:${muted};font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-bottom:8px">الشروط والأحكام · Terms & Conditions</div>
+        <div style="font-size:11px;color:${muted};margin-bottom:8px"><span style="color:${accent};font-weight:600">صلاحية العرض </span><span style="font-weight:700;color:${ink}">${esc(d.expiry || d.dueDate || "—")}</span></div>
+        <div style="font-size:12px;color:${ink};line-height:2">${esc(d.terms || d.notes || "—").replace(/\n/g, "<br/>")}</div>
       </div>` : "",
     isPurchase ? `
       <div style="border:1px solid ${line};border-radius:12px;padding:14px 18px;background:${soft}">
