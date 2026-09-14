@@ -24,12 +24,12 @@ function fileToDataURL(f: File): Promise<string> {
   });
 }
 
-const DEFAULT_QUOTE_TERMS = [
-  "مدة التنفيذ / التوريد: 14 يوم عمل من تاريخ اعتماد العرض.",
-  "شروط الدفع: دفعة مقدمة 50% عند الاعتماد، والمتبقي 50% عند التسليم.",
-  "الأسعار شاملة ضريبة القيمة المضافة 15% ما لم يُذكر خلاف ذلك.",
-  "يسري هذا العرض حتى تاريخ الصلاحية الموضح أعلاه.",
-].join("\n");
+type TermsSection = { title: string; text: string };
+const DEFAULT_TERMS_SECTIONS: TermsSection[] = [
+  { title: "طريقة الدفع", text: "دفعة مقدمة 50% عند اعتماد العرض، والمتبقي 50% عند التسليم." },
+  { title: "الفترة الزمنية", text: "مدة التنفيذ / التوريد: 14 يوم عمل من تاريخ اعتماد العرض." },
+  { title: "الأحكام", text: "الأسعار شاملة ضريبة القيمة المضافة 15% ما لم يُذكر خلاف ذلك.\nيسري هذا العرض حتى تاريخ الصلاحية الموضح أعلاه." },
+];
 
 type Line = {
   description: string;
@@ -84,7 +84,13 @@ export function QuotationForm({ docId }: { docId?: string }) {
   const [date, setDate] = useState<string>(existing?.date ?? today);
   const [expiry, setExpiry] = useState<string>(existing?.expiry ?? today);
   const [intro, setIntro] = useState<string>(existing?.intro ?? "");
-  const [terms, setTerms] = useState<string>(existing?.terms ?? DEFAULT_QUOTE_TERMS);
+  const [termsSections, setTermsSections] = useState<TermsSection[]>(
+    existing?.termsSections?.length
+      ? existing.termsSections
+      : existing?.terms
+        ? [{ title: "الأحكام", text: existing.terms }]
+        : DEFAULT_TERMS_SECTIONS,
+  );
   const [partyId, setPartyId] = useState<string>(existing?.partyId ?? "");
   const [notes, setNotes] = useState<string>(existing?.notes ?? "");
   const [poNumber, setPoNumber] = useState<string>(existing?.poNumber ?? "");
@@ -115,7 +121,13 @@ export function QuotationForm({ docId }: { docId?: string }) {
       setDate(existing.date);
       setExpiry(existing.expiry ?? existing.dueDate ?? today);
       setIntro(existing.intro ?? "");
-      setTerms(existing.terms ?? DEFAULT_QUOTE_TERMS);
+      setTermsSections(
+        existing.termsSections?.length
+          ? existing.termsSections
+          : existing.terms
+            ? [{ title: "الأحكام", text: existing.terms }]
+            : DEFAULT_TERMS_SECTIONS,
+      );
       setPartyId(existing.partyId ?? "");
       setNotes(existing.notes ?? "");
       setLines(existing.lines ?? [{ description: "", qty: 1, price: 0, tax: 15 }]);
@@ -223,7 +235,7 @@ export function QuotationForm({ docId }: { docId?: string }) {
     if (saving) return;
     setSaving(true);
     const payload: any = {
-      ref, date, expiry, dueDate: expiry, partyId, intro, terms,
+      ref, date, expiry, dueDate: expiry, partyId, intro, termsSections,
       partyName: party?.name ?? "—",
       notes, lines, subtotal, tax, total,
       poNumber, reference, project, currency, priceMode, optCols,
@@ -280,7 +292,7 @@ export function QuotationForm({ docId }: { docId?: string }) {
         subtotal, tax, total,
         discAmt, shipAmt,
         notes,
-        terms,
+        termsSections,
         intro,
         partyRole: "العميل",
         currency: CUR,
@@ -306,7 +318,7 @@ export function QuotationForm({ docId }: { docId?: string }) {
         discAmt: 0,
         shipAmt: 0,
         notes,
-        terms,
+        termsSections,
         intro,
         partyRole: "العميل",
         currency: CUR,
@@ -527,14 +539,45 @@ export function QuotationForm({ docId }: { docId?: string }) {
               </FormField>
             </div>
             <div className="mt-4">
-              <FormField label="الشروط والأحكام (المدة الزمنية وشروط الدفع)">
-                <textarea
-                  value={terms}
-                  onChange={(e) => setTerms(e.target.value)}
-                  rows={4}
-                  className="border border-[#eceae2] rounded-lg px-3 py-2 w-full resize-y"
-                />
-              </FormField>
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-xs text-[#0f2a1d]/70">الشروط والأحكام — أعمدة (طريقة الدفع، الفترة الزمنية، الأحكام…)</span>
+                <button
+                  type="button"
+                  onClick={() => setTermsSections((ss) => [...ss, { title: "", text: "" }])}
+                  className="text-xs px-2 py-1 rounded border border-[#eceae2] hover:bg-[#f7f6f0] inline-flex items-center gap-1"
+                >
+                  <Plus className="w-3 h-3" /> إضافة عمود
+                </button>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                {termsSections.map((sec, i) => (
+                  <div key={i} className="border border-[#eceae2] rounded-lg p-2 space-y-2 bg-[#fafaf7]">
+                    <div className="flex items-center gap-1">
+                      <input
+                        value={sec.title}
+                        onChange={(e) => setTermsSections((ss) => ss.map((x, j) => (j === i ? { ...x, title: e.target.value } : x)))}
+                        placeholder="عنوان العمود"
+                        className="border border-[#eceae2] rounded px-2 py-1.5 text-sm font-semibold flex-1 bg-white"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setTermsSections((ss) => ss.filter((_, j) => j !== i))}
+                        className="p-1.5 rounded text-red-500 hover:bg-red-50"
+                        title="حذف العمود"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                    <textarea
+                      value={sec.text}
+                      onChange={(e) => setTermsSections((ss) => ss.map((x, j) => (j === i ? { ...x, text: e.target.value } : x)))}
+                      rows={3}
+                      placeholder="نص الشرط…"
+                      className="border border-[#eceae2] rounded px-2 py-1.5 text-sm w-full resize-y bg-white"
+                    />
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
 
@@ -748,7 +791,7 @@ export function QuotationForm({ docId }: { docId?: string }) {
                 tax={tax}
                 total={total}
                 notes={notes}
-                terms={terms}
+                termsSections={termsSections}
                 intro={intro}
                 currency={CUR}
                 structure={structure}
@@ -826,7 +869,7 @@ export function QuotationForm({ docId }: { docId?: string }) {
               <QuotationPreview
                 tpl={tpl} org={org} party={party} ref_={ref} date={date} dueDate={expiry}
                 lines={lines} lineCalcs={lineCalcs} subtotal={subtotal} tax={tax}
-                total={total} notes={notes} terms={terms} intro={intro} currency={CUR} structure={structure} verify={verify}
+                total={total} notes={notes} termsSections={termsSections} intro={intro} currency={CUR} structure={structure} verify={verify}
               />
             </div>
           </div>
