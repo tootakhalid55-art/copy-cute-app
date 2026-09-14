@@ -1,7 +1,10 @@
 import { useMemo, useState, type ReactNode } from "react";
-import { Plus, Pencil, Trash2, Search, X, Eye } from "lucide-react";
+import { Plus, Pencil, Trash2, Search, X, Eye, Ban } from "lucide-react";
 import { useNavigate } from "@tanstack/react-router";
+import { toast } from "sonner";
 import { useCollection } from "@/lib/haseem/store";
+import { DOC_KEYS, cancelCloudDocument, logClientEvent } from "@/lib/db/collections";
+import { useOrg } from "@/lib/db/org";
 import { Shell, PageHeader, PrimaryBtn, OutlineBtn, EmptyState } from "./Shell";
 
 
@@ -52,7 +55,35 @@ export function CrudModule({
   rowActions?: (row: any) => ReactNode;
 }) {
   const { items, addAsync, update, remove } = useCollection<any>(storageKey);
+  const { currentOrgId } = useOrg();
   const navigate = useNavigate();
+  const isDocCollection = !!DOC_KEYS[storageKey];
+  const [cancelling, setCancelling] = useState<string | null>(null);
+
+  // Posted documents are financially immutable — deleting one is blocked
+  // server-side (its journal entry must survive for audit). The correct
+  // operation is a cancel: the server posts a reversal journal entry and
+  // marks the document ملغي, which stays on record.
+  const cancelPosted = async (row: any) => {
+    if (!currentOrgId || cancelling) return;
+    if (!confirm(`المستند ${row.ref ?? ""} مرحّل في دفتر اليومية ولا يمكن حذفه.\nسيتم إلغاؤه بإنشاء قيد عكسي وتتحول حالته إلى "ملغي". متابعة؟`)) return;
+    setCancelling(row.id);
+    try {
+      await cancelCloudDocument(currentOrgId, row.id, "إلغاء من قائمة المستندات");
+      toast.success("أُلغي المستند وأُنشئ قيد عكسي في دفتر اليومية");
+      window.dispatchEvent(new CustomEvent("haseem:collection-changed", { detail: { key: storageKey } }));
+    } catch (e) {
+      const msg = String((e as any)?.message ?? e ?? "");
+      logClientEvent("cancel-doc", `failed: ${msg.slice(0, 140)}`);
+      toast.error(
+        /document_has_allocations/i.test(msg)
+          ? "المستند مرتبط بتسويات دفع — اعكس التسويات أولاً ثم أعد المحاولة"
+          : `تعذر إلغاء المستند: ${msg.slice(0, 120)}`,
+      );
+    } finally {
+      setCancelling(null);
+    }
+  };
   const [q, setQ] = useState("");
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<any | null>(null);
@@ -168,16 +199,35 @@ export function CrudModule({
                           </button>
                         )}
                         {rowActions?.(row)}
-                        <button
-                          onClick={() => {
-                            if (confirm("حذف هذا السجل؟")) remove(row.id);
-                          }}
-                          className="p-1.5 hover:bg-red-50 text-red-600 rounded"
-                          aria-label="حذف"
-                          title="حذف"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
+                        {isDocCollection && (row.status === "مرحل" || row.dbStatus === "posted") ? (
+                          <button
+                            onClick={() => cancelPosted(row)}
+                            disabled={cancelling === row.id}
+                            className="p-1.5 hover:bg-amber-50 text-amber-600 rounded disabled:opacity-50"
+                            aria-label="إلغاء بقيد عكسي"
+                            title="مستند مرحّل — الإلغاء ينشئ قيداً عكسياً ويحوّله إلى ملغي"
+                          >
+                            <Ban className="w-3.5 h-3.5" />
+                          </button>
+                        ) : isDocCollection && (row.status === "ملغي" || row.dbStatus === "cancelled") ? (
+                          <span
+                            className="p-1.5 text-[#0f2a1d]/25 cursor-not-allowed"
+                            title="مستند ملغي بقيد عكسي — يبقى في السجل المحاسبي ولا يُحذف"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </span>
+                        ) : (
+                          <button
+                            onClick={() => {
+                              if (confirm("حذف هذا السجل؟")) remove(row.id);
+                            }}
+                            className="p-1.5 hover:bg-red-50 text-red-600 rounded"
+                            aria-label="حذف"
+                            title="حذف"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>
