@@ -826,7 +826,7 @@ export function QuotationForm({ docId }: { docId?: string }) {
 
       {/* New party modal */}
       {partyModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/50 flex items-start justify-center p-4 overflow-auto" onClick={() => setPartyModalOpen(false)}>
+        <div className="fixed inset-0 z-50 bg-black/50 flex items-start justify-center p-4 overflow-auto">
           <div className="bg-white rounded-xl w-full max-w-lg my-8" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between px-6 py-3 border-b border-[#eceae2] bg-[#fafaf7]">
               <h3 className="font-bold">إضافة عميل جديد</h3>
@@ -856,7 +856,7 @@ export function QuotationForm({ docId }: { docId?: string }) {
 
       {/* Fullscreen preview */}
       {previewFull && (
-        <div className="fixed inset-0 z-50 bg-black/70 flex items-start justify-center p-6 overflow-auto" onClick={() => setPreviewFull(false)}>
+        <div className="fixed inset-0 z-50 bg-black/70 flex items-start justify-center p-6 overflow-auto">
           <div className="bg-white rounded-xl max-w-3xl w-full" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between px-6 py-3 border-b border-[#eceae2]">
               <h3 className="font-bold">معاينة عرض السعر</h3>

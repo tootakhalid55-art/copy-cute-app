@@ -112,10 +112,10 @@ function Page() {
       />
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-3 mb-4">
-        <StatCard label="أصول مؤهلة" value={String(totals.eligible)} />
+        <StatCard label="أصول مؤهلة" value={String(totals.eligible)} unit="" />
         <StatCard label="إجمالي الإهلاك الشهري" value={money(totals.totalDep)} />
-        <StatCard label="مستبعدة" value={String(totals.skipped)} />
-        <StatCard label="دورات سابقة" value={String(runs.length)} />
+        <StatCard label="مستبعدة" value={String(totals.skipped)} unit="" />
+        <StatCard label="دورات سابقة" value={String(runs.length)} unit="" />
       </div>
 
       <div className="rounded-xl bg-white border border-[#eceae2] p-4 mb-4">
@@ -159,7 +159,7 @@ function Page() {
       </div>
 
       {sim && (
-        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4" onClick={() => setSim(null)}>
+        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-xl w-full max-w-3xl max-h-[85vh] overflow-y-auto p-5" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold">محاكاة الترحيل — {lastDayOfMonth(periodEnd)}</h3>
@@ -178,9 +178,9 @@ function Page() {
             )}
 
             <div className="grid grid-cols-3 gap-3 mb-4">
-              <StatCard label="أصول مؤهلة" value={String(sim.summary?.asset_count ?? 0)} />
+              <StatCard label="أصول مؤهلة" value={String(sim.summary?.asset_count ?? 0)} unit="" />
               <StatCard label="إجمالي الإهلاك" value={money(Number(sim.summary?.total_depreciation || 0))} />
-              <StatCard label="مستبعدة" value={String(sim.summary?.skipped ?? 0)} />
+              <StatCard label="مستبعدة" value={String(sim.summary?.skipped ?? 0)} unit="" />
             </div>
 
             <div className="rounded-lg border border-[#eceae2] overflow-hidden mb-4">

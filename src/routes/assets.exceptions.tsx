@@ -70,11 +70,11 @@ function Page() {
 
       <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-4">
         <button onClick={() => setFilter("")} className="text-right">
-          <StatCard label="الكل" value={String(rows.length)} />
+          <StatCard label="الكل" value={String(rows.length)} unit="" />
         </button>
         {Object.entries(LABELS).map(([k, v]) => (
           <button key={k} onClick={() => setFilter(k)} className="text-right">
-            <StatCard label={v.ar} value={String(buckets[k] || 0)} />
+            <StatCard label={v.ar} value={String(buckets[k] || 0)} unit="" />
           </button>
         ))}
       </div>

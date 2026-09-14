@@ -6,6 +6,7 @@ import { useCollection } from "@/lib/haseem/store";
 import { DOC_KEYS, cancelCloudDocument, logClientEvent } from "@/lib/db/collections";
 import { useOrg } from "@/lib/db/org";
 import { Shell, PageHeader, PrimaryBtn, OutlineBtn, EmptyState } from "./Shell";
+import { nextAutoCode } from "./PartyEditorModal";
 
 
 export type FieldDef = {
@@ -16,6 +17,9 @@ export type FieldDef = {
   required?: boolean;
   placeholder?: string;
   default?: any;
+  /** Auto-generate a sequential code with this prefix for NEW records
+   *  (e.g. "ITM" -> ITM-0001). Always editable by the user. */
+  autoCode?: string;
 };
 
 export type ColumnDef = {
@@ -39,6 +43,7 @@ export function CrudModule({
   headerExtra,
   beforeList,
   rowActions,
+  customEditor,
 }: {
   storageKey: string;
   title: string;
@@ -53,8 +58,11 @@ export function CrudModule({
   headerExtra?: ReactNode;
   beforeList?: ReactNode;
   rowActions?: (row: any) => ReactNode;
+  /** Replace the default field-list modal with a rich custom editor
+   *  (used by customers/suppliers for the full tabbed party editor). */
+  customEditor?: (opts: { editing: any | null; onClose: () => void; onSave: (data: any) => Promise<void> }) => ReactNode;
 }) {
-  const { items, addAsync, update, remove } = useCollection<any>(storageKey);
+  const { items, addAsync, updateAsync, remove } = useCollection<any>(storageKey);
   const { currentOrgId } = useOrg();
   const navigate = useNavigate();
   const isDocCollection = !!DOC_KEYS[storageKey];
@@ -104,6 +112,15 @@ export function CrudModule({
   const openEdit = (row: any) => {
     setEditing(row);
     setOpen(true);
+  };
+
+  // Prefill auto-generated sequential codes for new records (still editable).
+  const autoCodeDefaults = () => {
+    const d: Record<string, any> = {};
+    for (const f of fields) {
+      if (f.autoCode) d[f.name] = nextAutoCode(items, f.name, f.autoCode);
+    }
+    return d;
   };
 
   const handlePrimary = () => {
@@ -238,23 +255,33 @@ export function CrudModule({
         </div>
       )}
 
-      {open && (
+      {open && (customEditor ? (
+        customEditor({
+          editing,
+          onClose: () => setOpen(false),
+          onSave: async (data) => {
+            if (editing) await updateAsync(editing.id, data);
+            else await addAsync(data);
+          },
+        })
+      ) : (
         <FormModal
           title={editing ? "تعديل" : newLabel}
           fields={fields}
-          initial={editing ?? {}}
+          initial={editing ?? autoCodeDefaults()}
           onClose={() => setOpen(false)}
           onSubmit={async (data) => {
             try {
-              if (editing) update(editing.id, data);
+              if (editing) await updateAsync(editing.id, data);
               else await addAsync(data);
               setOpen(false);
-            } catch (e: any) {
-              alert(`تعذّر الحفظ: ${e?.message ?? e}`);
+            } catch {
+              // The collections adapter already toasts the failure reason;
+              // keep the modal open so nothing typed is lost.
             }
           }}
         />
-      )}
+      ))}
     </Shell>
   );
 }
@@ -285,10 +312,7 @@ function FormModal({
     return v;
   });
   return (
-    <div
-      className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4"
-      onClick={onClose}
-    >
+    <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
       <div
         dir="rtl"
         className="bg-white rounded-xl w-full max-w-lg max-h-[90vh] overflow-auto font-[Cairo,system-ui,sans-serif]"

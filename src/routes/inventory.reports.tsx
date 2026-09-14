@@ -18,8 +18,8 @@ function InventoryReports() {
     <Shell>
       <PageHeader title="تقارير المخزون" subtitle="نظرة سريعة على حالة الأصناف والمخازن" />
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-        <StatCard label="عدد الأصناف" value={String(totalItems)} />
-        <StatCard label="إجمالي الكميات" value={String(totalStock)} />
+        <StatCard label="عدد الأصناف" value={String(totalItems)} unit="" />
+        <StatCard label="إجمالي الكميات" value={String(totalStock)} unit="" />
         <StatCard label="قيمة المخزون (تكلفة)" value={money(totalValue).replace(" ﷼", "")} />
       </div>
 

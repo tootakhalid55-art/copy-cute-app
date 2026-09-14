@@ -524,11 +524,11 @@ export function Input(props: React.InputHTMLAttributes<HTMLInputElement>) {
   return <input {...props} className={`border border-[#eceae2] rounded-lg px-3 py-2 text-sm bg-white ${props.className ?? ""}`} />;
 }
 
-export function StatCard({ label, value, valueClass = "" }: { label: string; value: string; valueClass?: string }) {
+export function StatCard({ label, value, valueClass = "", unit = "﷼" }: { label: string; value: string; valueClass?: string; unit?: string }) {
   return (
     <div className="rounded-xl bg-white border border-[#eceae2] p-4">
       <div className="text-xs text-[#0f2a1d]/60">{label}</div>
-      <div className={`text-xl font-bold mt-1 ${valueClass}`}>{value} <span className="text-xs font-normal">﷼</span></div>
+      <div className={`text-xl font-bold mt-1 ${valueClass}`}>{value}{unit ? <> <span className="text-xs font-normal">{unit}</span></> : null}</div>
     </div>
   );
 }

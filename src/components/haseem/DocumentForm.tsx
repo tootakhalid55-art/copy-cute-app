@@ -980,7 +980,7 @@ export function DocumentForm({
       </div>
 
       {previewOpen && (
-        <div className="fixed inset-0 z-50 bg-black/50 flex items-start justify-center p-4 overflow-auto print:static print:bg-white print:p-0 print:overflow-visible" onClick={() => setPreviewOpen(false)}>
+        <div className="fixed inset-0 z-50 bg-black/50 flex items-start justify-center p-4 overflow-auto print:static print:bg-white print:p-0 print:overflow-visible">
           <div className="bg-white rounded-xl max-w-3xl w-full my-8 overflow-hidden print:my-0 print:max-w-none print:rounded-none" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between px-6 py-3 border-b border-[#eceae2] bg-[#fafaf7] print:hidden">
               <div className="flex items-center gap-3">
@@ -1044,7 +1044,7 @@ export function DocumentForm({
 
 
       {partyModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/50 flex items-start justify-center p-4 overflow-auto" onClick={() => setPartyModalOpen(false)}>
+        <div className="fixed inset-0 z-50 bg-black/50 flex items-start justify-center p-4 overflow-auto">
           <div className="bg-white rounded-xl w-full max-w-3xl my-6 overflow-hidden" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between px-6 py-3 border-b border-[#eceae2] bg-[#fafaf7]">
               <div>

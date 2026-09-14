@@ -12,7 +12,7 @@ export const Route = createFileRoute("/inventory/warehouses")({
       searchIn={["name", "code", "location"]}
       fields={[
         { name: "name", label: "اسم المستودع", required: true },
-        { name: "code", label: "الرمز", placeholder: "WH-001" },
+        { name: "code", label: "الرمز — يُولَّد تلقائياً وقابل للتعديل", autoCode: "WH" },
         { name: "location", label: "الموقع" },
         { name: "manager", label: "المسؤول" },
       ]}

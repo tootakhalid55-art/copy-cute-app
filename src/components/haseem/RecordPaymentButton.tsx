@@ -100,7 +100,7 @@ function PaymentModal({ row, side, orgId, onClose }: { row: any; side: Side; org
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4" onClick={onClose}>
+    <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
       <div className="bg-white rounded-xl w-full max-w-md" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between px-5 py-3 border-b border-[#eceae2] bg-[#fafaf7] rounded-t-xl">
           <h3 className="font-bold text-sm">تسجيل دفعة — {row.ref}</h3>

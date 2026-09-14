@@ -13,7 +13,7 @@ export const Route = createFileRoute("/inventory/items")({
       searchIn={["name", "sku", "unit"]}
       fields={[
         { name: "name", label: "اسم الصنف", required: true },
-        { name: "sku", label: "الرمز (SKU)", placeholder: "ITM-001" },
+        { name: "sku", label: "الرمز (SKU) — يُولَّد تلقائياً وقابل للتعديل", autoCode: "ITM" },
         { name: "type", label: "النوع", type: "select", options: ["منتج", "خدمة"], default: "منتج" },
         { name: "unit", label: "الوحدة", placeholder: "قطعة / كجم / ساعة" },
         { name: "price", label: "سعر البيع", type: "number", required: true },

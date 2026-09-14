@@ -499,7 +499,7 @@ function ReviewModal({
     setForm((f) => ({ ...f, lines: f.lines.filter((_, idx) => idx !== i) }));
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/60 flex items-start justify-center p-4 overflow-auto" onClick={onClose}>
+    <div className="fixed inset-0 z-50 bg-black/60 flex items-start justify-center p-4 overflow-auto">
       <div dir="rtl" className="bg-white rounded-xl w-full max-w-6xl my-4" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between px-5 py-3 border-b border-[#eceae2] bg-[#fafaf7]">
           <div>

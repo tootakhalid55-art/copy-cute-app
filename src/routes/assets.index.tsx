@@ -108,7 +108,7 @@ function Page() {
       />
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <StatCard label="عدد الأصول" value={stats.count.toLocaleString("ar-SA")} />
+        <StatCard label="عدد الأصول" value={stats.count.toLocaleString("ar-SA")} unit="" />
         <StatCard label="التكلفة الإجمالية" value={money(stats.gross)} />
         <StatCard label="مجمع الإهلاك" value={money(stats.acc)} valueClass="text-amber-700" />
         <StatCard label="القيمة الدفترية" value={money(stats.nbv)} valueClass="text-emerald-700" />
