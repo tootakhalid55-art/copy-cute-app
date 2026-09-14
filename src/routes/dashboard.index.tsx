@@ -8,7 +8,7 @@ import { useCollection, useKV } from "@/lib/haseem/store";
 import { useAuth } from "@/lib/haseem/auth";
 import { Plus, TrendingUp, FileText, Receipt } from "lucide-react";
 
-export const Route = createFileRoute("/dashboard")({
+export const Route = createFileRoute("/dashboard/")({
   head: () => ({ meta: [{ title: "لوحة المعلومات — كنار المحاسبية" }] }),
   component: DashboardPage,
 });

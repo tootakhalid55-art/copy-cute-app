@@ -10,20 +10,19 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as AccountingRouteImport } from './routes/accounting'
-import { Route as AssetsRouteImport } from './routes/assets'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as CopilotRouteImport } from './routes/copilot'
-import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as ExpensesRouteImport } from './routes/expenses'
 import { Route as PlatformAdminRouteImport } from './routes/platform-admin'
 import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as ProjectsRouteImport } from './routes/projects'
 import { Route as SelectOrganizationRouteImport } from './routes/select-organization'
 import { Route as VerifyRouteImport } from './routes/verify'
+import { Route as AccountingIndexRouteImport } from './routes/accounting.index'
 import { Route as AccountingChartOfAccountsRouteImport } from './routes/accounting.chart-of-accounts'
 import { Route as AccountingGeneralLedgerRouteImport } from './routes/accounting.general-ledger'
 import { Route as AccountingJournalEntriesRouteImport } from './routes/accounting.journal-entries'
+import { Route as AssetsIndexRouteImport } from './routes/assets.index'
 import { Route as AssetsIdRouteImport } from './routes/assets.$id'
 import { Route as AssetsCalendarRouteImport } from './routes/assets.calendar'
 import { Route as AssetsCategoriesRouteImport } from './routes/assets.categories'
@@ -39,6 +38,7 @@ import { Route as CashReceiptsRouteImport } from './routes/cash.receipts'
 import { Route as CashReconciliationRouteImport } from './routes/cash.reconciliation'
 import { Route as CashTransactionsRouteImport } from './routes/cash.transactions'
 import { Route as CashTransfersRouteImport } from './routes/cash.transfers'
+import { Route as DashboardIndexRouteImport } from './routes/dashboard.index'
 import { Route as DashboardCashFlowRouteImport } from './routes/dashboard.cash-flow'
 import { Route as DashboardProfitAndLossRouteImport } from './routes/dashboard.profit-and-loss'
 import { Route as InboxUploadTokenRouteImport } from './routes/inbox-upload.$token'
@@ -124,16 +124,6 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AccountingRoute = AccountingRouteImport.update({
-  id: '/accounting',
-  path: '/accounting',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AssetsRoute = AssetsRouteImport.update({
-  id: '/assets',
-  path: '/assets',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
   path: '/auth',
@@ -142,11 +132,6 @@ const AuthRoute = AuthRouteImport.update({
 const CopilotRoute = CopilotRouteImport.update({
   id: '/copilot',
   path: '/copilot',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const DashboardRoute = DashboardRouteImport.update({
-  id: '/dashboard',
-  path: '/dashboard',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ExpensesRoute = ExpensesRouteImport.update({
@@ -179,62 +164,72 @@ const VerifyRoute = VerifyRouteImport.update({
   path: '/verify',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AccountingIndexRoute = AccountingIndexRouteImport.update({
+  id: '/accounting/',
+  path: '/accounting/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AccountingChartOfAccountsRoute =
   AccountingChartOfAccountsRouteImport.update({
-    id: '/chart-of-accounts',
-    path: '/chart-of-accounts',
-    getParentRoute: () => AccountingRoute,
+    id: '/accounting/chart-of-accounts',
+    path: '/accounting/chart-of-accounts',
+    getParentRoute: () => rootRouteImport,
   } as any)
 const AccountingGeneralLedgerRoute = AccountingGeneralLedgerRouteImport.update({
-  id: '/general-ledger',
-  path: '/general-ledger',
-  getParentRoute: () => AccountingRoute,
+  id: '/accounting/general-ledger',
+  path: '/accounting/general-ledger',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const AccountingJournalEntriesRoute =
   AccountingJournalEntriesRouteImport.update({
-    id: '/journal-entries',
-    path: '/journal-entries',
-    getParentRoute: () => AccountingRoute,
+    id: '/accounting/journal-entries',
+    path: '/accounting/journal-entries',
+    getParentRoute: () => rootRouteImport,
   } as any)
+const AssetsIndexRoute = AssetsIndexRouteImport.update({
+  id: '/assets/',
+  path: '/assets/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AssetsIdRoute = AssetsIdRouteImport.update({
-  id: '/$id',
-  path: '/$id',
-  getParentRoute: () => AssetsRoute,
+  id: '/assets/$id',
+  path: '/assets/$id',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const AssetsCalendarRoute = AssetsCalendarRouteImport.update({
-  id: '/calendar',
-  path: '/calendar',
-  getParentRoute: () => AssetsRoute,
+  id: '/assets/calendar',
+  path: '/assets/calendar',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const AssetsCategoriesRoute = AssetsCategoriesRouteImport.update({
-  id: '/categories',
-  path: '/categories',
-  getParentRoute: () => AssetsRoute,
+  id: '/assets/categories',
+  path: '/assets/categories',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const AssetsCipRoute = AssetsCipRouteImport.update({
-  id: '/cip',
-  path: '/cip',
-  getParentRoute: () => AssetsRoute,
+  id: '/assets/cip',
+  path: '/assets/cip',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const AssetsDepreciationRoute = AssetsDepreciationRouteImport.update({
-  id: '/depreciation',
-  path: '/depreciation',
-  getParentRoute: () => AssetsRoute,
+  id: '/assets/depreciation',
+  path: '/assets/depreciation',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const AssetsExceptionsRoute = AssetsExceptionsRouteImport.update({
-  id: '/exceptions',
-  path: '/exceptions',
-  getParentRoute: () => AssetsRoute,
+  id: '/assets/exceptions',
+  path: '/assets/exceptions',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const AssetsReportsRoute = AssetsReportsRouteImport.update({
-  id: '/reports',
-  path: '/reports',
-  getParentRoute: () => AssetsRoute,
+  id: '/assets/reports',
+  path: '/assets/reports',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const AssetsSettingsRoute = AssetsSettingsRouteImport.update({
-  id: '/settings',
-  path: '/settings',
-  getParentRoute: () => AssetsRoute,
+  id: '/assets/settings',
+  path: '/assets/settings',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const AuthResetPasswordRoute = AuthResetPasswordRouteImport.update({
   id: '/reset-password',
@@ -271,15 +266,20 @@ const CashTransfersRoute = CashTransfersRouteImport.update({
   path: '/cash/transfers',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DashboardIndexRoute = DashboardIndexRouteImport.update({
+  id: '/dashboard/',
+  path: '/dashboard/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const DashboardCashFlowRoute = DashboardCashFlowRouteImport.update({
-  id: '/cash-flow',
-  path: '/cash-flow',
-  getParentRoute: () => DashboardRoute,
+  id: '/dashboard/cash-flow',
+  path: '/dashboard/cash-flow',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const DashboardProfitAndLossRoute = DashboardProfitAndLossRouteImport.update({
-  id: '/profit-and-loss',
-  path: '/profit-and-loss',
-  getParentRoute: () => DashboardRoute,
+  id: '/dashboard/profit-and-loss',
+  path: '/dashboard/profit-and-loss',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const InboxUploadTokenRoute = InboxUploadTokenRouteImport.update({
   id: '/inbox-upload/$token',
@@ -679,11 +679,8 @@ const ApiPublicHooksFinanceHealthRoute =
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/accounting': typeof AccountingRouteWithChildren
-  '/assets': typeof AssetsRouteWithChildren
   '/auth': typeof AuthRouteWithChildren
   '/copilot': typeof CopilotRoute
-  '/dashboard': typeof DashboardRouteWithChildren
   '/expenses': typeof ExpensesRoute
   '/platform-admin': typeof PlatformAdminRoute
   '/profile': typeof ProfileRoute
@@ -762,6 +759,9 @@ export interface FileRoutesByFullPath {
   '/settings/users': typeof SettingsUsersRoute
   '/settings/workflows': typeof SettingsWorkflowsRoute
   '/settings/zatca': typeof SettingsZatcaRoute
+  '/accounting/': typeof AccountingIndexRoute
+  '/assets/': typeof AssetsIndexRoute
+  '/dashboard/': typeof DashboardIndexRoute
   '/api/public/client-log': typeof ApiPublicClientLogRoute
   '/api/public/ensure-storage': typeof ApiPublicEnsureStorageRoute
   '/api/public/verify': typeof ApiPublicVerifyRoute
@@ -790,11 +790,8 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/accounting': typeof AccountingRouteWithChildren
-  '/assets': typeof AssetsRouteWithChildren
   '/auth': typeof AuthRouteWithChildren
   '/copilot': typeof CopilotRoute
-  '/dashboard': typeof DashboardRouteWithChildren
   '/expenses': typeof ExpensesRoute
   '/platform-admin': typeof PlatformAdminRoute
   '/profile': typeof ProfileRoute
@@ -867,6 +864,9 @@ export interface FileRoutesByTo {
   '/settings/users': typeof SettingsUsersRoute
   '/settings/workflows': typeof SettingsWorkflowsRoute
   '/settings/zatca': typeof SettingsZatcaRoute
+  '/accounting': typeof AccountingIndexRoute
+  '/assets': typeof AssetsIndexRoute
+  '/dashboard': typeof DashboardIndexRoute
   '/api/public/client-log': typeof ApiPublicClientLogRoute
   '/api/public/ensure-storage': typeof ApiPublicEnsureStorageRoute
   '/api/public/verify': typeof ApiPublicVerifyRoute
@@ -896,11 +896,8 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/accounting': typeof AccountingRouteWithChildren
-  '/assets': typeof AssetsRouteWithChildren
   '/auth': typeof AuthRouteWithChildren
   '/copilot': typeof CopilotRoute
-  '/dashboard': typeof DashboardRouteWithChildren
   '/expenses': typeof ExpensesRoute
   '/platform-admin': typeof PlatformAdminRoute
   '/profile': typeof ProfileRoute
@@ -979,6 +976,9 @@ export interface FileRoutesById {
   '/settings/users': typeof SettingsUsersRoute
   '/settings/workflows': typeof SettingsWorkflowsRoute
   '/settings/zatca': typeof SettingsZatcaRoute
+  '/accounting/': typeof AccountingIndexRoute
+  '/assets/': typeof AssetsIndexRoute
+  '/dashboard/': typeof DashboardIndexRoute
   '/api/public/client-log': typeof ApiPublicClientLogRoute
   '/api/public/ensure-storage': typeof ApiPublicEnsureStorageRoute
   '/api/public/verify': typeof ApiPublicVerifyRoute
@@ -1009,11 +1009,8 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
-    | '/accounting'
-    | '/assets'
     | '/auth'
     | '/copilot'
-    | '/dashboard'
     | '/expenses'
     | '/platform-admin'
     | '/profile'
@@ -1092,6 +1089,9 @@ export interface FileRouteTypes {
     | '/settings/users'
     | '/settings/workflows'
     | '/settings/zatca'
+    | '/accounting/'
+    | '/assets/'
+    | '/dashboard/'
     | '/api/public/client-log'
     | '/api/public/ensure-storage'
     | '/api/public/verify'
@@ -1120,11 +1120,8 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
-    | '/accounting'
-    | '/assets'
     | '/auth'
     | '/copilot'
-    | '/dashboard'
     | '/expenses'
     | '/platform-admin'
     | '/profile'
@@ -1197,6 +1194,9 @@ export interface FileRouteTypes {
     | '/settings/users'
     | '/settings/workflows'
     | '/settings/zatca'
+    | '/accounting'
+    | '/assets'
+    | '/dashboard'
     | '/api/public/client-log'
     | '/api/public/ensure-storage'
     | '/api/public/verify'
@@ -1225,11 +1225,8 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
-    | '/accounting'
-    | '/assets'
     | '/auth'
     | '/copilot'
-    | '/dashboard'
     | '/expenses'
     | '/platform-admin'
     | '/profile'
@@ -1308,6 +1305,9 @@ export interface FileRouteTypes {
     | '/settings/users'
     | '/settings/workflows'
     | '/settings/zatca'
+    | '/accounting/'
+    | '/assets/'
+    | '/dashboard/'
     | '/api/public/client-log'
     | '/api/public/ensure-storage'
     | '/api/public/verify'
@@ -1337,23 +1337,33 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  AccountingRoute: typeof AccountingRouteWithChildren
-  AssetsRoute: typeof AssetsRouteWithChildren
   AuthRoute: typeof AuthRouteWithChildren
   CopilotRoute: typeof CopilotRoute
-  DashboardRoute: typeof DashboardRouteWithChildren
   ExpensesRoute: typeof ExpensesRoute
   PlatformAdminRoute: typeof PlatformAdminRoute
   ProfileRoute: typeof ProfileRoute
   ProjectsRoute: typeof ProjectsRoute
   SelectOrganizationRoute: typeof SelectOrganizationRoute
   VerifyRoute: typeof VerifyRoute
+  AccountingChartOfAccountsRoute: typeof AccountingChartOfAccountsRoute
+  AccountingGeneralLedgerRoute: typeof AccountingGeneralLedgerRoute
+  AccountingJournalEntriesRoute: typeof AccountingJournalEntriesRoute
+  AssetsIdRoute: typeof AssetsIdRoute
+  AssetsCalendarRoute: typeof AssetsCalendarRoute
+  AssetsCategoriesRoute: typeof AssetsCategoriesRoute
+  AssetsCipRoute: typeof AssetsCipRoute
+  AssetsDepreciationRoute: typeof AssetsDepreciationRoute
+  AssetsExceptionsRoute: typeof AssetsExceptionsRoute
+  AssetsReportsRoute: typeof AssetsReportsRoute
+  AssetsSettingsRoute: typeof AssetsSettingsRoute
   CashBanksRoute: typeof CashBanksRoute
   CashPaymentsRoute: typeof CashPaymentsRoute
   CashReceiptsRoute: typeof CashReceiptsRoute
   CashReconciliationRoute: typeof CashReconciliationRoute
   CashTransactionsRoute: typeof CashTransactionsRoute
   CashTransfersRoute: typeof CashTransfersRoute
+  DashboardCashFlowRoute: typeof DashboardCashFlowRoute
+  DashboardProfitAndLossRoute: typeof DashboardProfitAndLossRoute
   InboxUploadTokenRoute: typeof InboxUploadTokenRoute
   InventoryAdjustmentsRoute: typeof InventoryAdjustmentsRoute
   InventoryItemsRoute: typeof InventoryItemsRoute
@@ -1406,6 +1416,9 @@ export interface RootRouteChildren {
   SettingsUsersRoute: typeof SettingsUsersRoute
   SettingsWorkflowsRoute: typeof SettingsWorkflowsRoute
   SettingsZatcaRoute: typeof SettingsZatcaRoute
+  AccountingIndexRoute: typeof AccountingIndexRoute
+  AssetsIndexRoute: typeof AssetsIndexRoute
+  DashboardIndexRoute: typeof DashboardIndexRoute
   ApiPublicClientLogRoute: typeof ApiPublicClientLogRoute
   ApiPublicEnsureStorageRoute: typeof ApiPublicEnsureStorageRoute
   ApiPublicVerifyRoute: typeof ApiPublicVerifyRoute
@@ -1424,20 +1437,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/accounting': {
-      id: '/accounting'
-      path: '/accounting'
-      fullPath: '/accounting'
-      preLoaderRoute: typeof AccountingRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/assets': {
-      id: '/assets'
-      path: '/assets'
-      fullPath: '/assets'
-      preLoaderRoute: typeof AssetsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/auth': {
       id: '/auth'
       path: '/auth'
@@ -1450,13 +1449,6 @@ declare module '@tanstack/react-router' {
       path: '/copilot'
       fullPath: '/copilot'
       preLoaderRoute: typeof CopilotRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/dashboard': {
-      id: '/dashboard'
-      path: '/dashboard'
-      fullPath: '/dashboard'
-      preLoaderRoute: typeof DashboardRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/expenses': {
@@ -1501,82 +1493,96 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof VerifyRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/accounting/': {
+      id: '/accounting/'
+      path: '/accounting'
+      fullPath: '/accounting/'
+      preLoaderRoute: typeof AccountingIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/accounting/chart-of-accounts': {
       id: '/accounting/chart-of-accounts'
-      path: '/chart-of-accounts'
+      path: '/accounting/chart-of-accounts'
       fullPath: '/accounting/chart-of-accounts'
       preLoaderRoute: typeof AccountingChartOfAccountsRouteImport
-      parentRoute: typeof AccountingRoute
+      parentRoute: typeof rootRouteImport
     }
     '/accounting/general-ledger': {
       id: '/accounting/general-ledger'
-      path: '/general-ledger'
+      path: '/accounting/general-ledger'
       fullPath: '/accounting/general-ledger'
       preLoaderRoute: typeof AccountingGeneralLedgerRouteImport
-      parentRoute: typeof AccountingRoute
+      parentRoute: typeof rootRouteImport
     }
     '/accounting/journal-entries': {
       id: '/accounting/journal-entries'
-      path: '/journal-entries'
+      path: '/accounting/journal-entries'
       fullPath: '/accounting/journal-entries'
       preLoaderRoute: typeof AccountingJournalEntriesRouteImport
-      parentRoute: typeof AccountingRoute
+      parentRoute: typeof rootRouteImport
+    }
+    '/assets/': {
+      id: '/assets/'
+      path: '/assets'
+      fullPath: '/assets/'
+      preLoaderRoute: typeof AssetsIndexRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/assets/$id': {
       id: '/assets/$id'
-      path: '/$id'
+      path: '/assets/$id'
       fullPath: '/assets/$id'
       preLoaderRoute: typeof AssetsIdRouteImport
-      parentRoute: typeof AssetsRoute
+      parentRoute: typeof rootRouteImport
     }
     '/assets/calendar': {
       id: '/assets/calendar'
-      path: '/calendar'
+      path: '/assets/calendar'
       fullPath: '/assets/calendar'
       preLoaderRoute: typeof AssetsCalendarRouteImport
-      parentRoute: typeof AssetsRoute
+      parentRoute: typeof rootRouteImport
     }
     '/assets/categories': {
       id: '/assets/categories'
-      path: '/categories'
+      path: '/assets/categories'
       fullPath: '/assets/categories'
       preLoaderRoute: typeof AssetsCategoriesRouteImport
-      parentRoute: typeof AssetsRoute
+      parentRoute: typeof rootRouteImport
     }
     '/assets/cip': {
       id: '/assets/cip'
-      path: '/cip'
+      path: '/assets/cip'
       fullPath: '/assets/cip'
       preLoaderRoute: typeof AssetsCipRouteImport
-      parentRoute: typeof AssetsRoute
+      parentRoute: typeof rootRouteImport
     }
     '/assets/depreciation': {
       id: '/assets/depreciation'
-      path: '/depreciation'
+      path: '/assets/depreciation'
       fullPath: '/assets/depreciation'
       preLoaderRoute: typeof AssetsDepreciationRouteImport
-      parentRoute: typeof AssetsRoute
+      parentRoute: typeof rootRouteImport
     }
     '/assets/exceptions': {
       id: '/assets/exceptions'
-      path: '/exceptions'
+      path: '/assets/exceptions'
       fullPath: '/assets/exceptions'
       preLoaderRoute: typeof AssetsExceptionsRouteImport
-      parentRoute: typeof AssetsRoute
+      parentRoute: typeof rootRouteImport
     }
     '/assets/reports': {
       id: '/assets/reports'
-      path: '/reports'
+      path: '/assets/reports'
       fullPath: '/assets/reports'
       preLoaderRoute: typeof AssetsReportsRouteImport
-      parentRoute: typeof AssetsRoute
+      parentRoute: typeof rootRouteImport
     }
     '/assets/settings': {
       id: '/assets/settings'
-      path: '/settings'
+      path: '/assets/settings'
       fullPath: '/assets/settings'
       preLoaderRoute: typeof AssetsSettingsRouteImport
-      parentRoute: typeof AssetsRoute
+      parentRoute: typeof rootRouteImport
     }
     '/auth/reset-password': {
       id: '/auth/reset-password'
@@ -1627,19 +1633,26 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CashTransfersRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/dashboard/': {
+      id: '/dashboard/'
+      path: '/dashboard'
+      fullPath: '/dashboard/'
+      preLoaderRoute: typeof DashboardIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/dashboard/cash-flow': {
       id: '/dashboard/cash-flow'
-      path: '/cash-flow'
+      path: '/dashboard/cash-flow'
       fullPath: '/dashboard/cash-flow'
       preLoaderRoute: typeof DashboardCashFlowRouteImport
-      parentRoute: typeof DashboardRoute
+      parentRoute: typeof rootRouteImport
     }
     '/dashboard/profit-and-loss': {
       id: '/dashboard/profit-and-loss'
-      path: '/profit-and-loss'
+      path: '/dashboard/profit-and-loss'
       fullPath: '/dashboard/profit-and-loss'
       preLoaderRoute: typeof DashboardProfitAndLossRouteImport
-      parentRoute: typeof DashboardRoute
+      parentRoute: typeof rootRouteImport
     }
     '/inbox-upload/$token': {
       id: '/inbox-upload/$token'
@@ -2183,47 +2196,6 @@ declare module '@tanstack/react-router' {
   }
 }
 
-interface AccountingRouteChildren {
-  AccountingChartOfAccountsRoute: typeof AccountingChartOfAccountsRoute
-  AccountingGeneralLedgerRoute: typeof AccountingGeneralLedgerRoute
-  AccountingJournalEntriesRoute: typeof AccountingJournalEntriesRoute
-}
-
-const AccountingRouteChildren: AccountingRouteChildren = {
-  AccountingChartOfAccountsRoute: AccountingChartOfAccountsRoute,
-  AccountingGeneralLedgerRoute: AccountingGeneralLedgerRoute,
-  AccountingJournalEntriesRoute: AccountingJournalEntriesRoute,
-}
-
-const AccountingRouteWithChildren = AccountingRoute._addFileChildren(
-  AccountingRouteChildren,
-)
-
-interface AssetsRouteChildren {
-  AssetsIdRoute: typeof AssetsIdRoute
-  AssetsCalendarRoute: typeof AssetsCalendarRoute
-  AssetsCategoriesRoute: typeof AssetsCategoriesRoute
-  AssetsCipRoute: typeof AssetsCipRoute
-  AssetsDepreciationRoute: typeof AssetsDepreciationRoute
-  AssetsExceptionsRoute: typeof AssetsExceptionsRoute
-  AssetsReportsRoute: typeof AssetsReportsRoute
-  AssetsSettingsRoute: typeof AssetsSettingsRoute
-}
-
-const AssetsRouteChildren: AssetsRouteChildren = {
-  AssetsIdRoute: AssetsIdRoute,
-  AssetsCalendarRoute: AssetsCalendarRoute,
-  AssetsCategoriesRoute: AssetsCategoriesRoute,
-  AssetsCipRoute: AssetsCipRoute,
-  AssetsDepreciationRoute: AssetsDepreciationRoute,
-  AssetsExceptionsRoute: AssetsExceptionsRoute,
-  AssetsReportsRoute: AssetsReportsRoute,
-  AssetsSettingsRoute: AssetsSettingsRoute,
-}
-
-const AssetsRouteWithChildren =
-  AssetsRoute._addFileChildren(AssetsRouteChildren)
-
 interface AuthRouteChildren {
   AuthResetPasswordRoute: typeof AuthResetPasswordRoute
 }
@@ -2233,20 +2205,6 @@ const AuthRouteChildren: AuthRouteChildren = {
 }
 
 const AuthRouteWithChildren = AuthRoute._addFileChildren(AuthRouteChildren)
-
-interface DashboardRouteChildren {
-  DashboardCashFlowRoute: typeof DashboardCashFlowRoute
-  DashboardProfitAndLossRoute: typeof DashboardProfitAndLossRoute
-}
-
-const DashboardRouteChildren: DashboardRouteChildren = {
-  DashboardCashFlowRoute: DashboardCashFlowRoute,
-  DashboardProfitAndLossRoute: DashboardProfitAndLossRoute,
-}
-
-const DashboardRouteWithChildren = DashboardRoute._addFileChildren(
-  DashboardRouteChildren,
-)
 
 interface PurchasesBillsRouteChildren {
   PurchasesBillsIdRoute: typeof PurchasesBillsIdRoute
@@ -2346,23 +2304,33 @@ const SalesQuotationsRouteWithChildren = SalesQuotationsRoute._addFileChildren(
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  AccountingRoute: AccountingRouteWithChildren,
-  AssetsRoute: AssetsRouteWithChildren,
   AuthRoute: AuthRouteWithChildren,
   CopilotRoute: CopilotRoute,
-  DashboardRoute: DashboardRouteWithChildren,
   ExpensesRoute: ExpensesRoute,
   PlatformAdminRoute: PlatformAdminRoute,
   ProfileRoute: ProfileRoute,
   ProjectsRoute: ProjectsRoute,
   SelectOrganizationRoute: SelectOrganizationRoute,
   VerifyRoute: VerifyRoute,
+  AccountingChartOfAccountsRoute: AccountingChartOfAccountsRoute,
+  AccountingGeneralLedgerRoute: AccountingGeneralLedgerRoute,
+  AccountingJournalEntriesRoute: AccountingJournalEntriesRoute,
+  AssetsIdRoute: AssetsIdRoute,
+  AssetsCalendarRoute: AssetsCalendarRoute,
+  AssetsCategoriesRoute: AssetsCategoriesRoute,
+  AssetsCipRoute: AssetsCipRoute,
+  AssetsDepreciationRoute: AssetsDepreciationRoute,
+  AssetsExceptionsRoute: AssetsExceptionsRoute,
+  AssetsReportsRoute: AssetsReportsRoute,
+  AssetsSettingsRoute: AssetsSettingsRoute,
   CashBanksRoute: CashBanksRoute,
   CashPaymentsRoute: CashPaymentsRoute,
   CashReceiptsRoute: CashReceiptsRoute,
   CashReconciliationRoute: CashReconciliationRoute,
   CashTransactionsRoute: CashTransactionsRoute,
   CashTransfersRoute: CashTransfersRoute,
+  DashboardCashFlowRoute: DashboardCashFlowRoute,
+  DashboardProfitAndLossRoute: DashboardProfitAndLossRoute,
   InboxUploadTokenRoute: InboxUploadTokenRoute,
   InventoryAdjustmentsRoute: InventoryAdjustmentsRoute,
   InventoryItemsRoute: InventoryItemsRoute,
@@ -2415,6 +2383,9 @@ const rootRouteChildren: RootRouteChildren = {
   SettingsUsersRoute: SettingsUsersRoute,
   SettingsWorkflowsRoute: SettingsWorkflowsRoute,
   SettingsZatcaRoute: SettingsZatcaRoute,
+  AccountingIndexRoute: AccountingIndexRoute,
+  AssetsIndexRoute: AssetsIndexRoute,
+  DashboardIndexRoute: DashboardIndexRoute,
   ApiPublicClientLogRoute: ApiPublicClientLogRoute,
   ApiPublicEnsureStorageRoute: ApiPublicEnsureStorageRoute,
   ApiPublicVerifyRoute: ApiPublicVerifyRoute,

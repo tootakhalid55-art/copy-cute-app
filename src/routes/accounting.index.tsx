@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { Shell, PageHeader, StatCard, money } from "@/components/haseem/Shell";
 import { useCollection } from "@/lib/haseem/store";
 
-export const Route = createFileRoute("/accounting")({
+export const Route = createFileRoute("/accounting/")({
   head: () => ({ meta: [{ title: "المحاسبة — كنار المحاسبية" }] }),
   component: AccountingPage,
 });

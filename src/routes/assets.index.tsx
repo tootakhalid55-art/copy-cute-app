@@ -11,7 +11,7 @@ import {
 } from "@/lib/assets/registry.functions";
 import { mergeAssets } from "@/lib/assets/lifecycle.functions";
 
-export const Route = createFileRoute("/assets")({
+export const Route = createFileRoute("/assets/")({
   head: () => ({
     meta: [
       { title: "الأصول الثابتة — كنار المحاسبية" },
