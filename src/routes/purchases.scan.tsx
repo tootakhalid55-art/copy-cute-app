@@ -123,6 +123,135 @@ function ScanPage() {
 
   const reviewJob = jobs.find((j) => j.id === reviewId) || null;
 
+  // Shared save routine — used by the review modal and the bulk
+  // high-confidence approve button. Returns ok=false (with toasts already
+  // shown) instead of throwing.
+  const saveScannedInvoice = async (
+    job: Job,
+    payload: ReviewPayload,
+  ): Promise<{ ok: boolean; billId?: string }> => {
+    // Find or create supplier — must await the REAL DB record (the sync
+    // add() returns an optimistic tmp_ stub that breaks the partyId link).
+    let supplier = suppliers.find((s: any) => s.name?.trim() === payload.supplierName?.trim());
+    if (!supplier && payload.createSupplier) {
+      supplier = await addSupplierAsync({
+        name: payload.supplierName,
+        taxNumber: payload.supplierVatNumber,
+        cr_number: payload.supplierCrNumber || undefined,
+        address: payload.supplierAddress || undefined,
+        phone: payload.supplierPhone || undefined,
+        email: payload.supplierEmail || undefined,
+        currency: payload.currency || "SAR",
+        type: "company",
+      });
+    }
+    logClientEvent("scan-save", `attempt org=${currentOrgId ? "yes" : "MISSING"} lines=${payload.lines?.length ?? 0}`);
+    // Same invoice number already in the system? Say so up front with a
+    // jump-to link instead of letting the DB unique constraint fail.
+    if (payload.invoiceNumber) {
+      const dup = bills.find((b: any) => b.ref === payload.invoiceNumber || b.supplierRef === payload.invoiceNumber);
+      if (dup) {
+        logClientEvent("scan-save", `duplicate pre-check hit ref=${payload.invoiceNumber}`);
+        toast.error(`فاتورة برقم "${payload.invoiceNumber}" محفوظة مسبقاً — لا يمكن حفظها مرتين`, {
+          duration: 8000,
+          action: { label: "فتح الفاتورة المحفوظة", onClick: () => navigate({ to: "/purchases/bills/$id", params: { id: dup.id } }) },
+        });
+        updateJob(job.id, { status: "duplicate", duplicateOf: dup.id });
+        return { ok: false };
+      }
+    }
+    let bill: any;
+    try {
+      bill = await addBillAsync({
+        ref: payload.invoiceNumber || `BILL-${Math.floor(100000 + Math.random() * 900000)}`,
+        supplierRef: payload.invoiceNumber,
+        date: payload.invoiceDate || new Date().toISOString().slice(0, 10),
+        dueDate: payload.dueDate || payload.invoiceDate || new Date().toISOString().slice(0, 10),
+        partyId: supplier?.id || "",
+        partyName: supplier?.name || payload.supplierName,
+        notes: `تم إنشاؤها بالمسح الذكي · PO: ${payload.purchaseOrderNumber || "—"}`,
+        // "مؤكد" posts the invoice to the ledger server-side (the adapter
+        // falls back to a saved draft with a toast on failure).
+        status: payload.finalStatus || "مسودة",
+        lines: payload.lines,
+        subtotal: payload.subtotal,
+        tax: payload.vat,
+        total: payload.grandTotal,
+        currency: payload.currency,
+        source: "ai-scan",
+      });
+    } catch (e) {
+      const msg = String((e as any)?.message ?? e ?? "");
+      logClientEvent("scan-save", `failed: ${msg.slice(0, 140)}`);
+      if (/duplicate key.*doc_number|documents_org_id_kind_doc_number/i.test(msg)) {
+        const dupRef = payload.invoiceNumber || "";
+        const existingBill = bills.find((b: any) => b.ref === dupRef || b.supplierRef === dupRef);
+        toast.error(`فاتورة برقم "${dupRef}" محفوظة مسبقاً — لا يمكن حفظها مرتين`, {
+          duration: 8000,
+          ...(existingBill
+            ? { action: { label: "فتح الفاتورة المحفوظة", onClick: () => navigate({ to: "/purchases/bills/$id", params: { id: existingBill.id } }) } }
+            : {}),
+        });
+      }
+      return { ok: false };
+    }
+    logClientEvent("scan-save", `success id=${bill?.id ?? "?"}`);
+
+    // Persist the original scanned file to cloud storage, awaited so the
+    // bill opens with the original already linked.
+    if (currentOrgId && bill?.id && !String(bill.id).startsWith("tmp_")) {
+      const up = await uploadAttachmentAndWait(job.file, {
+        orgId: currentOrgId, entityType: "document", entityId: bill.id,
+      });
+      if (up.status !== "done") {
+        logClientEvent("scan-save", `attachment upload ${up.status}: ${up.error ?? "?"}`);
+        toast.error("تم حفظ الفاتورة، لكن تعذّر رفع الملف الأصلي — سيُعاد رفعه من صفحة الفاتورة عبر زر المرفقات");
+      }
+    }
+
+    addHistory({
+      supplierName: payload.supplierName,
+      invoiceNumber: payload.invoiceNumber,
+      invoiceDate: payload.invoiceDate,
+      grandTotal: payload.grandTotal,
+      billId: bill.id,
+      originalFilename: job.file.name,
+      originalDataUrl: job.dataUrl,
+      rawText: job.result?.rawText || "",
+      orgName: org.name,
+    });
+    updateJob(job.id, { status: "saved" });
+    return { ok: true, billId: bill.id };
+  };
+
+  // Bulk approve: every reviewed-and-waiting invoice whose extraction
+  // confidence is high gets saved & posted in one click.
+  const HIGH_CONFIDENCE = 85;
+  const highConfJobs = jobs.filter(
+    (j) => j.status === "review" && j.result && averageConfidence(j.result) >= HIGH_CONFIDENCE,
+  );
+  const [bulkSaving, setBulkSaving] = useState(false);
+  const approveHighConfidence = async () => {
+    if (bulkSaving || !highConfJobs.length) return;
+    if (!confirm(`سيتم حفظ واعتماد ${highConfJobs.length} فاتورة نسبة الثقة فيها ${HIGH_CONFIDENCE}% فأكثر.\nمتابعة؟`)) return;
+    setBulkSaving(true);
+    let ok = 0;
+    let fail = 0;
+    try {
+      for (const job of highConfJobs) {
+        const r = job.result!;
+        const res = await saveScannedInvoice(job, { ...r, createSupplier: true, finalStatus: "مؤكد" });
+        if (res.ok) ok++;
+        else fail++;
+      }
+      logClientEvent("scan-bulk", `done ok=${ok} fail=${fail}`);
+      if (fail) toast.warning(`الاعتماد الجماعي: نجح ${ok} · تعذّر ${fail} (تفاصيل كل حالة أعلاه)`);
+      else toast.success(`تم حفظ واعتماد ${ok} فاتورة بنجاح ✓`);
+    } finally {
+      setBulkSaving(false);
+    }
+  };
+
   return (
     <Shell>
       <PageHeader
@@ -172,12 +301,25 @@ function ScanPage() {
       {/* Active queue */}
       {jobs.length > 0 && (
         <div className="rounded-xl bg-white border border-[#eceae2] overflow-hidden">
-          <div className="px-4 py-3 border-b border-[#eceae2] bg-[#fafaf7] flex items-center justify-between">
+          <div className="px-4 py-3 border-b border-[#eceae2] bg-[#fafaf7] flex items-center justify-between gap-2 flex-wrap">
             <div className="font-semibold text-sm">قائمة المسح ({jobs.length})</div>
-            <button
-              onClick={() => setJobs((js) => js.filter((j) => j.status === "scanning"))}
-              className="text-xs text-[#0f2a1d]/60 hover:underline"
-            >مسح المكتملة</button>
+            <div className="flex items-center gap-3">
+              {highConfJobs.length > 0 && (
+                <PrimaryBtn
+                  onClick={approveHighConfidence}
+                  disabled={bulkSaving}
+                  className="!py-1.5 !px-3 text-xs"
+                  title={`حفظ واعتماد كل الفواتير التي نسبة الثقة فيها ${HIGH_CONFIDENCE}% فأكثر دفعة واحدة`}
+                >
+                  <Check className="w-3.5 h-3.5" />
+                  {bulkSaving ? "جارٍ الاعتماد…" : `اعتماد ${highConfJobs.length} عالية الثقة`}
+                </PrimaryBtn>
+              )}
+              <button
+                onClick={() => setJobs((js) => js.filter((j) => j.status === "scanning"))}
+                className="text-xs text-[#0f2a1d]/60 hover:underline"
+              >مسح المكتملة</button>
+            </div>
           </div>
           <div className="divide-y divide-[#eceae2]">
             {jobs.map((j) => (
@@ -266,117 +408,26 @@ function ScanPage() {
           suppliers={suppliers}
           onClose={() => setReviewId(null)}
           onSave={async (payload) => {
-            // Find or create supplier
-            let supplier = suppliers.find(
-              (s: any) => s.name?.trim() === payload.supplierName?.trim()
-            );
-            if (!supplier && payload.createSupplier) {
-              // Must await the real DB record here: the sync `add()` on a
-              // cloud-backed collection returns an optimistic stub with a
-              // temporary id (`tmp_...`) that never matches the real row,
-              // which silently broke the partyId link on every scanned bill.
-              supplier = await addSupplierAsync({
-                name: payload.supplierName,
-                taxNumber: payload.supplierVatNumber,
-                cr_number: payload.supplierCrNumber || undefined,
-                address: payload.supplierAddress || undefined,
-                phone: payload.supplierPhone || undefined,
-                email: payload.supplierEmail || undefined,
-                currency: payload.currency || "SAR",
-                type: "company",
-              });
-            }
-            // Create the bill ONCE through the cloud adapter and WAIT for the
-            // real database row. The old flow used the fire-and-forget add()
-            // (optimistic tmp_ id, errors swallowed) plus a second insert via
-            // syncDocumentToCloud, then navigated to the tmp_ id — the bill
-            // page found nothing and the save looked like it never happened.
-            logClientEvent("scan-save", `attempt org=${currentOrgId ? "yes" : "MISSING"} lines=${payload.lines?.length ?? 0}`);
-            // Same invoice number already in the system? Say so up front with
-            // a jump-to link instead of letting the DB unique constraint fail.
-            if (payload.invoiceNumber) {
-              const dup = bills.find((b: any) => b.ref === payload.invoiceNumber || b.supplierRef === payload.invoiceNumber);
-              if (dup) {
-                logClientEvent("scan-save", `duplicate pre-check hit ref=${payload.invoiceNumber}`);
-                toast.error(`فاتورة برقم "${payload.invoiceNumber}" محفوظة مسبقاً — لا يمكن حفظها مرتين`, {
-                  duration: 8000,
-                  action: { label: "فتح الفاتورة المحفوظة", onClick: () => navigate({ to: "/purchases/bills/$id", params: { id: dup.id } }) },
-                });
-                return;
-              }
-            }
-            let bill: any;
-            try {
-              bill = await addBillAsync({
-                ref: payload.invoiceNumber || `BILL-${Math.floor(100000 + Math.random() * 900000)}`,
-                supplierRef: payload.invoiceNumber,
-                date: payload.invoiceDate || new Date().toISOString().slice(0, 10),
-                dueDate: payload.dueDate || payload.invoiceDate || new Date().toISOString().slice(0, 10),
-                partyId: supplier?.id || "",
-                partyName: supplier?.name || payload.supplierName,
-                notes: `تم إنشاؤها بالمسح الذكي · PO: ${payload.purchaseOrderNumber || "—"}`,
-                // "مؤكد" posts the invoice to the ledger server-side (the
-                // adapter falls back to a saved draft with a toast on failure).
-                status: payload.finalStatus || "مسودة",
-                lines: payload.lines,
-                subtotal: payload.subtotal,
-                tax: payload.vat,
-                total: payload.grandTotal,
-                currency: payload.currency,
-                source: "ai-scan",
-              });
-            } catch (e) {
-              // Keep the modal open so nothing reviewed is lost, and log the
-              // real message (Supabase errors are plain objects — String(e)
-              // yields "[object Object]").
-              const msg = String((e as any)?.message ?? e ?? "");
-              logClientEvent("scan-save", `failed: ${msg.slice(0, 140)}`);
-              if (/duplicate key.*doc_number|documents_org_id_kind_doc_number/i.test(msg)) {
-                // Same supplier invoice number already saved — almost always a
-                // re-scan of an invoice that exists. Point at it instead of a
-                // bare "number in use" error.
-                const dupRef = payload.invoiceNumber || "";
-                const existingBill = bills.find((b: any) => b.ref === dupRef || b.supplierRef === dupRef);
-                toast.error(`فاتورة برقم "${dupRef}" محفوظة مسبقاً — لا يمكن حفظها مرتين`, {
-                  duration: 8000,
-                  ...(existingBill
-                    ? { action: { label: "فتح الفاتورة المحفوظة", onClick: () => navigate({ to: "/purchases/bills/$id", params: { id: existingBill.id } }) } }
-                    : {}),
-                });
-              }
-              return;
-            }
-            logClientEvent("scan-save", `success id=${bill?.id ?? "?"}`);
-
-            // Persist the original scanned file to Supabase Storage (not
-            // localStorage — an 8MB base64 blob per bill would blow the
-            // browser storage quota fast). Await the terminal state so the
-            // bill page opens with the original already linked; a silent
-            // fire-and-forget lost the race (and hid upload failures).
-            if (currentOrgId && bill?.id && !String(bill.id).startsWith("tmp_")) {
-              const up = await uploadAttachmentAndWait(reviewJob.file, {
-                orgId: currentOrgId, entityType: "document", entityId: bill.id,
-              });
-              if (up.status !== "done") {
-                logClientEvent("scan-save", `attachment upload ${up.status}: ${up.error ?? "?"}`);
-                toast.error("تم حفظ الفاتورة، لكن تعذّر رفع الملف الأصلي — سيُعاد رفعه من صفحة الفاتورة عبر زر المرفقات");
-              }
-            }
-
-            addHistory({
-              supplierName: payload.supplierName,
-              invoiceNumber: payload.invoiceNumber,
-              invoiceDate: payload.invoiceDate,
-              grandTotal: payload.grandTotal,
-              billId: bill.id,
-              originalFilename: reviewJob.file.name,
-              originalDataUrl: reviewJob.dataUrl,
-              rawText: reviewJob.result?.rawText || "",
-              orgName: org.name,
-            });
-            updateJob(reviewJob.id, { status: "saved" });
+            const res = await saveScannedInvoice(reviewJob, payload);
+            if (!res.ok) return;
             setReviewId(null);
-            navigate({ to: "/purchases/bills/$id", params: { id: bill.id } });
+            // Staying on the scan page while other invoices still await
+            // review — navigating away used to drop the whole in-memory
+            // queue, so reviewing one invoice made the rest vanish.
+            const remaining = jobs.filter(
+              (j) => j.id !== reviewJob.id && (j.status === "review" || j.status === "duplicate"),
+            ).length;
+            if (remaining > 0) {
+              toast.success(`حُفظت الفاتورة ✓ — تبقّى ${remaining} فاتورة بانتظار المراجعة`, {
+                duration: 6000,
+                action: {
+                  label: "فتح الفاتورة",
+                  onClick: () => navigate({ to: "/purchases/bills/$id", params: { id: res.billId! } }),
+                },
+              });
+            } else {
+              navigate({ to: "/purchases/bills/$id", params: { id: res.billId! } });
+            }
           }}
         />
       )}
@@ -399,6 +450,11 @@ function JobRow({
         <div className="text-sm font-medium truncate">{job.file.name}</div>
         <div className="text-xs text-[#0f2a1d]/60 flex items-center gap-2 mt-0.5">
           <StatusBadge status={job.status} />
+          {job.result && (
+            <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold ${averageConfidence(job.result) >= 85 ? "bg-emerald-50 text-emerald-700" : "bg-amber-50 text-amber-700"}`}>
+              ثقة {averageConfidence(job.result)}%
+            </span>
+          )}
           {job.result?.supplierName && <span>· {job.result.supplierName}</span>}
           {job.result?.grandTotal ? <span>· {job.result.grandTotal.toLocaleString()} {job.result.currency}</span> : null}
           {job.error && <span className="text-red-600">· {job.error}</span>}
