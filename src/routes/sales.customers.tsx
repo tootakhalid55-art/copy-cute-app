@@ -24,6 +24,7 @@ function CustomersPage() {
           partyLabel="عميل"
           initial={editing}
           autoCode={nextAutoCode(items, "code", "CLI")}
+          allParties={items}
           onSave={onSave}
           onClose={onClose}
         />

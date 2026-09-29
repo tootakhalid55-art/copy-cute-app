@@ -4,7 +4,9 @@
 // The modal never closes on backdrop clicks: only حفظ / إلغاء / X close it.
 import { useEffect, useState } from "react";
 import { X } from "lucide-react";
+import { toast } from "sonner";
 import { PrimaryBtn, OutlineBtn } from "./Shell";
+import { validateSaudiVat, vatDigits, openZatcaLookup } from "@/lib/haseem/vat";
 
 export type PartyDraft = Record<string, any>;
 
@@ -55,6 +57,7 @@ export function PartyEditorModal({
   partyLabel,
   initial,
   autoCode,
+  allParties,
   onSave,
   onClose,
 }: {
@@ -62,6 +65,8 @@ export function PartyEditorModal({
   initial?: PartyDraft | null;
   /** Suggested code for NEW records (editable). */
   autoCode?: string;
+  /** Existing records of the same collection — for duplicate-VAT warnings. */
+  allParties?: any[];
   onSave: (payload: PartyDraft) => Promise<void>;
   onClose: () => void;
 }) {
@@ -166,7 +171,34 @@ export function PartyEditorModal({
                 <input value={p.displayName} onChange={(e) => set("displayName", e.target.value)} className={inputCls} />
               </Field>
               <Field label="الرقم الضريبي">
-                <input value={p.taxNumber} onChange={(e) => set("taxNumber", e.target.value)} className={inputCls} dir="ltr" />
+                <input value={p.taxNumber} onChange={(e) => set("taxNumber", e.target.value)} className={inputCls} dir="ltr" placeholder="3XXXXXXXXXXXXX3" />
+                {(() => {
+                  const v = vatDigits(p.taxNumber);
+                  if (!v) return null;
+                  const check = validateSaudiVat(v);
+                  const dupe = (allParties ?? []).find(
+                    (x: any) => x.id !== initial?.id && vatDigits(x.taxNumber) === v,
+                  );
+                  return (
+                    <div className="mt-1 space-y-1 text-[11px]">
+                      {check.ok ? (
+                        <div className="text-emerald-700">✓ صيغة الرقم صحيحة (15 رقماً يبدأ وينتهي بـ3)</div>
+                      ) : (
+                        <div className="text-red-600">✗ {check.issues.join(" · ")}</div>
+                      )}
+                      {dupe && (
+                        <div className="text-amber-700">⚠ نفس الرقم مسجّل باسم «{dupe.name}» — تأكد أنه ليس تكراراً</div>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => { openZatcaLookup(v); toast.info("نُسخ الرقم — الصقه في حقل البحث بصفحة الهيئة"); }}
+                        className="text-[#0f2a1d] underline underline-offset-2 hover:opacity-70"
+                      >
+                        التحقق الرسمي من موقع هيئة الزكاة ↗ (يُنسخ الرقم تلقائياً)
+                      </button>
+                    </div>
+                  );
+                })()}
               </Field>
               <Field label="السجل التجاري">
                 <input value={p.commercialReg} onChange={(e) => set("commercialReg", e.target.value)} className={inputCls} dir="ltr" />

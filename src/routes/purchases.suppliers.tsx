@@ -24,6 +24,7 @@ function SuppliersPage() {
           partyLabel="مورد"
           initial={editing}
           autoCode={nextAutoCode(items, "code", "SUP")}
+          allParties={items}
           onSave={onSave}
           onClose={onClose}
         />

@@ -13,6 +13,7 @@ import { useOrg } from "@/lib/db/org";
 import { logClientEvent } from "@/lib/db/collections";
 import { uploadAttachmentAndWait } from "@/lib/db/attachments";
 import { toast } from "sonner";
+import { validateSaudiVat, vatDigits, openZatcaLookup } from "@/lib/haseem/vat";
 
 export const Route = createFileRoute("/purchases/scan")({
   head: () => ({ meta: [{ title: "مسح الفواتير بالذكاء الاصطناعي — كنار المحاسبية" }] }),
@@ -130,7 +131,7 @@ function ScanPage() {
     job: Job,
     payload: ReviewPayload,
     opts?: { quiet?: boolean; supplierCache?: Map<string, any> },
-  ): Promise<{ ok: boolean; billId?: string; reason?: "duplicate" | "error" }> => {
+  ): Promise<{ ok: boolean; billId?: string; reason?: "duplicate" | "error" | "vat-mismatch" }> => {
     const quiet = !!opts?.quiet;
     // Find or create supplier — must await the REAL DB record (the sync
     // add() returns an optimistic tmp_ stub that breaks the partyId link).
@@ -154,6 +155,18 @@ function ScanPage() {
       });
     }
     if (supplier && supplierKey) opts?.supplierCache?.set(supplierKey, supplier);
+    // Company verification: the VAT number on the invoice must match the one
+    // stored for this supplier. In bulk mode a mismatch is not auto-approved;
+    // in single mode the reviewer is warned and stays in control.
+    if (supplier && payload.supplierVatNumber) {
+      const stored = vatDigits(supplier.taxNumber);
+      const extracted = vatDigits(payload.supplierVatNumber);
+      if (stored && extracted && stored !== extracted) {
+        logClientEvent("scan-save", `vat mismatch supplier=${String(supplier.name).slice(0, 40)}`);
+        if (quiet) return { ok: false, reason: "vat-mismatch" };
+        toast.warning(`تنبيه: الرقم الضريبي في الفاتورة (${extracted}) يختلف عن المسجل للمورد «${supplier.name}» (${stored})`, { duration: 9000 });
+      }
+    }
     logClientEvent("scan-save", `attempt org=${currentOrgId ? "yes" : "MISSING"} lines=${payload.lines?.length ?? 0}${quiet ? " bulk" : ""}`);
     // Same invoice number already in the system? Skip it as a duplicate —
     // loudly with a jump-to link in single mode, silently in bulk mode.
@@ -255,6 +268,7 @@ function ScanPage() {
     let ok = 0;
     let dup = 0;
     let fail = 0;
+    let vatReview = 0;
     const supplierCache = new Map<string, any>();
     const seenRefs = new Set<string>();
     try {
@@ -278,6 +292,8 @@ function ScanPage() {
             if (r.invoiceNumber) seenRefs.add(r.invoiceNumber);
           } else if (res.reason === "duplicate") {
             dup++;
+          } else if (res.reason === "vat-mismatch") {
+            vatReview++;
           } else {
             fail++;
           }
@@ -287,13 +303,14 @@ function ScanPage() {
           logClientEvent("scan-bulk", `job threw: ${String((e as any)?.message ?? e ?? "").slice(0, 120)}`);
         }
       }
-      logClientEvent("scan-bulk", `done ok=${ok} dup=${dup} fail=${fail}`);
+      logClientEvent("scan-bulk", `done ok=${ok} dup=${dup} vat=${vatReview} fail=${fail}`);
       const parts = [
         ok ? `اعتُمدت ${ok} فاتورة ✓` : "",
         dup ? `تم تجاوز ${dup} مكررة` : "",
+        vatReview ? `${vatReview} بحاجة مراجعة يدوية (اختلاف الرقم الضريبي عن المورد المسجل)` : "",
         fail ? `تعذّر ${fail}` : "",
       ].filter(Boolean).join(" · ");
-      if (fail) toast.warning(parts, { duration: 8000 });
+      if (fail || vatReview) toast.warning(parts, { duration: 10000 });
       else toast.success(parts || "لا شيء للاعتماد", { duration: 8000 });
     } finally {
       setBulkSaving(false);
@@ -679,6 +696,41 @@ function ReviewModal({
                     onChange={(e) => setForm({ ...form, supplierVatNumber: e.target.value })}
                     className="border border-[#eceae2] rounded-lg px-3 py-2 w-full font-mono"
                   />
+                  {(() => {
+                    const v = vatDigits(form.supplierVatNumber);
+                    if (!v) return null;
+                    const check = validateSaudiVat(v);
+                    const storedVat = supplierMatch ? vatDigits(supplierMatch.taxNumber) : "";
+                    const mismatch = supplierMatch && storedVat && storedVat !== v;
+                    const sameVatOther = !supplierMatch
+                      ? suppliers.find((s: any) => vatDigits(s.taxNumber) === v && s.name?.trim() !== form.supplierName?.trim())
+                      : null;
+                    return (
+                      <div className="mt-1 space-y-1 text-[11px]">
+                        {check.ok
+                          ? <div className="text-emerald-700">✓ صيغة الرقم الضريبي صحيحة</div>
+                          : <div className="text-red-600">✗ {check.issues.join(" · ")}</div>}
+                        {mismatch && (
+                          <div className="text-red-600 font-semibold">
+                            ⚠ الرقم المستخرج من الفاتورة لا يطابق الرقم المسجل للمورد «{supplierMatch.name}» ({storedVat}) — راجع الفاتورة قبل الاعتماد
+                          </div>
+                        )}
+                        {supplierMatch && storedVat && !mismatch && (
+                          <div className="text-emerald-700">✓ مطابق للرقم المسجل للمورد «{supplierMatch.name}»</div>
+                        )}
+                        {sameVatOther && (
+                          <div className="text-amber-700">⚠ هذا الرقم مسجّل عندك باسم مورد آخر: «{sameVatOther.name}»</div>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => { openZatcaLookup(v); toast.info("نُسخ الرقم — الصقه في حقل البحث بصفحة الهيئة"); }}
+                          className="text-[#0f2a1d] underline underline-offset-2 hover:opacity-70"
+                        >
+                          التحقق الرسمي من موقع هيئة الزكاة ↗
+                        </button>
+                      </div>
+                    );
+                  })()}
                 </FormField>
                 <FormField label="رقم الفاتورة" extra={conf("invoiceNumber")}>
                   <input
