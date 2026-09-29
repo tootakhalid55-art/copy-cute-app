@@ -1,0 +1,32 @@
+name: Probe ZATCA lookup
+on:
+  workflow_dispatch: {}
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Inspect the taxpayer lookup page
+        run: |
+          UA="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126 Safari/537.36"
+          echo '== GET page =='
+          curl -sS -L -A "$UA" -o /tmp/page.html -w "code=%{http_code} size=%{size_download}\n" \
+            "https://zatca.gov.sa/ar/eServices/Pages/TaxpayerLookup.aspx" || true
+          echo '== Endpoint-looking strings in page =='
+          grep -oiE '(https?:)?//[^"'"'"' ]*(api|lookup|taxpayer|verify)[^"'"'"' ]*' /tmp/page.html | sort -u | head -30 || true
+          grep -oiE '"/[^" ]*(api|Lookup|Verify|Taxpayer)[^" ]*"' /tmp/page.html | sort -u | head -30 || true
+          echo '== fetch/ajax/xhr snippets =='
+          grep -oiE '.{60}(fetch\(|\$\.ajax|XMLHttpRequest|axios).{120}' /tmp/page.html | head -20 || true
+          echo '== form actions and inputs =='
+          grep -oiE '<form[^>]*action="[^"]*"' /tmp/page.html | head -5 || true
+          grep -oiE '<input[^>]*(id|name)="[^"]*"' /tmp/page.html | grep -iE 'vat|tin|cr|captcha|search' | head -20 || true
+          echo '== custom script srcs =='
+          grep -oiE '<script[^>]*src="[^"]*"' /tmp/page.html | grep -viE 'jquery|bootstrap|core\.js|init\.js|sp\.js' | head -20 || true
+          echo '== iframes =='
+          grep -oiE '<iframe[^>]*src="[^"]*"' /tmp/page.html | head -5 || true
+          echo '== fetch candidate custom scripts =='
+          for u in $(grep -oiE '<script[^>]*src="[^"]*"' /tmp/page.html | grep -oE 'src="[^"]*"' | cut -d'"' -f2 | grep -viE 'jquery|bootstrap|_layouts/15/(sp|core|init|blank|clientrenderer|ScriptResx)' | head -6); do
+            case "$u" in http*) full="$u";; //*) full="https:$u";; /*) full="https://zatca.gov.sa$u";; *) full="https://zatca.gov.sa/$u";; esac
+            echo "---- $full"
+            curl -sS -L -A "$UA" --max-time 30 "$full" -o /tmp/s.js || continue
+            grep -oiE '.{40}(api|Lookup|Taxpayer|Verify)[^"'"'"']{0,80}' /tmp/s.js | head -10 || true
+          done
