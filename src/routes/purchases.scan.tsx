@@ -124,16 +124,24 @@ function ScanPage() {
   const reviewJob = jobs.find((j) => j.id === reviewId) || null;
 
   // Shared save routine — used by the review modal and the bulk
-  // high-confidence approve button. Returns ok=false (with toasts already
-  // shown) instead of throwing.
+  // high-confidence approve button. Returns {ok:false, reason} instead of
+  // throwing; in quiet mode duplicates are skipped without error toasts.
   const saveScannedInvoice = async (
     job: Job,
     payload: ReviewPayload,
-  ): Promise<{ ok: boolean; billId?: string }> => {
+    opts?: { quiet?: boolean; supplierCache?: Map<string, any> },
+  ): Promise<{ ok: boolean; billId?: string; reason?: "duplicate" | "error" }> => {
+    const quiet = !!opts?.quiet;
     // Find or create supplier — must await the REAL DB record (the sync
     // add() returns an optimistic tmp_ stub that breaks the partyId link).
-    let supplier = suppliers.find((s: any) => s.name?.trim() === payload.supplierName?.trim());
-    if (!supplier && payload.createSupplier) {
+    // The cache covers a bulk run where several invoices share a supplier
+    // that was just created: the render-time `suppliers` list is stale
+    // during the loop and would create the same supplier again.
+    const supplierKey = String(payload.supplierName ?? "").trim();
+    let supplier =
+      opts?.supplierCache?.get(supplierKey) ??
+      suppliers.find((s: any) => s.name?.trim() === supplierKey);
+    if (!supplier && payload.createSupplier && supplierKey) {
       supplier = await addSupplierAsync({
         name: payload.supplierName,
         taxNumber: payload.supplierVatNumber,
@@ -145,19 +153,22 @@ function ScanPage() {
         type: "company",
       });
     }
-    logClientEvent("scan-save", `attempt org=${currentOrgId ? "yes" : "MISSING"} lines=${payload.lines?.length ?? 0}`);
-    // Same invoice number already in the system? Say so up front with a
-    // jump-to link instead of letting the DB unique constraint fail.
+    if (supplier && supplierKey) opts?.supplierCache?.set(supplierKey, supplier);
+    logClientEvent("scan-save", `attempt org=${currentOrgId ? "yes" : "MISSING"} lines=${payload.lines?.length ?? 0}${quiet ? " bulk" : ""}`);
+    // Same invoice number already in the system? Skip it as a duplicate —
+    // loudly with a jump-to link in single mode, silently in bulk mode.
     if (payload.invoiceNumber) {
       const dup = bills.find((b: any) => b.ref === payload.invoiceNumber || b.supplierRef === payload.invoiceNumber);
       if (dup) {
         logClientEvent("scan-save", `duplicate pre-check hit ref=${payload.invoiceNumber}`);
-        toast.error(`فاتورة برقم "${payload.invoiceNumber}" محفوظة مسبقاً — لا يمكن حفظها مرتين`, {
-          duration: 8000,
-          action: { label: "فتح الفاتورة المحفوظة", onClick: () => navigate({ to: "/purchases/bills/$id", params: { id: dup.id } }) },
-        });
+        if (!quiet) {
+          toast.error(`فاتورة برقم "${payload.invoiceNumber}" محفوظة مسبقاً — لا يمكن حفظها مرتين`, {
+            duration: 8000,
+            action: { label: "فتح الفاتورة المحفوظة", onClick: () => navigate({ to: "/purchases/bills/$id", params: { id: dup.id } }) },
+          });
+        }
         updateJob(job.id, { status: "duplicate", duplicateOf: dup.id });
-        return { ok: false };
+        return { ok: false, reason: "duplicate" };
       }
     }
     let bill: any;
@@ -183,17 +194,22 @@ function ScanPage() {
     } catch (e) {
       const msg = String((e as any)?.message ?? e ?? "");
       logClientEvent("scan-save", `failed: ${msg.slice(0, 140)}`);
-      if (/duplicate key.*doc_number|documents_org_id_kind_doc_number/i.test(msg)) {
+      const isDup = /duplicate key.*doc_number|documents_org_id_kind_doc_number/i.test(msg);
+      if (isDup) {
         const dupRef = payload.invoiceNumber || "";
         const existingBill = bills.find((b: any) => b.ref === dupRef || b.supplierRef === dupRef);
-        toast.error(`فاتورة برقم "${dupRef}" محفوظة مسبقاً — لا يمكن حفظها مرتين`, {
-          duration: 8000,
-          ...(existingBill
-            ? { action: { label: "فتح الفاتورة المحفوظة", onClick: () => navigate({ to: "/purchases/bills/$id", params: { id: existingBill.id } }) } }
-            : {}),
-        });
+        updateJob(job.id, { status: "duplicate", duplicateOf: existingBill?.id });
+        if (!quiet) {
+          toast.error(`فاتورة برقم "${dupRef}" محفوظة مسبقاً — لا يمكن حفظها مرتين`, {
+            duration: 8000,
+            ...(existingBill
+              ? { action: { label: "فتح الفاتورة المحفوظة", onClick: () => navigate({ to: "/purchases/bills/$id", params: { id: existingBill.id } }) } }
+              : {}),
+          });
+        }
+        return { ok: false, reason: "duplicate" };
       }
-      return { ok: false };
+      return { ok: false, reason: "error" };
     }
     logClientEvent("scan-save", `success id=${bill?.id ?? "?"}`);
 
@@ -225,7 +241,8 @@ function ScanPage() {
   };
 
   // Bulk approve: every reviewed-and-waiting invoice whose extraction
-  // confidence is high gets saved & posted in one click.
+  // confidence is high gets saved & posted in one click. Duplicates are
+  // skipped quietly, and one invoice failing never stops the rest.
   const HIGH_CONFIDENCE = 85;
   const highConfJobs = jobs.filter(
     (j) => j.status === "review" && j.result && averageConfidence(j.result) >= HIGH_CONFIDENCE,
@@ -233,20 +250,51 @@ function ScanPage() {
   const [bulkSaving, setBulkSaving] = useState(false);
   const approveHighConfidence = async () => {
     if (bulkSaving || !highConfJobs.length) return;
-    if (!confirm(`سيتم حفظ واعتماد ${highConfJobs.length} فاتورة نسبة الثقة فيها ${HIGH_CONFIDENCE}% فأكثر.\nمتابعة؟`)) return;
+    if (!confirm(`سيتم حفظ واعتماد ${highConfJobs.length} فاتورة نسبة الثقة فيها ${HIGH_CONFIDENCE}% فأكثر.\nالفواتير المكررة سيتم تجاوزها تلقائياً. متابعة؟`)) return;
     setBulkSaving(true);
     let ok = 0;
+    let dup = 0;
     let fail = 0;
+    const supplierCache = new Map<string, any>();
+    const seenRefs = new Set<string>();
     try {
       for (const job of highConfJobs) {
         const r = job.result!;
-        const res = await saveScannedInvoice(job, { ...r, createSupplier: true, finalStatus: "مؤكد" });
-        if (res.ok) ok++;
-        else fail++;
+        try {
+          // Two invoices with the same number inside the SAME batch: the
+          // second is a duplicate of the first — skip before hitting the DB.
+          if (r.invoiceNumber && seenRefs.has(r.invoiceNumber)) {
+            updateJob(job.id, { status: "duplicate" });
+            dup++;
+            continue;
+          }
+          const res = await saveScannedInvoice(
+            job,
+            { ...r, createSupplier: true, finalStatus: "مؤكد" },
+            { quiet: true, supplierCache },
+          );
+          if (res.ok) {
+            ok++;
+            if (r.invoiceNumber) seenRefs.add(r.invoiceNumber);
+          } else if (res.reason === "duplicate") {
+            dup++;
+          } else {
+            fail++;
+          }
+        } catch (e) {
+          // One bad invoice must never abort the rest of the batch.
+          fail++;
+          logClientEvent("scan-bulk", `job threw: ${String((e as any)?.message ?? e ?? "").slice(0, 120)}`);
+        }
       }
-      logClientEvent("scan-bulk", `done ok=${ok} fail=${fail}`);
-      if (fail) toast.warning(`الاعتماد الجماعي: نجح ${ok} · تعذّر ${fail} (تفاصيل كل حالة أعلاه)`);
-      else toast.success(`تم حفظ واعتماد ${ok} فاتورة بنجاح ✓`);
+      logClientEvent("scan-bulk", `done ok=${ok} dup=${dup} fail=${fail}`);
+      const parts = [
+        ok ? `اعتُمدت ${ok} فاتورة ✓` : "",
+        dup ? `تم تجاوز ${dup} مكررة` : "",
+        fail ? `تعذّر ${fail}` : "",
+      ].filter(Boolean).join(" · ");
+      if (fail) toast.warning(parts, { duration: 8000 });
+      else toast.success(parts || "لا شيء للاعتماد", { duration: 8000 });
     } finally {
       setBulkSaving(false);
     }
