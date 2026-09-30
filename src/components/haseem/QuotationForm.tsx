@@ -111,11 +111,32 @@ export function QuotationForm({ docId }: { docId?: string }) {
   const [lines, setLines] = useState<Line[]>(
     existing?.lines ?? [{ description: "", qty: 1, price: 0, tax: 15 }]
   );
-  // Bank accounts shown on ALL quotations (org-level setting, editable here).
-  const [bankAccounts, setBankAccounts] = useKV<{ bankName: string; accountName: string; iban: string; accountNumber: string }[]>(
+  // Bank accounts live in org settings (الإعدادات ← إعدادات المنشأة); here
+  // the user picks which of them attach to THIS quotation (all by default)
+  // and can quick-add a new account without leaving the form.
+  const [bankAccounts, setBankAccounts] = useKV<{ id: string; bankName: string; accountName: string; iban: string; accountNumber: string }[]>(
     "bank-accounts",
     [],
   );
+  useEffect(() => {
+    if (bankAccounts.length && bankAccounts.some((a) => !a.id)) {
+      setBankAccounts(bankAccounts.map((a) => (a.id ? a : { ...a, id: crypto.randomUUID() })));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [bankAccounts.length]);
+  // null = "all accounts" (the default for new quotes and old saved quotes).
+  const [bankAccountIds, setBankAccountIds] = useState<string[] | null>(existing?.bankAccountIds ?? null);
+  const selectedBankAccounts = useMemo(
+    () => (bankAccountIds === null ? bankAccounts : bankAccounts.filter((a) => bankAccountIds.includes(a.id))),
+    [bankAccounts, bankAccountIds],
+  );
+  const toggleBankAccount = (id: string) => {
+    setBankAccountIds((cur) => {
+      const base = cur === null ? bankAccounts.map((a) => a.id) : cur;
+      return base.includes(id) ? base.filter((x) => x !== id) : [...base, id];
+    });
+  };
+  const [quickBank, setQuickBank] = useState<null | { bankName: string; accountName: string; iban: string }>(null);
   const [partyModalOpen, setPartyModalOpen] = useState(false);
   const [previewFull, setPreviewFull] = useState(false);
   const [previewHidden, setPreviewHidden] = useState(false);
@@ -133,6 +154,7 @@ export function QuotationForm({ docId }: { docId?: string }) {
             ? [{ title: "الأحكام", text: existing.terms }]
             : DEFAULT_TERMS_SECTIONS,
       );
+      setBankAccountIds(existing.bankAccountIds ?? null);
       setPartyId(existing.partyId ?? "");
       setNotes(existing.notes ?? "");
       setLines(existing.lines ?? [{ description: "", qty: 1, price: 0, tax: 15 }]);
@@ -241,6 +263,7 @@ export function QuotationForm({ docId }: { docId?: string }) {
     setSaving(true);
     const payload: any = {
       ref, date, expiry, dueDate: expiry, partyId, intro, termsSections,
+      bankAccountIds: selectedBankAccounts.map((a) => a.id),
       partyName: party?.name ?? "—",
       notes, lines, subtotal, tax, total,
       poNumber, reference, project, currency, priceMode, optCols,
@@ -298,7 +321,7 @@ export function QuotationForm({ docId }: { docId?: string }) {
         discAmt, shipAmt,
         notes,
         termsSections,
-        bankAccounts,
+        bankAccounts: selectedBankAccounts,
         intro,
         partyRole: "العميل",
         currency: CUR,
@@ -325,7 +348,7 @@ export function QuotationForm({ docId }: { docId?: string }) {
         shipAmt: 0,
         notes,
         termsSections,
-        bankAccounts,
+        bankAccounts: selectedBankAccounts,
         intro,
         partyRole: "العميل",
         currency: CUR,
@@ -587,62 +610,77 @@ export function QuotationForm({ docId }: { docId?: string }) {
               </div>
             </div>
             <div className="mt-4">
-              <div className="flex items-center justify-between mb-1">
-                <span className="text-xs text-[#0f2a1d]/70">الحسابات البنكية — تظهر تلقائياً في جميع عروض الأسعار</span>
-                <button
-                  type="button"
-                  onClick={() => setBankAccounts((bs) => [...bs, { bankName: "", accountName: "", iban: "", accountNumber: "" }])}
-                  className="text-xs px-2 py-1 rounded border border-[#eceae2] hover:bg-[#f7f6f0] inline-flex items-center gap-1"
-                >
-                  <Plus className="w-3 h-3" /> إضافة حساب بنكي
-                </button>
+              <div className="flex items-center justify-between mb-1 flex-wrap gap-2">
+                <span className="text-xs text-[#0f2a1d]/70">الحسابات البنكية المرفقة في هذا العرض</span>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setQuickBank({ bankName: "", accountName: "", iban: "" })}
+                    className="text-xs px-2 py-1 rounded border border-[#eceae2] hover:bg-[#f7f6f0] inline-flex items-center gap-1"
+                  >
+                    <Plus className="w-3 h-3" /> إضافة حساب جديد
+                  </button>
+                  <a href="/settings/organization" className="text-[11px] text-[#0f2a1d]/60 underline underline-offset-2 hover:text-[#0f2a1d]">
+                    إدارة الحسابات ↗
+                  </a>
+                </div>
               </div>
               {bankAccounts.length === 0 ? (
                 <div className="text-[11px] text-[#0f2a1d]/50 border border-dashed border-[#eceae2] rounded-lg p-3 text-center">
-                  لا توجد حسابات بنكية بعد — أضف حساباً وسيظهر في كل العروض تلقائياً.
+                  لا توجد حسابات بنكية — أضف حساباً من هنا أو من إعدادات المنشأة.
                 </div>
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  {bankAccounts.map((b, i) => (
-                    <div key={i} className="border border-[#eceae2] rounded-lg p-2 space-y-2 bg-[#fafaf7]">
-                      <div className="flex items-center gap-1">
-                        <input
-                          value={b.bankName}
-                          onChange={(e) => setBankAccounts((bs) => bs.map((x, j) => (j === i ? { ...x, bankName: e.target.value } : x)))}
-                          placeholder="اسم البنك *"
-                          className="border border-[#eceae2] rounded px-2 py-1.5 text-sm font-semibold flex-1 bg-white"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => setBankAccounts((bs) => bs.filter((_, j) => j !== i))}
-                          className="p-1.5 rounded text-red-500 hover:bg-red-50"
-                          title="حذف الحساب"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-                      <input
-                        value={b.accountName}
-                        onChange={(e) => setBankAccounts((bs) => bs.map((x, j) => (j === i ? { ...x, accountName: e.target.value } : x)))}
-                        placeholder="اسم صاحب الحساب"
-                        className="border border-[#eceae2] rounded px-2 py-1.5 text-sm w-full bg-white"
-                      />
-                      <input
-                        value={b.iban}
-                        onChange={(e) => setBankAccounts((bs) => bs.map((x, j) => (j === i ? { ...x, iban: e.target.value } : x)))}
-                        placeholder="IBAN — SAxxxxxxxxxxxxxxxxxxxxxx"
-                        dir="ltr"
-                        className="border border-[#eceae2] rounded px-2 py-1.5 text-sm w-full bg-white font-mono"
-                      />
-                      <input
-                        value={b.accountNumber}
-                        onChange={(e) => setBankAccounts((bs) => bs.map((x, j) => (j === i ? { ...x, accountNumber: e.target.value } : x)))}
-                        placeholder="رقم الحساب (اختياري)"
-                        dir="ltr"
-                        className="border border-[#eceae2] rounded px-2 py-1.5 text-sm w-full bg-white font-mono"
-                      />
-                    </div>
-                  ))}
+                <div className="flex flex-wrap gap-2">
+                  {bankAccounts.map((b) => {
+                    const checked = bankAccountIds === null || bankAccountIds.includes(b.id);
+                    return (
+                      <label
+                        key={b.id}
+                        className={`flex items-center gap-2 border rounded-lg px-3 py-2 text-sm cursor-pointer ${checked ? "border-[#0f2a1d] bg-[#f2f0e8]" : "border-[#eceae2] bg-white"}`}
+                      >
+                        <input type="checkbox" checked={checked} onChange={() => toggleBankAccount(b.id)} />
+                        <span className="font-semibold">{b.bankName || "بدون اسم"}</span>
+                        {b.iban && <span className="text-[10px] text-[#0f2a1d]/50 font-mono" dir="ltr">…{b.iban.slice(-6)}</span>}
+                      </label>
+                    );
+                  })}
+                </div>
+              )}
+              {quickBank && (
+                <div className="mt-2 border border-[#eceae2] rounded-lg p-3 bg-[#fafaf7] grid grid-cols-1 md:grid-cols-4 gap-2 items-end">
+                  <input
+                    value={quickBank.bankName}
+                    onChange={(e) => setQuickBank({ ...quickBank, bankName: e.target.value })}
+                    placeholder="اسم البنك *"
+                    className="border border-[#eceae2] rounded px-2 py-1.5 text-sm bg-white"
+                  />
+                  <input
+                    value={quickBank.accountName}
+                    onChange={(e) => setQuickBank({ ...quickBank, accountName: e.target.value })}
+                    placeholder="اسم صاحب الحساب"
+                    className="border border-[#eceae2] rounded px-2 py-1.5 text-sm bg-white"
+                  />
+                  <input
+                    value={quickBank.iban}
+                    onChange={(e) => setQuickBank({ ...quickBank, iban: e.target.value })}
+                    placeholder="IBAN"
+                    dir="ltr"
+                    className="border border-[#eceae2] rounded px-2 py-1.5 text-sm bg-white font-mono"
+                  />
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      disabled={!quickBank.bankName.trim()}
+                      onClick={() => {
+                        const acc = { id: crypto.randomUUID(), bankName: quickBank.bankName.trim(), accountName: quickBank.accountName.trim(), iban: quickBank.iban.trim(), accountNumber: "" };
+                        setBankAccounts((bs) => [...bs, acc]);
+                        setBankAccountIds((cur) => (cur === null ? null : [...cur, acc.id]));
+                        setQuickBank(null);
+                      }}
+                      className="text-xs px-3 py-1.5 rounded bg-[#0f2a1d] text-white disabled:opacity-50"
+                    >حفظ الحساب</button>
+                    <button type="button" onClick={() => setQuickBank(null)} className="text-xs px-3 py-1.5 rounded border border-[#eceae2]">إلغاء</button>
+                  </div>
                 </div>
               )}
             </div>
@@ -858,7 +896,7 @@ export function QuotationForm({ docId }: { docId?: string }) {
                 tax={tax}
                 total={total}
                 notes={notes}
-                termsSections={termsSections} bankAccounts={bankAccounts}
+                termsSections={termsSections} bankAccounts={selectedBankAccounts}
                 intro={intro}
                 currency={CUR}
                 structure={structure}
@@ -936,7 +974,7 @@ export function QuotationForm({ docId }: { docId?: string }) {
               <QuotationPreview
                 tpl={tpl} org={org} party={party} ref_={ref} date={date} dueDate={expiry}
                 lines={lines} lineCalcs={lineCalcs} subtotal={subtotal} tax={tax}
-                total={total} notes={notes} termsSections={termsSections} bankAccounts={bankAccounts} intro={intro} currency={CUR} structure={structure} verify={verify}
+                total={total} notes={notes} termsSections={termsSections} bankAccounts={selectedBankAccounts} intro={intro} currency={CUR} structure={structure} verify={verify}
               />
             </div>
           </div>

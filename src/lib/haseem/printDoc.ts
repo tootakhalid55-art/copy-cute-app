@@ -321,24 +321,35 @@ export function buildDocHtml(d: PrintDocData): string {
       </div>`
     : "";
 
-  // Bank accounts block (quotations): org-level details auto-printed on
-  // every quotation so the customer always has where to pay.
+  // Bank accounts (quotations): org-level details auto-printed on every
+  // quotation. Layout swap: the bank accounts occupy the notes cell (next to
+  // the totals), and the notes move to a full-width box below the terms.
   const bankAccounts = (Array.isArray(d.bankAccounts) ? d.bankAccounts : []).filter(
     (b: any) => String(b?.bankName ?? "").trim() || String(b?.iban ?? "").trim(),
   );
-  const bankAccountsHtml = isQuotation && bankAccounts.length
+  const swapNotesWithBanks = isQuotation && bankAccounts.length > 0;
+  const bankRowsHtml = bankAccounts.map((b, i) => `
+    <div style="${i > 0 ? `border-inline-start:1px dashed ${line};padding-inline-start:12px;` : ""}min-width:0;font-size:10.5px;line-height:1.8">
+      <div style="font-weight:800;color:${accent}">${esc(b.bankName || "—")}</div>
+      ${b.accountName ? `<div style="color:${ink}">${esc(b.accountName)}</div>` : ""}
+      ${b.iban ? `<div style="direction:ltr;text-align:end;font-family:ui-monospace,monospace;font-size:10px;color:${ink};word-break:break-all"><span style="color:${muted}">IBAN </span>${esc(b.iban)}</div>` : ""}
+      ${b.accountNumber ? `<div style="direction:ltr;text-align:end;font-family:ui-monospace,monospace;font-size:10px;color:${ink}"><span style="color:${muted}">A/C </span>${esc(b.accountNumber)}</div>` : ""}
+    </div>`).join("");
+  const bankMiddleHtml = `
+    <div style="font-weight:700;color:${accent};font-size:10px;letter-spacing:.06em;text-transform:uppercase;margin-bottom:6px">الحسابات البنكية · Bank Details</div>
+    <div style="display:grid;grid-template-columns:repeat(${Math.min(Math.max(bankAccounts.length, 1), 2)},1fr);gap:8px 14px">${bankRowsHtml}</div>`;
+  const notesInnerHtml = d.notes
+    ? `<div style="font-weight:700;color:${accent};font-size:10px;letter-spacing:.06em;text-transform:uppercase;margin-bottom:6px">ملاحظات · Notes</div>${esc(d.notes).replace(/\n/g, "<br/>")}`
+    : `<span style="color:#b7bdb2">لا توجد ملاحظات</span>`;
+  // The cell that sits beside the totals table:
+  const middleCellHtml = swapNotesWithBanks ? bankMiddleHtml : notesInnerHtml;
+  const middleCellHtmlMin = swapNotesWithBanks ? bankMiddleHtml : (d.notes ? notesInnerHtml : "");
+  // The full-width block below the terms: notes (when banks took their cell).
+  const bankAccountsHtml = swapNotesWithBanks && d.notes
     ? `<div style="padding:0 32px 22px">
-        <div style="border:1px solid ${line};border-radius:12px;padding:14px 18px;background:#fff">
-          <div style="font-size:9.5px;color:${muted};font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-bottom:10px">الحسابات البنكية · Bank Details</div>
-          <div style="display:grid;grid-template-columns:repeat(${Math.min(bankAccounts.length, 3)},1fr);gap:0 14px">
-            ${bankAccounts.map((b, i) => `
-              <div style="${i > 0 ? `border-inline-start:1px dashed ${line};padding-inline-start:14px;` : ""}min-width:0;font-size:11px;line-height:1.9">
-                <div style="font-weight:800;color:${accent}">${esc(b.bankName || "—")}</div>
-                ${b.accountName ? `<div style="color:${ink}">${esc(b.accountName)}</div>` : ""}
-                ${b.iban ? `<div style="direction:ltr;text-align:end;font-family:ui-monospace,monospace;font-size:10.5px;color:${ink};word-break:break-all"><span style="color:${muted}">IBAN </span>${esc(b.iban)}</div>` : ""}
-                ${b.accountNumber ? `<div style="direction:ltr;text-align:end;font-family:ui-monospace,monospace;font-size:10.5px;color:${ink}"><span style="color:${muted}">A/C </span>${esc(b.accountNumber)}</div>` : ""}
-              </div>`).join("")}
-          </div>
+        <div style="border:1px solid ${line};border-radius:12px;padding:14px 18px;background:${soft};font-size:11px;color:${ink};line-height:1.9">
+          <div style="font-size:9.5px;color:${muted};font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-bottom:6px">ملاحظات · Notes</div>
+          ${esc(d.notes).replace(/\n/g, "<br/>")}
         </div>
       </div>`
     : "";
@@ -482,7 +493,7 @@ export function buildDocHtml(d: PrintDocData): string {
     <div class="avoid-break" style="padding:0 32px 22px;display:grid;grid-template-columns:${notesGridCols};gap:18px;align-items:start">
       ${sideCellHtml}
       <div style="font-size:11px;color:${muted};padding:14px 16px;background:${soft};border-radius:12px;border-inline-start:3px solid ${accent};line-height:1.7;min-height:90px">
-        ${d.notes ? `<div style="font-weight:700;color:${accent};font-size:10px;letter-spacing:.06em;text-transform:uppercase;margin-bottom:6px">ملاحظات · Notes</div>${esc(d.notes).replace(/\n/g, "<br/>")}` : `<span style="color:#b7bdb2">لا توجد ملاحظات</span>`}
+        ${middleCellHtml}
       </div>
       ${totalsBlock}
     </div>
@@ -524,7 +535,7 @@ export function buildDocHtml(d: PrintDocData): string {
     <div class="avoid-break" style="padding:0 32px 22px;display:grid;grid-template-columns:${notesGridCols};gap:18px;align-items:start">
       ${sideCellHtml}
       <div style="font-size:11px;color:${muted};padding:14px 0;border-top:1px solid ${line};line-height:1.7;min-height:90px">
-        ${d.notes ? `<div style="font-weight:700;color:${accent};font-size:10px;letter-spacing:.06em;text-transform:uppercase;margin-bottom:6px">ملاحظات · Notes</div>${esc(d.notes).replace(/\n/g, "<br/>")}` : `<span style="color:#b7bdb2">لا توجد ملاحظات</span>`}
+        ${middleCellHtml}
       </div>
       ${totalsBlock}
     </div>
@@ -559,7 +570,7 @@ export function buildDocHtml(d: PrintDocData): string {
     ${extrasHtml.replace(/padding:0 32px 22px/g, "padding:0 8px 20px")}
     <div class="avoid-break" style="padding:8px 8px 20px;display:grid;grid-template-columns:1fr 240px;gap:24px;align-items:start">
       <div style="font-size:11px;color:${muted};line-height:1.7">
-        ${d.notes ? `<div style="font-weight:700;color:${accent};font-size:10px;letter-spacing:.06em;text-transform:uppercase;margin-bottom:6px">ملاحظات</div>${esc(d.notes).replace(/\n/g, "<br/>")}` : ""}
+        ${middleCellHtmlMin}
         ${qrBlock ? `<div style="margin-top:14px">${qrBlock}</div>` : ""}
       </div>
       <div>
@@ -607,7 +618,7 @@ export function buildDocHtml(d: PrintDocData): string {
     <div class="avoid-break" style="padding:0 32px 20px;display:grid;grid-template-columns:${notesGridCols};gap:18px;align-items:start">
       ${sideCellHtml}
       <div style="font-size:11px;color:${muted};border:1px solid ${line};padding:14px 16px;line-height:1.7;min-height:90px">
-        ${d.notes ? `<div style="font-weight:700;color:${accent};font-size:10px;letter-spacing:.06em;text-transform:uppercase;margin-bottom:6px">ملاحظات</div>${esc(d.notes).replace(/\n/g, "<br/>")}` : `<span style="color:#b7bdb2">لا توجد ملاحظات</span>`}
+        ${middleCellHtml}
       </div>
       <div style="border:1px solid ${line}">${totalsBlock.replace(/border:1px solid[^;]+;border-radius:12px;overflow:hidden/, "border:0")}</div>
     </div>
