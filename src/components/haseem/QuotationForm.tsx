@@ -111,6 +111,11 @@ export function QuotationForm({ docId }: { docId?: string }) {
   const [lines, setLines] = useState<Line[]>(
     existing?.lines ?? [{ description: "", qty: 1, price: 0, tax: 15 }]
   );
+  // Bank accounts shown on ALL quotations (org-level setting, editable here).
+  const [bankAccounts, setBankAccounts] = useKV<{ bankName: string; accountName: string; iban: string; accountNumber: string }[]>(
+    "bank-accounts",
+    [],
+  );
   const [partyModalOpen, setPartyModalOpen] = useState(false);
   const [previewFull, setPreviewFull] = useState(false);
   const [previewHidden, setPreviewHidden] = useState(false);
@@ -293,6 +298,7 @@ export function QuotationForm({ docId }: { docId?: string }) {
         discAmt, shipAmt,
         notes,
         termsSections,
+        bankAccounts,
         intro,
         partyRole: "العميل",
         currency: CUR,
@@ -319,6 +325,7 @@ export function QuotationForm({ docId }: { docId?: string }) {
         shipAmt: 0,
         notes,
         termsSections,
+        bankAccounts,
         intro,
         partyRole: "العميل",
         currency: CUR,
@@ -579,6 +586,66 @@ export function QuotationForm({ docId }: { docId?: string }) {
                 ))}
               </div>
             </div>
+            <div className="mt-4">
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-xs text-[#0f2a1d]/70">الحسابات البنكية — تظهر تلقائياً في جميع عروض الأسعار</span>
+                <button
+                  type="button"
+                  onClick={() => setBankAccounts((bs) => [...bs, { bankName: "", accountName: "", iban: "", accountNumber: "" }])}
+                  className="text-xs px-2 py-1 rounded border border-[#eceae2] hover:bg-[#f7f6f0] inline-flex items-center gap-1"
+                >
+                  <Plus className="w-3 h-3" /> إضافة حساب بنكي
+                </button>
+              </div>
+              {bankAccounts.length === 0 ? (
+                <div className="text-[11px] text-[#0f2a1d]/50 border border-dashed border-[#eceae2] rounded-lg p-3 text-center">
+                  لا توجد حسابات بنكية بعد — أضف حساباً وسيظهر في كل العروض تلقائياً.
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {bankAccounts.map((b, i) => (
+                    <div key={i} className="border border-[#eceae2] rounded-lg p-2 space-y-2 bg-[#fafaf7]">
+                      <div className="flex items-center gap-1">
+                        <input
+                          value={b.bankName}
+                          onChange={(e) => setBankAccounts((bs) => bs.map((x, j) => (j === i ? { ...x, bankName: e.target.value } : x)))}
+                          placeholder="اسم البنك *"
+                          className="border border-[#eceae2] rounded px-2 py-1.5 text-sm font-semibold flex-1 bg-white"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setBankAccounts((bs) => bs.filter((_, j) => j !== i))}
+                          className="p-1.5 rounded text-red-500 hover:bg-red-50"
+                          title="حذف الحساب"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                      <input
+                        value={b.accountName}
+                        onChange={(e) => setBankAccounts((bs) => bs.map((x, j) => (j === i ? { ...x, accountName: e.target.value } : x)))}
+                        placeholder="اسم صاحب الحساب"
+                        className="border border-[#eceae2] rounded px-2 py-1.5 text-sm w-full bg-white"
+                      />
+                      <input
+                        value={b.iban}
+                        onChange={(e) => setBankAccounts((bs) => bs.map((x, j) => (j === i ? { ...x, iban: e.target.value } : x)))}
+                        placeholder="IBAN — SAxxxxxxxxxxxxxxxxxxxxxx"
+                        dir="ltr"
+                        className="border border-[#eceae2] rounded px-2 py-1.5 text-sm w-full bg-white font-mono"
+                      />
+                      <input
+                        value={b.accountNumber}
+                        onChange={(e) => setBankAccounts((bs) => bs.map((x, j) => (j === i ? { ...x, accountNumber: e.target.value } : x)))}
+                        placeholder="رقم الحساب (اختياري)"
+                        dir="ltr"
+                        className="border border-[#eceae2] rounded px-2 py-1.5 text-sm w-full bg-white font-mono"
+                      />
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Items */}
@@ -791,7 +858,7 @@ export function QuotationForm({ docId }: { docId?: string }) {
                 tax={tax}
                 total={total}
                 notes={notes}
-                termsSections={termsSections}
+                termsSections={termsSections} bankAccounts={bankAccounts}
                 intro={intro}
                 currency={CUR}
                 structure={structure}
@@ -869,7 +936,7 @@ export function QuotationForm({ docId }: { docId?: string }) {
               <QuotationPreview
                 tpl={tpl} org={org} party={party} ref_={ref} date={date} dueDate={expiry}
                 lines={lines} lineCalcs={lineCalcs} subtotal={subtotal} tax={tax}
-                total={total} notes={notes} termsSections={termsSections} intro={intro} currency={CUR} structure={structure} verify={verify}
+                total={total} notes={notes} termsSections={termsSections} bankAccounts={bankAccounts} intro={intro} currency={CUR} structure={structure} verify={verify}
               />
             </div>
           </div>

@@ -65,6 +65,8 @@ export type PrintDocData = {
   /** Column-based terms & conditions (quotations): payment method, time
    *  period, conditions, plus any custom columns. */
   termsSections?: { title: string; text: string }[];
+  /** Bank accounts printed on quotations (org-level, auto-filled). */
+  bankAccounts?: { bankName: string; accountName?: string; iban?: string; accountNumber?: string }[];
   /** Free-text introduction shown above the items table (quotations). */
   intro?: string;
   reason?: string;
@@ -319,6 +321,28 @@ export function buildDocHtml(d: PrintDocData): string {
       </div>`
     : "";
 
+  // Bank accounts block (quotations): org-level details auto-printed on
+  // every quotation so the customer always has where to pay.
+  const bankAccounts = (Array.isArray(d.bankAccounts) ? d.bankAccounts : []).filter(
+    (b: any) => String(b?.bankName ?? "").trim() || String(b?.iban ?? "").trim(),
+  );
+  const bankAccountsHtml = isQuotation && bankAccounts.length
+    ? `<div style="padding:0 32px 22px">
+        <div style="border:1px solid ${line};border-radius:12px;padding:14px 18px;background:#fff">
+          <div style="font-size:9.5px;color:${muted};font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-bottom:10px">الحسابات البنكية · Bank Details</div>
+          <div style="display:grid;grid-template-columns:repeat(${Math.min(bankAccounts.length, 3)},1fr);gap:0 14px">
+            ${bankAccounts.map((b, i) => `
+              <div style="${i > 0 ? `border-inline-start:1px dashed ${line};padding-inline-start:14px;` : ""}min-width:0;font-size:11px;line-height:1.9">
+                <div style="font-weight:800;color:${accent}">${esc(b.bankName || "—")}</div>
+                ${b.accountName ? `<div style="color:${ink}">${esc(b.accountName)}</div>` : ""}
+                ${b.iban ? `<div style="direction:ltr;text-align:end;font-family:ui-monospace,monospace;font-size:10.5px;color:${ink};word-break:break-all"><span style="color:${muted}">IBAN </span>${esc(b.iban)}</div>` : ""}
+                ${b.accountNumber ? `<div style="direction:ltr;text-align:end;font-family:ui-monospace,monospace;font-size:10.5px;color:${ink}"><span style="color:${muted}">A/C </span>${esc(b.accountNumber)}</div>` : ""}
+              </div>`).join("")}
+          </div>
+        </div>
+      </div>`
+    : "";
+
   const contractingHtml = isContracting ? (() => {
     const pb = d.progressBilling!;
     const row = (label: string, value: string, opts?: { strong?: boolean; negative?: boolean }) => `
@@ -463,6 +487,7 @@ export function buildDocHtml(d: PrintDocData): string {
       ${totalsBlock}
     </div>
     ${quoteTermsHtml}
+    ${bankAccountsHtml}
     ${contractingHtml}
     ${verifyHtml}
     ${footerLine("transparent", "")}
@@ -504,6 +529,7 @@ export function buildDocHtml(d: PrintDocData): string {
       ${totalsBlock}
     </div>
     ${quoteTermsHtml}
+    ${bankAccountsHtml}
     ${contractingHtml}
     ${verifyHtml}
     ${footerLine(accent, tpl.onAccent)}
@@ -545,6 +571,7 @@ export function buildDocHtml(d: PrintDocData): string {
       </div>
     </div>
     ${quoteTermsHtml.replace(/padding:0 32px 22px/g, "padding:0 8px 20px")}
+    ${bankAccountsHtml.replace(/padding:0 32px 22px/g, "padding:0 8px 20px")}
     ${contractingHtml.replace(/padding:0 32px 22px/g, "padding:0 8px 20px")}
     ${verifyHtml}
     <div style="padding:16px 8px;border-top:1px solid ${line};font-size:10px;color:${muted};text-align:center">${esc(org.name)} · ${esc(d.ref)}</div>
@@ -585,6 +612,7 @@ export function buildDocHtml(d: PrintDocData): string {
       <div style="border:1px solid ${line}">${totalsBlock.replace(/border:1px solid[^;]+;border-radius:12px;overflow:hidden/, "border:0")}</div>
     </div>
     ${quoteTermsHtml}
+    ${bankAccountsHtml}
     ${contractingHtml}
     ${verifyHtml}
     <div style="padding:24px 32px 8px;display:grid;grid-template-columns:1fr 1fr;gap:24px;font-size:10.5px;color:${muted}">
