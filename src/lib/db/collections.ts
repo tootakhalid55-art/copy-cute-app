@@ -6,6 +6,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { verifyPurchaseForPosting } from "@/lib/haseem/taxpayer.functions";
 import { useOrg } from "./org";
 // Static import on purpose: a dynamic import() here fetched a chunk that no
 // longer exists after a redeploy ("Failed to fetch dynamically imported
@@ -111,6 +112,7 @@ async function applyDocStatus(key: string, orgId: string, docId: string, uiStatu
 
 /** Post a document's journal atomically on the server (documents only). */
 export async function postCloudDocument(orgId: string, docId: string) {
+  await verifyPurchaseForPosting({ data: { orgId, documentId: docId } });
   const { data, error } = await supabase.rpc("post_document", {
     _org: orgId,
     _doc_id: docId,

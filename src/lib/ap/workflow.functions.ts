@@ -126,8 +126,8 @@ export const validateIntake = createServerFn({ method: "POST" })
       .single();
     if (error || !row) throw new Error("Intake not found");
 
-    const { validateExtraction, matchPurchaseOrderAndGrn } = await import("./validation.server");
-    const validation = validateExtraction(row.extraction || {});
+    const { validateExtractionWithTaxpayer, matchPurchaseOrderAndGrn } = await import("./validation.server");
+    const validation = await validateExtractionWithTaxpayer(row.extraction || {});
     const { poId, grnId } = await matchPurchaseOrderAndGrn(
       supabase,
       row.org_id,

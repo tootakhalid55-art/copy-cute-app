@@ -98,8 +98,8 @@ export const Route = createFileRoute("/api/public/hooks/ap-intake-process")({
             );
 
             // Validation + PO/GRN
-            const { validateExtraction, matchPurchaseOrderAndGrn } = await import("@/lib/ap/validation.server");
-            const validation = validateExtraction(extraction);
+            const { validateExtractionWithTaxpayer, matchPurchaseOrderAndGrn } = await import("@/lib/ap/validation.server");
+            const validation = await validateExtractionWithTaxpayer(extraction);
             const { poId, grnId } = await matchPurchaseOrderAndGrn(
               admin, intake.org_id, best?.party_id ?? null,
               Number(extraction.grandTotal) || 0, extraction.invoiceDate || null,

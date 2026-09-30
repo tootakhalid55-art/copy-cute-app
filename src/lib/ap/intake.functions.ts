@@ -212,8 +212,10 @@ export const runIntakeExtraction = createServerFn({ method: "POST" })
           }))
         : [];
 
+      const { validateExtractionWithTaxpayer } = await import("./validation.server");
+      const validation = await validateExtractionWithTaxpayer(extraction);
       await supabase.from("ap_intake_documents").update({
-        status: nextStatus, extraction,
+        status: nextStatus, extraction, validation: validation as any,
         extraction_model: usedModel,
         extraction_completed_at: new Date().toISOString(),
         confidence, matched_party_id: best?.party_id ?? null,
@@ -383,6 +385,7 @@ export const createBillFromIntake = createServerFn({ method: "POST" })
       doc_number: ref, issue_date: issueDate, due_date: dueDate, currency,
       subtotal, vat_total: tax, grand_total: total,
       status: "draft" as any,
+      meta: { supplierVatNumber: String(ex.supplierVatNumber ?? ""), supplierInvoiceName: String(ex.supplierName ?? "") },
       notes: o.notes || `Created from AP intake ${intake.id}`, created_by: userId,
     } as any).select("id").single();
     if (bErr) throw new Error(`Failed to create bill: ${bErr.message}`);

@@ -1,5 +1,8 @@
 import { createServerFn } from "@tanstack/react-start";
 import { callAnthropicAI } from "@/lib/ai-gateway.server";
+import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { lookupTaxpayer } from "./taxpayer.server";
+import type { TaxpayerResult } from "./taxpayer";
 
 export type ScanLine = {
   description: string;
@@ -13,6 +16,7 @@ export type ScanLine = {
 };
 
 export type ScanResult = {
+  taxpayerVerification?: TaxpayerResult;
   supplierName: string;
   supplierVatNumber: string;
   supplierCrNumber: string;
@@ -173,10 +177,12 @@ async function extract(fileDataUrl: string, filename: string): Promise<ScanResul
       : "mixed",
   };
 
+  result.taxpayerVerification = await lookupTaxpayer(result.supplierVatNumber);
   return result;
 }
 
 export const scanInvoice = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => {
     const i = input as { fileDataUrl?: string; filename?: string };
     if (!i?.fileDataUrl || typeof i.fileDataUrl !== "string") {
