@@ -1,6 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "@/lib/haseem/auth";
+import { BRAND } from "@/lib/brand";
 import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/auth/reset-password")({
@@ -94,8 +95,8 @@ function ResetPasswordPage() {
     <div dir="rtl" className="min-h-screen bg-[#0f2a1d] flex items-center justify-center p-4 font-[Cairo,system-ui,sans-serif]">
       <div className="bg-white rounded-2xl w-full max-w-md p-8 space-y-5 shadow-2xl">
         <div className="text-center">
-          <div className="w-14 h-14 mx-auto rounded-xl bg-[#0f2a1d] flex items-center justify-center mb-3">
-            <span className="text-[#d4f24a] font-black text-2xl">ح</span>
+          <div className="w-60 h-40 max-w-full mx-auto rounded-xl bg-white flex items-center justify-center mb-3">
+            <img src={BRAND.logoSrc} alt={BRAND.nameEn} className="w-full h-full object-contain" />
           </div>
           <h1 className="text-xl font-bold text-[#0f2a1d]">إعادة تعيين كلمة المرور</h1>
           <p className="text-xs text-[#0f2a1d]/60 mt-1">اكتب كلمة مرور جديدة وآمنة للحساب.</p>

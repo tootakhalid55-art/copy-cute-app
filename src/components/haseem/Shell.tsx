@@ -281,8 +281,8 @@ export function Shell({ children }: { children: ReactNode }) {
       )}
       <header className="flex items-center justify-between px-6 py-3 bg-white border-b border-[#eceae2] sticky top-0 z-30">
         <div className="flex items-center gap-3">
-          <Link to="/dashboard" className="w-10 h-10 rounded-lg bg-[#0f2a1d] flex items-center justify-center">
-            <img src={BRAND.logoSrc} alt={BRAND.nameEn} className="h-9 w-9 object-contain rounded-md bg-white p-1" />
+          <Link to="/dashboard" className="w-24 h-16 shrink-0 rounded-lg bg-white flex items-center justify-center">
+            <img src={BRAND.logoSrc} alt={BRAND.nameEn} className="h-full w-full object-contain rounded-md" />
           </Link>
           <Link to="/select-organization" className="hidden md:flex items-center gap-2 border border-[#eceae2] rounded-lg px-3 py-1.5 hover:bg-[#f7f6f0]">
             <Building2 className="w-4 h-4 text-[#0f2a1d]" />
