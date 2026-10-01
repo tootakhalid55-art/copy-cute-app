@@ -1,8 +1,9 @@
 // Saudi VAT (TIN) number helpers.
 //
 // ZATCA's public taxpayer lookup (zatca.gov.sa → TaxpayerLookup.aspx) is an
-// ASP.NET postback protected by Google reCAPTCHA v3, so there is no lawful
-// way to query it programmatically. What we CAN do reliably:
+// ASP.NET postback protected by Google reCAPTCHA v3. Automated lookups use
+// an authorized provider adapter (taxpayer.server.ts), not page scraping.
+// Without that adapter we can:
 //   1. validate the number's structure locally (15 digits, starts and ends
 //      with 3 — the documented KSA VAT registration format),
 //   2. cross-check it against the records already in the org's database,
@@ -23,6 +24,7 @@ export type VatCheck = { ok: boolean; issues: string[] };
 export function validateSaudiVat(vatRaw: unknown): VatCheck {
   const v = vatDigits(vatRaw);
   const issues: string[] = [];
+  if (/[^0-9٠-٩۰-۹\s-]/u.test(String(vatRaw ?? ""))) issues.push("الرقم الضريبي يجب ألا يحتوي على حروف أو رموز");
   if (!v) return { ok: false, issues: ["الرقم فارغ"] };
   if (v.length !== 15) issues.push(`الطول ${v.length} رقماً — الرقم الضريبي السعودي 15 رقماً`);
   if (v[0] !== "3") issues.push("يجب أن يبدأ بالرقم 3");

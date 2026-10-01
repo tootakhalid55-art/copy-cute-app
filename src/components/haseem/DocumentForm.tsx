@@ -13,6 +13,9 @@ import { CreditNotePreview } from "./CreditNotePreview";
 import { PurchasePreview } from "./PurchasePreview";
 
 import { DocumentSidePanel } from "./DocumentSidePanel";
+import { TaxpayerLookup } from "./TaxpayerLookup";
+import { vatDigits } from "@/lib/haseem/vat";
+import type { ManualTaxpayerReview } from "@/lib/haseem/taxpayer";
 import { useOrg } from "@/lib/db/org";
 import { toDocKind } from "@/lib/db/document-bridge";
 import { buildTokenVerifyUrl, newVerifyToken } from "@/lib/haseem/docSignature";
@@ -90,6 +93,9 @@ export function DocumentForm({
   const [date, setDate] = useState(existing?.date ?? today);
   const [dueDate, setDueDate] = useState(existing?.dueDate ?? today);
   const [partyId, setPartyId] = useState(existing?.partyId ?? "");
+  const [invoiceSupplierName, setInvoiceSupplierName] = useState<string | null>(existing?.supplierInvoiceName ?? null);
+  const [invoiceSupplierVat, setInvoiceSupplierVat] = useState<string | null>(existing?.supplierVatNumber ?? null);
+  const [manualTaxpayerReview, setManualTaxpayerReview] = useState<ManualTaxpayerReview>();
   const [notes, setNotes] = useState(existing?.notes ?? "");
   const [lines, setLines] = useState<Line[]>(
     existing?.lines ?? [{ description: "", qty: 1, price: 0, tax: 15 }]
@@ -107,6 +113,9 @@ export function DocumentForm({
       setDate(existing.date);
       setDueDate(existing.dueDate);
       setPartyId(existing.partyId ?? "");
+      setInvoiceSupplierName(existing.supplierInvoiceName ?? null);
+      setInvoiceSupplierVat(existing.supplierVatNumber ?? null);
+      setManualTaxpayerReview(undefined);
       setNotes(existing.notes ?? "");
       setLines(existing.lines ?? [{ description: "", qty: 1, price: 0, tax: 15 }]);
       setContractValue(existing.contractValue ?? 0);
@@ -469,6 +478,11 @@ export function DocumentForm({
       status: finalStatus, lines, subtotal, tax, total,
       contractValue, previousCertified, retentionPct, advanceRecoveryPct,
       verifyToken,
+      ...(kind === "bill" ? {
+        supplierVatNumber: invoiceSupplierVat ?? party?.taxNumber ?? "",
+        supplierInvoiceName: invoiceSupplierName ?? party?.name ?? "",
+        manualTaxpayerReview,
+      } : {}),
     };
     try {
       if (existing) await updateAsync(existing.id, payload);
@@ -489,6 +503,17 @@ export function DocumentForm({
 
   return (
     <Shell>
+      {kind === "bill" && <section className="space-y-2 rounded-lg border p-3">
+        <p className="font-semibold">هوية المورد كما وردت في الفاتورة الأصلية</p>
+        <label className="block">اسم الشركة في الفاتورة
+          <input className="border rounded px-3 py-2 w-full" disabled={isPostedDoc} value={invoiceSupplierName ?? party?.name ?? ""} onChange={(e) => setInvoiceSupplierName(e.target.value)} />
+        </label>
+        <label className="block">الرقم الضريبي في الفاتورة
+          <input className="border rounded px-3 py-2 w-full" dir="ltr" disabled={isPostedDoc} value={invoiceSupplierVat ?? party?.taxNumber ?? ""} onChange={(e) => setInvoiceSupplierVat(vatDigits(e.target.value))} />
+        </label>
+        <TaxpayerLookup key={docId ?? "new"} disabled={isPostedDoc} vatNumber={invoiceSupplierVat ?? party?.taxNumber ?? ""} name={invoiceSupplierName ?? party?.name ?? ""} onManualReview={setManualTaxpayerReview} />
+        <p className="text-xs">يمكن حفظ المسودة قبل التحقق. الاعتماد يتطلب تطابق بيانات الفاتورة وسجل المورد مع نتيجة التحقق.</p>
+      </section>}
       <div className="flex items-start justify-between flex-wrap gap-3">
         <div>
           <h1 className="text-xl font-bold">{title}</h1>
@@ -697,6 +722,8 @@ export function DocumentForm({
                   setPartyModalOpen(true);
                 } else {
                   setPartyId(e.target.value);
+                  setInvoiceSupplierName(null);
+                  setInvoiceSupplierVat(null);
                 }
               }}
               className="border border-[#eceae2] rounded-lg px-3 py-2 bg-white flex-1"
@@ -1153,10 +1180,11 @@ export function DocumentForm({
                     />
                   </FormField>
                   <FormField label="الرقم الضريبي">
+                    <TaxpayerLookup vatNumber={newParty.taxNumber} name={newParty.name} onApply={(result) => setNewParty((previous) => ({ ...previous, name: result.name ?? previous.name, ...(result.address ? { street: result.address } : {}) }))} />
                     <input
                       maxLength={15}
                       value={newParty.taxNumber}
-                      onChange={(e) => setNewParty((p) => ({ ...p, taxNumber: e.target.value.replace(/[^0-9]/g, "") }))}
+                      onChange={(e) => setNewParty((p) => ({ ...p, taxNumber: vatDigits(e.target.value) }))}
                       className="border border-[#eceae2] rounded-lg px-3 py-2"
                       placeholder="15 رقم"
                     />

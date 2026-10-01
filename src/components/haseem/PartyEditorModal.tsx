@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { X } from "lucide-react";
 import { toast } from "sonner";
 import { PrimaryBtn, OutlineBtn } from "./Shell";
+import { TaxpayerLookup } from "./TaxpayerLookup";
 import { validateSaudiVat, vatDigits, openZatcaLookup } from "@/lib/haseem/vat";
 
 export type PartyDraft = Record<string, any>;
@@ -171,6 +172,7 @@ export function PartyEditorModal({
                 <input value={p.displayName} onChange={(e) => set("displayName", e.target.value)} className={inputCls} />
               </Field>
               <Field label="الرقم الضريبي">
+                <TaxpayerLookup vatNumber={p.taxNumber ?? ""} name={p.name ?? ""} onApply={(result) => setP((previous) => ({ ...previous, name: result.name, ...(result.address ? { address: result.address, street: result.address, district: "", city: "", region: "" } : {}) }))} />
                 <input value={p.taxNumber} onChange={(e) => set("taxNumber", e.target.value)} className={inputCls} dir="ltr" placeholder="3XXXXXXXXXXXXX3" />
                 {(() => {
                   const v = vatDigits(p.taxNumber);

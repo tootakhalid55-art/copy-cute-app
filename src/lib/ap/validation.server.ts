@@ -1,5 +1,18 @@
 // AI validation: VAT calculation, currency, total reconciliation, PO/GRN matching.
 // Pure server-side; no client imports.
+import { lookupTaxpayer } from "@/lib/haseem/taxpayer.server";
+import { compareTaxpayer } from "@/lib/haseem/taxpayer";
+
+export async function validateExtractionWithTaxpayer(ex: any) {
+  const result = validateExtraction(ex);
+  const taxpayerVerification = await lookupTaxpayer(String(ex?.supplierVatNumber ?? ""));
+  const identity = compareTaxpayer(taxpayerVerification, String(ex?.supplierVatNumber ?? ""), String(ex?.supplierName ?? ""));
+  if (!identity.matches) {
+    result.issues.push({ code: "taxpayer_verification_required", severity: "error", message: identity.message });
+    result.ok = false;
+  }
+  return { ...result, taxpayerVerification };
+}
 
 export type ValidationIssue = { code: string; severity: "error" | "warn" | "info"; message: string };
 export type ValidationResult = {

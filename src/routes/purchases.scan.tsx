@@ -13,6 +13,9 @@ import { useOrg } from "@/lib/db/org";
 import { logClientEvent } from "@/lib/db/collections";
 import { uploadAttachmentAndWait } from "@/lib/db/attachments";
 import { toast } from "sonner";
+import { TaxpayerLookup } from "@/components/haseem/TaxpayerLookup";
+import { verifyTaxpayer } from "@/lib/haseem/taxpayer.functions";
+import { compareTaxpayer, manualReviewResult, type ManualTaxpayerReview } from "@/lib/haseem/taxpayer";
 import { validateSaudiVat, vatDigits, openZatcaLookup } from "@/lib/haseem/vat";
 
 export const Route = createFileRoute("/purchases/scan")({
@@ -50,6 +53,7 @@ function newId() {
 
 function ScanPage() {
   const scan = useServerFn(scanInvoice);
+  const verifyCompany = useServerFn(verifyTaxpayer);
   const { currentOrgId } = useOrg();
   const { items: bills, addAsync: addBillAsync } = useCollection<any>("bills");
   const { items: suppliers, addAsync: addSupplierAsync } = useCollection<any>("suppliers");
@@ -133,6 +137,21 @@ function ScanPage() {
     opts?: { quiet?: boolean; supplierCache?: Map<string, any> },
   ): Promise<{ ok: boolean; billId?: string; reason?: "duplicate" | "error" | "vat-mismatch" }> => {
     const quiet = !!opts?.quiet;
+    if (!currentOrgId) return { ok: false, reason: "error" };
+    let verification;
+    try {
+      verification = payload.manualTaxpayerReview && !quiet
+        ? manualReviewResult(payload.manualTaxpayerReview)
+        : await verifyCompany({ data: { orgId: currentOrgId, vatNumber: payload.supplierVatNumber } });
+    } catch {
+      if (!quiet) toast.error("تعذر التحقق من بيانات الشركة؛ أعد المحاولة");
+      return { ok: false, reason: "error" };
+    }
+    const identity = compareTaxpayer(verification, payload.supplierVatNumber, payload.supplierName);
+    if (!identity.matches && payload.finalStatus !== "مسودة") {
+      if (!quiet) toast.error(`${identity.message}. يمكن حفظ الفاتورة مسودة للمراجعة.`);
+      return { ok: false, reason: "vat-mismatch" };
+    }
     // Find or create supplier — must await the REAL DB record (the sync
     // add() returns an optimistic tmp_ stub that breaks the partyId link).
     // The cache covers a bulk run where several invoices share a supplier
@@ -203,6 +222,10 @@ function ScanPage() {
         total: payload.grandTotal,
         currency: payload.currency,
         source: "ai-scan",
+        supplierVatNumber: payload.supplierVatNumber,
+        supplierInvoiceName: payload.supplierName,
+        taxpayerVerification: verification,
+        manualTaxpayerReview: quiet ? undefined : payload.manualTaxpayerReview,
       });
     } catch (e) {
       const msg = String((e as any)?.message ?? e ?? "");
@@ -566,7 +589,7 @@ function StatusBadge({ status }: { status: Status }) {
   );
 }
 
-type ReviewPayload = ScanResult & { createSupplier: boolean; finalStatus: string };
+type ReviewPayload = ScanResult & { createSupplier: boolean; finalStatus: string; manualTaxpayerReview?: ManualTaxpayerReview };
 
 function ReviewModal({
   job, suppliers, onClose, onSave,
@@ -578,19 +601,20 @@ function ReviewModal({
 }) {
   const r = job.result!;
   const [form, setForm] = useState<ScanResult>(() => JSON.parse(JSON.stringify(r)));
+  const [manualTaxpayerReview, setManualTaxpayerReview] = useState<ManualTaxpayerReview>();
   const [createSupplier, setCreateSupplier] = useState(true);
   const [saving, setSaving] = useState(false);
   const submit = async (finalStatus: string) => {
     if (saving) return;
     setSaving(true);
     try {
-      await onSave({ ...form, createSupplier, finalStatus });
+      await onSave({ ...form, createSupplier, finalStatus, manualTaxpayerReview });
     } finally {
       setSaving(false);
     }
   };
 
-  useEffect(() => { setForm(JSON.parse(JSON.stringify(r))); }, [r]);
+  useEffect(() => { setForm(JSON.parse(JSON.stringify(r))); setManualTaxpayerReview(undefined); }, [r]);
 
   const supplierMatch = useMemo(
     () => suppliers.find((s: any) => s.name?.trim() === form.supplierName?.trim()),
@@ -675,7 +699,7 @@ function ReviewModal({
                   <div className="font-bold">بيانات الفاتورة داخل النظام</div>
                 </div>
                 <span className="text-[11px] px-2 py-0.5 rounded-full bg-[#eaf5ee] text-[#0f6b3a]">
-                  يطابق المستند الأصلي
+                  بيانات مستخرجة — تحتاج إلى التحقق
                 </span>
               </div>
               <div className="p-4 grid grid-cols-2 gap-3">
@@ -691,6 +715,8 @@ function ReviewModal({
                   </datalist>
                 </FormField>
                 <FormField label="الرقم الضريبي" extra={conf("supplierVatNumber")}>
+                  <TaxpayerLookup key={job.id} vatNumber={form.supplierVatNumber} name={form.supplierName} onManualReview={setManualTaxpayerReview} />
+                  {!manualTaxpayerReview && form.taxpayerVerification && <p className="text-xs text-amber-800">{compareTaxpayer(form.taxpayerVerification, form.supplierVatNumber, form.supplierName).message}</p>}
                   <input
                     value={form.supplierVatNumber}
                     onChange={(e) => setForm({ ...form, supplierVatNumber: e.target.value })}

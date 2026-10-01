@@ -10,6 +10,7 @@
 //
 // The DB trigger `documents_status_guard` enforces the same rules server-side.
 import { supabase } from "@/integrations/supabase/client";
+import { verifyPurchaseForPosting } from "@/lib/haseem/taxpayer.functions";
 import { emitDocEvent } from "./events";
 import { enqueueNotification } from "./notifications";
 
@@ -238,6 +239,9 @@ export async function transitionStatus(
   }
 
   let data: any;
+  if (next === "approved" || next === "posted") {
+    await verifyPurchaseForPosting({ data: { orgId, documentId: id } });
+  }
   if (next === "posted") {
     // Atomic on the server: status transition + journal entry in one transaction.
     const { error } = await supabase.rpc("post_document", { _org: orgId, _doc_id: id } as never);
