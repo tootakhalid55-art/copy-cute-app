@@ -73,7 +73,7 @@ function AuthPage() {
     >
       <div className="bg-white/96 backdrop-blur rounded-2xl w-full max-w-md p-8 space-y-5 shadow-2xl border border-white/40">
         <div className="text-center">
-          <div className="w-20 h-20 mx-auto rounded-2xl bg-white shadow-sm flex items-center justify-center mb-3 border border-[#d9ecf7] p-2">
+          <div className="w-60 h-40 mx-auto rounded-2xl bg-white shadow-sm flex items-center justify-center mb-3 border border-[#d9ecf7] p-2">
             <img src={BRAND.logoSrc} alt={BRAND.nameEn} className="w-full h-full object-contain" />
           </div>
           <h1 className="text-xl font-bold text-[#0f2a1d]">
