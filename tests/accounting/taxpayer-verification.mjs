@@ -56,6 +56,9 @@ test("database blocks direct posting, forged evidence, stale checks and identity
     await assert.rejects(post, /purchase_taxpayer_verification_required/);
     await db.exec(`UPDATE taxpayer_posting_checks SET result='{"status":"manual_review","source":"manual","acknowledged":true}'; SET ROLE authenticated`);
     await db.exec(`UPDATE documents SET status='approved' WHERE id='${doc}'`);
+    await assert.rejects(() => db.exec(`UPDATE documents SET meta='{"supplierInvoiceName":"Different company"}' WHERE id='${doc}'`), /purchase_taxpayer_verification_required/);
+    await assert.rejects(() => db.exec(`UPDATE documents SET status='approved', meta='{"supplierVatNumber":"311111111111113"}' WHERE id='${doc}'`), /purchase_taxpayer_verification_required/);
+    await db.exec(`UPDATE documents SET meta=meta || '{"note":"Unrelated edit"}'::jsonb WHERE id='${doc}'`);
     await post();
     assert.equal((await db.query("SELECT status FROM documents")).rows[0].status, "posted");
   } finally { await db.close(); }

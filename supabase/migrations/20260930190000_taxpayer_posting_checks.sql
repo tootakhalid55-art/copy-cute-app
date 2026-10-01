@@ -1,5 +1,7 @@
 -- Apply before deploying the corresponding application change.
 -- Evidence is service-role-only; client JSON/AI confidence is never trusted.
+BEGIN;
+SET LOCAL lock_timeout = '5s';
 CREATE TABLE public.taxpayer_posting_checks (
   document_id uuid PRIMARY KEY REFERENCES public.documents(id) ON DELETE CASCADE,
   org_id uuid NOT NULL REFERENCES public.organizations(id),
@@ -18,8 +20,16 @@ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
 DECLARE p public.parties; c public.taxpayer_posting_checks;
 BEGIN
   IF NEW.kind <> 'purchase_invoice' OR NEW.status NOT IN ('approved','posted') THEN RETURN NEW; END IF;
-  -- Existing posted documents remain readable; no retroactive rewriting.
-  IF TG_OP = 'UPDATE' AND OLD.status = NEW.status THEN RETURN NEW; END IF;
+  -- Leave unrelated edits to existing documents alone, but recheck any
+  -- identity change even when the caller keeps the same approved status.
+  IF TG_OP = 'UPDATE' AND OLD.status = NEW.status
+    AND OLD.kind IS NOT DISTINCT FROM NEW.kind
+    AND OLD.org_id IS NOT DISTINCT FROM NEW.org_id
+    AND OLD.party_id IS NOT DISTINCT FROM NEW.party_id
+    AND (OLD.meta->>'supplierVatNumber') IS NOT DISTINCT FROM (NEW.meta->>'supplierVatNumber')
+    AND (OLD.meta->>'supplierInvoiceName') IS NOT DISTINCT FROM (NEW.meta->>'supplierInvoiceName')
+    AND (OLD.party_snapshot->>'name') IS NOT DISTINCT FROM (NEW.party_snapshot->>'name')
+  THEN RETURN NEW; END IF;
   SELECT * INTO p FROM public.parties WHERE id = NEW.party_id AND org_id = NEW.org_id FOR SHARE;
   IF NOT FOUND THEN RAISE EXCEPTION 'purchase_supplier_required'; END IF;
   SELECT * INTO c FROM public.taxpayer_posting_checks WHERE document_id = NEW.id AND org_id = NEW.org_id;
@@ -38,5 +48,7 @@ BEGIN
 END;
 $$;
 REVOKE ALL ON FUNCTION public.require_purchase_taxpayer_check() FROM PUBLIC, anon, authenticated;
-CREATE TRIGGER purchase_taxpayer_check BEFORE INSERT OR UPDATE OF status ON public.documents
+CREATE TRIGGER purchase_taxpayer_check BEFORE INSERT OR UPDATE OF status, kind, org_id, party_id, meta, party_snapshot ON public.documents
 FOR EACH ROW EXECUTE FUNCTION public.require_purchase_taxpayer_check();
+NOTIFY pgrst, 'reload schema';
+COMMIT;
