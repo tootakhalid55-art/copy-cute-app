@@ -7,6 +7,7 @@ import { useCallback, useEffect } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { verifyPurchaseForPosting } from "@/lib/haseem/taxpayer.functions";
+import type { ManualTaxpayerReview } from "@/lib/haseem/taxpayer";
 import { useOrg } from "./org";
 // Static import on purpose: a dynamic import() here fetched a chunk that no
 // longer exists after a redeploy ("Failed to fetch dynamically imported
@@ -84,14 +85,14 @@ const FOUNDATION_MISSING_RE =
   /no_posting_rule_for_event|missing_account_determination|no_period_for_date/i;
 
 /** Apply the UI-chosen status after a document insert/update. */
-async function applyDocStatus(key: string, orgId: string, docId: string, uiStatus: unknown) {
+async function applyDocStatus(key: string, orgId: string, docId: string, uiStatus: unknown, manualReview?: ManualTaxpayerReview) {
   const s = String(uiStatus ?? "");
   const nonPostable = NON_POSTABLE_KINDS.has(DOC_KEYS[key]);
   if (s === "مرسل" || ((s === "مؤكد" || s === "مرحل") && nonPostable)) {
     await issueCloudDocument(orgId, docId);
   } else if (s === "مؤكد" || s === "مرحل") {
     try {
-      await postCloudDocument(orgId, docId);
+      await postCloudDocument(orgId, docId, manualReview);
     } catch (e) {
       // Supabase errors can be plain objects (not Error instances), so read
       // .message directly — String(e) gives "[object Object]" and silently
@@ -105,14 +106,14 @@ async function applyDocStatus(key: string, orgId: string, docId: string, uiStatu
       const noPeriodDate = msg.match(/no_period_for_date:\s*(\d{4}-\d{2}-\d{2})/)?.[1];
       if (noPeriodDate) await ensureFiscalYearForDate(orgId, noPeriodDate);
       logClientEvent("auto-seed", "done — retrying post");
-      await postCloudDocument(orgId, docId);
+      await postCloudDocument(orgId, docId, manualReview);
     }
   }
 }
 
 /** Post a document's journal atomically on the server (documents only). */
-export async function postCloudDocument(orgId: string, docId: string) {
-  await verifyPurchaseForPosting({ data: { orgId, documentId: docId } });
+export async function postCloudDocument(orgId: string, docId: string, manualReview?: ManualTaxpayerReview) {
+  await verifyPurchaseForPosting({ data: { orgId, documentId: docId, manualReview } });
   const { data, error } = await supabase.rpc("post_document", {
     _org: orgId,
     _doc_id: docId,
@@ -275,7 +276,7 @@ function mapDocRow(r: any) {
 
 function toDocPayload(key: string, input: any, orgId: string) {
   const {
-    id: _id, dbId: _db, createdAt: _c, dbStatus: _ds,
+    id: _id, dbId: _db, createdAt: _c, dbStatus: _ds, manualTaxpayerReview: _review,
     ref, date, dueDate, partyId, partyName, notes, subtotal, tax, total, amount,
     lines, status: _status, currency, customer, supplier, description, category,
     verifyToken, verify_token: legacyVerifyToken,
@@ -471,7 +472,7 @@ async function insertOne(key: string, orgId: string, input: any) {
     // back (that made "حفظ واعتماد" look broken and retries create duplicates).
     // Surface the reason and return the saved draft instead.
     try {
-      await applyDocStatus(key, orgId, doc.id, input?.status);
+      await applyDocStatus(key, orgId, doc.id, input?.status, input?.manualTaxpayerReview);
     } catch (e) {
       surfaceError(e);
       toast.warning("تم حفظ المستند، لكن تعذّر اعتماده — راجع السبب أعلاه ثم أعد المحاولة من صفحة المستند");
@@ -549,7 +550,7 @@ async function updateOne(key: string, orgId: string, id: string, patch: any) {
     if (!patch?.date) delete (payload as any).issue_date;
     await updateDocument(id, orgId, { ...payload, ...(lines ? { lines } : {}) } as any);
     try {
-      await applyDocStatus(key, orgId, id, patch?.status);
+      await applyDocStatus(key, orgId, id, patch?.status, patch?.manualTaxpayerReview);
     } catch (e) {
       surfaceError(e);
       toast.warning("تم حفظ التعديلات، لكن تعذّر الاعتماد — راجع السبب أعلاه ثم أعد المحاولة");

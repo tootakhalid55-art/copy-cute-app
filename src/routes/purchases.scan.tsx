@@ -15,7 +15,7 @@ import { uploadAttachmentAndWait } from "@/lib/db/attachments";
 import { toast } from "sonner";
 import { TaxpayerLookup } from "@/components/haseem/TaxpayerLookup";
 import { verifyTaxpayer } from "@/lib/haseem/taxpayer.functions";
-import { compareTaxpayer } from "@/lib/haseem/taxpayer";
+import { compareTaxpayer, manualReviewResult, type ManualTaxpayerReview } from "@/lib/haseem/taxpayer";
 import { validateSaudiVat, vatDigits, openZatcaLookup } from "@/lib/haseem/vat";
 
 export const Route = createFileRoute("/purchases/scan")({
@@ -140,7 +140,9 @@ function ScanPage() {
     if (!currentOrgId) return { ok: false, reason: "error" };
     let verification;
     try {
-      verification = await verifyCompany({ data: { orgId: currentOrgId, vatNumber: payload.supplierVatNumber } });
+      verification = payload.manualTaxpayerReview && !quiet
+        ? manualReviewResult(payload.manualTaxpayerReview)
+        : await verifyCompany({ data: { orgId: currentOrgId, vatNumber: payload.supplierVatNumber } });
     } catch {
       if (!quiet) toast.error("تعذر التحقق من بيانات الشركة؛ أعد المحاولة");
       return { ok: false, reason: "error" };
@@ -223,6 +225,7 @@ function ScanPage() {
         supplierVatNumber: payload.supplierVatNumber,
         supplierInvoiceName: payload.supplierName,
         taxpayerVerification: verification,
+        manualTaxpayerReview: quiet ? undefined : payload.manualTaxpayerReview,
       });
     } catch (e) {
       const msg = String((e as any)?.message ?? e ?? "");
@@ -586,7 +589,7 @@ function StatusBadge({ status }: { status: Status }) {
   );
 }
 
-type ReviewPayload = ScanResult & { createSupplier: boolean; finalStatus: string };
+type ReviewPayload = ScanResult & { createSupplier: boolean; finalStatus: string; manualTaxpayerReview?: ManualTaxpayerReview };
 
 function ReviewModal({
   job, suppliers, onClose, onSave,
@@ -598,19 +601,20 @@ function ReviewModal({
 }) {
   const r = job.result!;
   const [form, setForm] = useState<ScanResult>(() => JSON.parse(JSON.stringify(r)));
+  const [manualTaxpayerReview, setManualTaxpayerReview] = useState<ManualTaxpayerReview>();
   const [createSupplier, setCreateSupplier] = useState(true);
   const [saving, setSaving] = useState(false);
   const submit = async (finalStatus: string) => {
     if (saving) return;
     setSaving(true);
     try {
-      await onSave({ ...form, createSupplier, finalStatus });
+      await onSave({ ...form, createSupplier, finalStatus, manualTaxpayerReview });
     } finally {
       setSaving(false);
     }
   };
 
-  useEffect(() => { setForm(JSON.parse(JSON.stringify(r))); }, [r]);
+  useEffect(() => { setForm(JSON.parse(JSON.stringify(r))); setManualTaxpayerReview(undefined); }, [r]);
 
   const supplierMatch = useMemo(
     () => suppliers.find((s: any) => s.name?.trim() === form.supplierName?.trim()),
@@ -711,8 +715,8 @@ function ReviewModal({
                   </datalist>
                 </FormField>
                 <FormField label="الرقم الضريبي" extra={conf("supplierVatNumber")}>
-                  <TaxpayerLookup vatNumber={form.supplierVatNumber} name={form.supplierName} />
-                  {form.taxpayerVerification && <p className="text-xs text-amber-800">{compareTaxpayer(form.taxpayerVerification, form.supplierVatNumber, form.supplierName).message}</p>}
+                  <TaxpayerLookup key={job.id} vatNumber={form.supplierVatNumber} name={form.supplierName} onManualReview={setManualTaxpayerReview} />
+                  {!manualTaxpayerReview && form.taxpayerVerification && <p className="text-xs text-amber-800">{compareTaxpayer(form.taxpayerVerification, form.supplierVatNumber, form.supplierName).message}</p>}
                   <input
                     value={form.supplierVatNumber}
                     onChange={(e) => setForm({ ...form, supplierVatNumber: e.target.value })}

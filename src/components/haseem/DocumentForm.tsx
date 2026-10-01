@@ -15,6 +15,7 @@ import { PurchasePreview } from "./PurchasePreview";
 import { DocumentSidePanel } from "./DocumentSidePanel";
 import { TaxpayerLookup } from "./TaxpayerLookup";
 import { vatDigits } from "@/lib/haseem/vat";
+import type { ManualTaxpayerReview } from "@/lib/haseem/taxpayer";
 import { useOrg } from "@/lib/db/org";
 import { toDocKind } from "@/lib/db/document-bridge";
 import { buildTokenVerifyUrl, newVerifyToken } from "@/lib/haseem/docSignature";
@@ -94,6 +95,7 @@ export function DocumentForm({
   const [partyId, setPartyId] = useState(existing?.partyId ?? "");
   const [invoiceSupplierName, setInvoiceSupplierName] = useState<string | null>(existing?.supplierInvoiceName ?? null);
   const [invoiceSupplierVat, setInvoiceSupplierVat] = useState<string | null>(existing?.supplierVatNumber ?? null);
+  const [manualTaxpayerReview, setManualTaxpayerReview] = useState<ManualTaxpayerReview>();
   const [notes, setNotes] = useState(existing?.notes ?? "");
   const [lines, setLines] = useState<Line[]>(
     existing?.lines ?? [{ description: "", qty: 1, price: 0, tax: 15 }]
@@ -113,6 +115,7 @@ export function DocumentForm({
       setPartyId(existing.partyId ?? "");
       setInvoiceSupplierName(existing.supplierInvoiceName ?? null);
       setInvoiceSupplierVat(existing.supplierVatNumber ?? null);
+      setManualTaxpayerReview(undefined);
       setNotes(existing.notes ?? "");
       setLines(existing.lines ?? [{ description: "", qty: 1, price: 0, tax: 15 }]);
       setContractValue(existing.contractValue ?? 0);
@@ -478,6 +481,7 @@ export function DocumentForm({
       ...(kind === "bill" ? {
         supplierVatNumber: invoiceSupplierVat ?? party?.taxNumber ?? "",
         supplierInvoiceName: invoiceSupplierName ?? party?.name ?? "",
+        manualTaxpayerReview,
       } : {}),
     };
     try {
@@ -507,7 +511,7 @@ export function DocumentForm({
         <label className="block">الرقم الضريبي في الفاتورة
           <input className="border rounded px-3 py-2 w-full" dir="ltr" disabled={isPostedDoc} value={invoiceSupplierVat ?? party?.taxNumber ?? ""} onChange={(e) => setInvoiceSupplierVat(vatDigits(e.target.value))} />
         </label>
-        <TaxpayerLookup vatNumber={invoiceSupplierVat ?? party?.taxNumber ?? ""} name={invoiceSupplierName ?? party?.name ?? ""} />
+        <TaxpayerLookup key={docId ?? "new"} disabled={isPostedDoc} vatNumber={invoiceSupplierVat ?? party?.taxNumber ?? ""} name={invoiceSupplierName ?? party?.name ?? ""} onManualReview={setManualTaxpayerReview} />
         <p className="text-xs">يمكن حفظ المسودة قبل التحقق. الاعتماد يتطلب تطابق بيانات الفاتورة وسجل المورد مع نتيجة التحقق.</p>
       </section>}
       <div className="flex items-start justify-between flex-wrap gap-3">

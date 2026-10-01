@@ -29,7 +29,9 @@ BEGIN
     OR c.party_vat IS DISTINCT FROM p.vat_number OR c.party_name IS DISTINCT FROM p.name
     OR c.invoice_vat IS DISTINCT FROM coalesce(NEW.meta->>'supplierVatNumber', p.vat_number, '')
     OR c.invoice_name IS DISTINCT FROM coalesce(NEW.meta->>'supplierInvoiceName', NEW.party_snapshot->>'name', p.name, '')
-    OR c.result->>'status' IS DISTINCT FROM 'registered'
+    OR NOT coalesce((c.result->>'status' = 'registered'
+      OR (c.result->>'status' = 'manual_review' AND c.result->>'source' = 'manual'
+        AND c.result->>'acknowledged' = 'true')), false)
   THEN RAISE EXCEPTION 'purchase_taxpayer_verification_required: verify supplier and invoice identity before posting';
   END IF;
   RETURN NEW;

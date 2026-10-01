@@ -1,7 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { lookupTaxpayer } from "./taxpayer.server";
-import { compareTaxpayer } from "./taxpayer";
+import { compareTaxpayer, manualReviewResult, parseManualReview } from "./taxpayer";
 import { vatDigits } from "./vat";
 
 export const verifyTaxpayer = createServerFn({ method: "POST" })
@@ -21,9 +21,9 @@ export const verifyTaxpayer = createServerFn({ method: "POST" })
 export const verifyPurchaseForPosting = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => {
-    const value = input as { orgId?: unknown; documentId?: unknown };
+    const value = input as { orgId?: unknown; documentId?: unknown; manualReview?: unknown };
     if (typeof value?.orgId !== "string" || typeof value.documentId !== "string") throw new Error("invalid_document");
-    return { orgId: value.orgId, documentId: value.documentId };
+    return { orgId: value.orgId, documentId: value.documentId, manualReview: value.manualReview === undefined ? undefined : parseManualReview(value.manualReview) };
   })
   .handler(async ({ data, context }) => {
     const { data: doc, error } = await context.supabase.from("documents").select("id,org_id,kind,party_id,meta,party_snapshot")
@@ -38,15 +38,28 @@ export const verifyPurchaseForPosting = createServerFn({ method: "POST" })
     const vat = String(meta.supplierVatNumber ?? party.vat_number ?? "");
     const name = String(meta.supplierInvoiceName ?? snapshot.name ?? party.name ?? "");
     if (vatDigits(party.vat_number) !== vatDigits(vat)) throw new Error("رقم الفاتورة الضريبي لا يطابق سجل المورد؛ احفظ مسودة للمراجعة");
-    const result = await lookupTaxpayer(vat);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    if (!data.manualReview) {
+      // Reuse only server-recorded evidence bound to the current identities.
+      const { data: previous } = await (supabaseAdmin as any).from("taxpayer_posting_checks")
+        .select("*").eq("document_id", doc.id).eq("org_id", doc.org_id).maybeSingle();
+      const age = previous ? Date.now() - Date.parse(previous.checked_at) : NaN;
+      if (previous && age >= 0 && age < 24 * 60 * 60 * 1000
+        && previous.party_id === party.id && previous.party_vat === party.vat_number
+        && previous.party_name === party.name && previous.invoice_vat === vat && previous.invoice_name === name
+        && compareTaxpayer(previous.result, vat, name).matches
+        && compareTaxpayer(previous.result, vat, party.name).matches) return { ok: true };
+    }
+    const result = data.manualReview ? manualReviewResult(data.manualReview) : await lookupTaxpayer(vat);
     const match = compareTaxpayer(result, vat, name);
     const partyMatch = compareTaxpayer(result, vat, party.name);
     if (!match.matches || !partyMatch.matches) throw new Error(!match.matches ? match.message : partyMatch.message);
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { error: saveError } = await (supabaseAdmin as any).from("taxpayer_posting_checks").upsert({
       document_id: doc.id, org_id: doc.org_id, party_id: party.id,
       invoice_vat: vat, invoice_name: name, party_vat: party.vat_number, party_name: party.name,
-      checked_at: result.checkedAt, checked_by: context.userId, result,
+      checked_at: result.checkedAt, checked_by: context.userId,
+      result: { ...result, source: data.manualReview ? "manual" : "api", acknowledged: !!data.manualReview,
+        evidenceNote: data.manualReview?.evidenceNote ?? "" },
     }, { onConflict: "document_id" });
     if (saveError) throw new Error("تعذر حفظ دليل التحقق؛ تأكد من تطبيق ترقية قاعدة البيانات");
     return { ok: true };

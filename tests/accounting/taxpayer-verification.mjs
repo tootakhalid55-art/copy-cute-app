@@ -12,7 +12,7 @@ async function moduleUrl(file, replacements = {}) {
   return `data:text/javascript;base64,${Buffer.from(source).toString("base64")}`;
 }
 const vatUrl = await moduleUrl("vat");
-const { compareTaxpayer } = await import(await moduleUrl("taxpayer", { "./vat": vatUrl }));
+const { compareTaxpayer, manualReviewResult, parseManualReview } = await import(await moduleUrl("taxpayer", { "./vat": vatUrl }));
 const { lookupTaxpayer } = await import(await moduleUrl("taxpayer.server", { "./vat": vatUrl }));
 const vat = "300000000000003"; // synthetic test identifier; never sent externally
 const registered = { status: "registered", vatNumber: vat, name: "شركة الاختبار", checkedAt: new Date().toISOString(), message: "ok" };
@@ -48,10 +48,31 @@ test("database blocks direct posting, forged evidence, stale checks and identity
     await db.exec(`UPDATE documents SET meta='{}'; UPDATE parties SET vat_number='311111111111113'`);
     await assert.rejects(post, /purchase_taxpayer_verification_required/);
     await db.exec(`UPDATE parties SET vat_number='${vat}'; SET ROLE authenticated`);
+    // Client-supplied metadata cannot replace the service-only evidence table.
+    await db.exec(`UPDATE documents SET meta='{"taxpayerVerification":{"status":"registered"}}'; RESET ROLE`);
+    await db.exec(`UPDATE taxpayer_posting_checks SET result='{"status":"manual_review"}'`);
+    await assert.rejects(post, /purchase_taxpayer_verification_required/);
+    await db.exec(`UPDATE taxpayer_posting_checks SET result='{}'`);
+    await assert.rejects(post, /purchase_taxpayer_verification_required/);
+    await db.exec(`UPDATE taxpayer_posting_checks SET result='{"status":"manual_review","source":"manual","acknowledged":true}'; SET ROLE authenticated`);
     await db.exec(`UPDATE documents SET status='approved' WHERE id='${doc}'`);
     await post();
     assert.equal((await db.query("SELECT status FROM documents")).rows[0].status, "posted");
   } finally { await db.close(); }
+});
+
+test("manual review requires explicit attestation and remains distinct from an API result", () => {
+  const input = { vatNumber: vat, name: "شركة الاختبار", address: "", evidenceNote: "result reference", acknowledged: true };
+  assert.throws(() => parseManualReview({ ...input, acknowledged: false }));
+  assert.throws(() => parseManualReview({ ...input, name: " " }));
+  assert.throws(() => parseManualReview({ ...input, vatNumber: "123" }));
+  assert.throws(() => parseManualReview({ ...input, acknowledged: "true" }));
+  const result = manualReviewResult({ ...input, checkedAt: "1900-01-01", status: "registered" }, "2026-10-01T00:00:00.000Z");
+  assert.equal(result.status, "manual_review");
+  assert.equal(result.checkedAt, "2026-10-01T00:00:00.000Z");
+  assert.equal(compareTaxpayer(result, vat, input.name).matches, true);
+  assert.equal(compareTaxpayer(result, vat, "شركة أخرى").matches, false);
+  assert.equal(compareTaxpayer(result, "311111111111113", input.name).matches, false);
 });
 
 test("matching is exact after conservative Arabic normalization", () => {
