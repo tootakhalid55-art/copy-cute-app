@@ -127,6 +127,9 @@ export async function callAnthropicAI(opts: {
 
   if (!res.ok) {
     const body = await res.text();
+    if (res.status === 400 && /credit balance.*too low/i.test(body)) {
+      throw new Error("AI_CREDITS_EXHAUSTED: رصيد خدمة المسح غير كافٍ؛ يلزم شحن رصيد Anthropic ثم إعادة المحاولة");
+    }
     if (res.status === 401) {
       throw new Error(`ANTHROPIC_AUTH_ERROR: مفتاح ANTHROPIC_API_KEY غير صالح — ${body.slice(0, 300)}`);
     }

@@ -1,3 +1,7 @@
+import { captureScannedLogo } from "@/lib/haseem/scanned-logo";
+import { useScannedTemplates, type ScannedTemplate } from "@/lib/haseem/scanned-templates";
+import { scanPreviewData } from "@/lib/haseem/scan-preview-data";
+import { ScannedTemplatePreview } from "@/components/haseem/ScannedTemplatePreview";
 import { FilePreviewPane } from "@/components/haseem/FilePreviewPane";
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
@@ -50,6 +54,7 @@ function newId() {
 
 function ScanPage() {
   const scan = useServerFn(scanInvoice);
+  const scannedTemplates = useScannedTemplates();
   const { currentOrgId } = useOrg();
   const { items: bills, addAsync: addBillAsync } = useCollection<any>("bills");
   const { items: suppliers, addAsync: addSupplierAsync } = useCollection<any>("suppliers");
@@ -75,6 +80,10 @@ function ScanPage() {
     updateJob(job.id, { status: "scanning", progress: 10 });
     try {
       const result = await scan({ data: { fileDataUrl: job.dataUrl, filename: job.file.name } });
+      if (result.visualLayout?.logoCrop) {
+        try { result.visualLayout = await captureScannedLogo(job.dataUrl, result.visualLayout); }
+        catch { result.layoutWarning = "تعذر نقل شعار المورد؛ راجع معاينة القالب أو أعد المسح."; }
+      }
       // Duplicate detection: same supplier + invoice number + total
       const dup = bills.find((b) =>
         b.partyName?.trim() === result.supplierName?.trim() &&
@@ -122,6 +131,8 @@ function ScanPage() {
     );
   }, [scanHistory, search]);
 
+  useEffect(() => { setJobs([]); setReviewId(null); }, [currentOrgId]);
+
   const reviewJob = jobs.find((j) => j.id === reviewId) || null;
 
   // Shared save routine — used by the review modal and the bulk
@@ -133,6 +144,10 @@ function ScanPage() {
     opts?: { quiet?: boolean; supplierCache?: Map<string, any> },
   ): Promise<{ ok: boolean; billId?: string; reason?: "duplicate" | "error" | "vat-mismatch" }> => {
     const quiet = !!opts?.quiet;
+    if (payload.useSourceTemplate !== false && !payload.visualLayout) {
+      if (!quiet) toast.error("تعذر استخراج التصميم؛ أعد المسح أو اختر القالب المعتاد من نافذة المراجعة");
+      return { ok: false, reason: "error" };
+    }
     // Find or create supplier — must await the REAL DB record (the sync
     // add() returns an optimistic tmp_ stub that breaks the partyId link).
     // The cache covers a bulk run where several invoices share a supplier
@@ -185,7 +200,20 @@ function ScanPage() {
       }
     }
     let bill: any;
+    let scannedTemplate: ScannedTemplate | undefined;
     try {
+      if (payload.useSourceTemplate !== false) {
+        if (!payload.visualLayout) throw new Error("لم يُستخرج تصميم صالح؛ أعد المسح أو اختر القالب المعتاد من المراجعة");
+        if (!supplier?.id) throw new Error("اختر أو أنشئ المورد لحفظ القالب ضمن نماذجه");
+        scannedTemplate = await scannedTemplates.save({
+          id: `scan-${job.id}`, name: `قالب ${payload.supplierName || "مورد"} — ${payload.invoiceNumber || job.file.name}`.slice(0, 100),
+          desc: "تصميم مستخرج من فاتورة ممسوحة؛ تُملأ حقوله من بيانات الفاتورة الحالية.",
+          source: "scan", supplierId: supplier.id, createdAt: new Date().toISOString(), kinds: ["bill"],
+          accent: payload.visualLayout.table.headerBackground, onAccent: payload.visualLayout.table.headerColor,
+          soft: payload.visualLayout.table.stripe, scannedLayout: payload.visualLayout,
+        });
+      }
+
       bill = await addBillAsync({
         ref: payload.invoiceNumber || `BILL-${Math.floor(100000 + Math.random() * 900000)}`,
         supplierRef: payload.invoiceNumber,
@@ -203,6 +231,8 @@ function ScanPage() {
         total: payload.grandTotal,
         currency: payload.currency,
         source: "ai-scan",
+        scannedTemplate: scannedTemplate ?? null,
+        scanExtras: { discount: payload.discount, shipping: payload.shipping, otherCharges: payload.otherCharges, poNumber: payload.purchaseOrderNumber },
       });
     } catch (e) {
       const msg = String((e as any)?.message ?? e ?? "");
@@ -222,6 +252,7 @@ function ScanPage() {
         }
         return { ok: false, reason: "duplicate" };
       }
+      if (!quiet) toast.error(msg || "تعذر حفظ الفاتورة والقالب");
       return { ok: false, reason: "error" };
     }
     logClientEvent("scan-save", `success id=${bill?.id ?? "?"}`);
@@ -566,7 +597,7 @@ function StatusBadge({ status }: { status: Status }) {
   );
 }
 
-type ReviewPayload = ScanResult & { createSupplier: boolean; finalStatus: string };
+type ReviewPayload = ScanResult & { createSupplier: boolean; finalStatus: string; useSourceTemplate?: boolean };
 
 function ReviewModal({
   job, suppliers, onClose, onSave,
@@ -579,12 +610,13 @@ function ReviewModal({
   const r = job.result!;
   const [form, setForm] = useState<ScanResult>(() => JSON.parse(JSON.stringify(r)));
   const [createSupplier, setCreateSupplier] = useState(true);
+  const [useSourceTemplate, setUseSourceTemplate] = useState(true);
   const [saving, setSaving] = useState(false);
   const submit = async (finalStatus: string) => {
     if (saving) return;
     setSaving(true);
     try {
-      await onSave({ ...form, createSupplier, finalStatus });
+      await onSave({ ...form, createSupplier, finalStatus, useSourceTemplate });
     } finally {
       setSaving(false);
     }
@@ -668,6 +700,13 @@ function ReviewModal({
           </div>
 
           <div className="space-y-4 text-sm">
+            <section className="rounded-xl border p-4 space-y-3">
+              <label className="flex items-center gap-2 font-semibold"><input type="checkbox" checked={useSourceTemplate} onChange={e => setUseSourceTemplate(e.target.checked)} />إنشاء الفاتورة بتصميم الأصل وحفظه في نماذج القوالب</label>
+              <p className="text-xs text-gray-600">راجع التصميم مقابل الأصل. يمكن إعادة استخدامه مع فواتير المورد، وتتغير الحقول والمبالغ حسب بيانات كل فاتورة. الأختام والتوقيعات محفوظة في المرفق الأصلي فقط.</p>
+              {form.layoutWarning && <p role="alert" className="text-amber-800">{form.layoutWarning}</p>}
+              {useSourceTemplate && form.visualLayout && <ScannedTemplatePreview layout={form.visualLayout} data={scanPreviewData(form)} />}
+              {useSourceTemplate && !form.visualLayout && <p role="alert">لم يُستخرج قالب صالح. أعد المسح أو ألغِ هذا الخيار لاستخدام القالب المعتاد.</p>}
+            </section>
             <div className="rounded-xl border border-[#eceae2] bg-white overflow-hidden shadow-sm">
               <div className="px-4 py-3 border-b border-[#eceae2] bg-[#fafaf7] flex items-center justify-between">
                 <div>

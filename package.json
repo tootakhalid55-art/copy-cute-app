@@ -12,7 +12,8 @@
     "lint": "eslint .",
     "format": "prettier --write .",
     "test:c2c": "node --test tests/accounting/phase-c2c-contract.mjs",
-    "test:platform-admin": "node --test tests/security/platform-admin-contract.mjs"
+    "test:platform-admin": "node --test tests/security/platform-admin-contract.mjs",
+    "test:scanned-layout": "node --test tests/accounting/scanned-layout.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
