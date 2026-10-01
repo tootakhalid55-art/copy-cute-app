@@ -11,4 +11,3 @@ export function scanPreviewData(scan?: Partial<ScanResult>): PrintDocData {
     scanExtras: { otherCharges: scan?.otherCharges },
     tpl: { name: "معاينة", accent: "#111111", onAccent: "#ffffff", soft: "#ffffff" } };
 }
-
