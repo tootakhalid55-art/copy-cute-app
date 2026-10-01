@@ -1,3 +1,4 @@
+import type { InvoiceTemplate } from "@/lib/haseem/templates";
 import { useState, useRef, useEffect, useMemo } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { Plus, Trash2, Printer, Eye, X, Pencil, Upload, Check, Download } from "lucide-react";
@@ -45,7 +46,7 @@ function zatcaTLV(seller: string, vat: string, iso: string, total: string, taxAm
   return typeof btoa !== "undefined" ? btoa(bin) : Buffer.from(bin, "binary").toString("base64");
 }
 
-type Line = { description: string; qty: number; price: number; tax: number; unit?: string };
+type Line = { description: string; qty: number; price: number; tax: number; unit?: string; discount?: number };
 
 export function DocumentForm({
   storageKey,
@@ -209,13 +210,18 @@ export function DocumentForm({
   // Per-kind named templates (settings → قوالب المستندات) — quotations get
   // quotation templates, invoices invoice templates, and so on.
   const { all: tplList, selected: selectedTpl, selectedId: tplId, setSelectedId: setTplId } = useInvoiceTemplates(printKind);
+  const [savedScanTemplate, setSavedScanTemplate] = useState<InvoiceTemplate | null>(existing?.scannedTemplate ?? null);
+  useEffect(() => { setSavedScanTemplate(existing?.scannedTemplate ?? null); }, [existing?.id, existing?.scannedTemplate]);
+  const availableTemplates = tplList.filter(t => !t.scannedLayout || t.supplierId === partyId);
   const [tplMode, setTplMode] = useKV<"template" | "custom">(`doc-tpl-mode:${kindForKV}`, "custom");
   // Content variant (progress billing / supply / services) only makes sense
   // where line items represent billable work — invoices and purchase bills.
   const supportsContentVariant = kind === "invoice" || kind === "bill";
   const [contentVariant, setContentVariant] = useKV<ContentVariant>(`doc-content-variant:${kindForKV}`, "standard");
   const layoutVariant = supportsContentVariant && contentVariant !== "standard" ? contentVariant : undefined;
-  const tpl = tplMode === "custom" || !selectedTpl
+  const scanTemplate = kind === "bill" && (savedScanTemplate || (tplMode === "template" ? selectedTpl : null));
+  const activeScanTemplate = scanTemplate && scanTemplate.scannedLayout && scanTemplate.supplierId === partyId ? scanTemplate : null;
+  const tpl = activeScanTemplate ? activeScanTemplate : tplMode === "custom" || !selectedTpl
     ? { name: "مخصص", accent: docColor, onAccent: contrastColorFor(docColor), soft: tintColorFor(docColor), layoutVariant }
     : { name: selectedTpl.name, accent: selectedTpl.accent, onAccent: selectedTpl.onAccent, soft: selectedTpl.soft, layoutVariant: selectedTpl.layoutVariant ?? layoutVariant };
   // ZATCA QR is exclusive to sales invoices (usesZatcaQr) and purchase bills
@@ -238,17 +244,21 @@ export function DocumentForm({
   // Arabic-Latin style: 1,234.56 with exactly 2 decimals
   const fmt = (n: number) =>
     r2(n).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-  const CUR = "ر.س";
+  const CUR = existing?.currency && existing.currency !== "SAR" ? existing.currency : "ر.س";
+  const scanExtras = kind === "bill" ? existing?.scanExtras : undefined;
 
   // Per-line rounded values, then aggregate — same convention as Qoyod
   const lineCalcs = lines.map((l) => {
-    const net = r2(l.qty * l.price);
+    const net = r2(l.qty * l.price - (l.discount || 0));
     const taxAmt = r2((net * l.tax) / 100);
     return { net, taxAmt, gross: r2(net + taxAmt) };
   });
-  const subtotal = r2(lineCalcs.reduce((s, c) => s + c.net, 0));
-  const tax = r2(lineCalcs.reduce((s, c) => s + c.taxAmt, 0));
-  const total = r2(subtotal + tax);
+  // A saved scan's authoritative totals include any printed header adjustments.
+  // Keep those totals on reopen; recompute when the user changes its line items.
+  const unchangedScan = kind === "bill" && existing?.source === "ai-scan" && JSON.stringify(lines) === JSON.stringify(existing.lines);
+  const subtotal = unchangedScan ? Number(existing.subtotal) : r2(lineCalcs.reduce((s, c) => s + c.net, 0));
+  const tax = unchangedScan ? Number(existing.tax) : r2(lineCalcs.reduce((s, c) => s + c.taxAmt, 0));
+  const total = unchangedScan ? Number(existing.total) : r2(subtotal + tax);
 
   // مستخلص (progress billing) summary — additive on top of the normal
   // subtotal/tax/total above, never replaces them. The line items represent
@@ -373,6 +383,7 @@ export function DocumentForm({
         qrDataUrl: usesZatcaQr || usesSupplierZatcaQr ? qrDataUrl : undefined,
         branding,
         tpl,
+        scanExtras,
         verify,
         attachment,
         layoutVariant: tpl.layoutVariant,
@@ -469,6 +480,9 @@ export function DocumentForm({
       status: finalStatus, lines, subtotal, tax, total,
       contractValue, previousCertified, retentionPct, advanceRecoveryPct,
       verifyToken,
+      currency: existing?.currency ?? "SAR",
+      ...(kind === "bill" ? { scannedTemplate: activeScanTemplate ?? null } : {}),
+      ...(existing?.source === "ai-scan" ? { source: "ai-scan", scanExtras: existing.scanExtras, supplierRef: existing.supplierRef } : {}),
     };
     try {
       if (existing) await updateAsync(existing.id, payload);
@@ -507,15 +521,17 @@ export function DocumentForm({
           <div className="flex items-center gap-1.5 border border-[#eceae2] rounded-lg px-2 py-1 bg-white">
             <span className="text-xs text-[#0f2a1d]/60">القالب:</span>
             <select
-              value={tplMode === "custom" ? "__custom" : tplId}
+              value={activeScanTemplate?.id ?? (tplMode === "custom" ? "__custom" : tplId)}
               onChange={(e) => {
+                setSavedScanTemplate(null);
                 if (e.target.value === "__custom") { setTplMode("custom"); return; }
                 setTplId(e.target.value); setTplMode("template");
               }}
               className="bg-transparent text-sm outline-none max-w-[190px]"
               title="قوالب هذا النوع من المستندات (تُدار من الإعدادات ← قوالب المستندات)"
             >
-              {tplList.map((t) => (
+              {activeScanTemplate && !availableTemplates.some(t => t.id === activeScanTemplate.id) && <option value={activeScanTemplate.id}>{activeScanTemplate.name} (محفوظ مع الفاتورة)</option>}
+              {availableTemplates.map((t) => (
                 <option key={t.id} value={t.id}>{t.name}</option>
               ))}
               <option value="__custom">مخصص (لون يدوي)</option>
@@ -617,6 +633,7 @@ export function DocumentForm({
         </div>
         <DocumentLivePreview
           kind={kind ?? cloudKind}
+          scanExtras={scanExtras}
           tpl={tpl}
           org={org}
           party={party}
@@ -1004,6 +1021,7 @@ export function DocumentForm({
               <div className="p-8 text-sm print:p-0">
               <DocumentLivePreview
                 kind={kind ?? cloudKind}
+                scanExtras={scanExtras}
                 tpl={tpl}
                 org={org}
                 party={party}
@@ -1349,6 +1367,7 @@ function BadgeChip({ label, tone }: { label: string; tone: "status" | "approval"
 
 function DocumentLivePreview({
   kind,
+  scanExtras,
   tpl,
   org,
   party,
@@ -1389,7 +1408,7 @@ function DocumentLivePreview({
   }
   if (kind === "purchase-order" || kind === "bill") {
     return <PurchasePreview {...{
-      tpl, org, party, partyName, partyLabel, partyAddress, ref_, date, dueDate, issuedAtIso,
+      tpl, scanExtras, org, party, partyName, partyLabel, partyAddress, ref_, date, dueDate, issuedAtIso,
       lines, lineCalcs, subtotal, tax, total, notes, branding, currency, kind,
       qrDataUrl, usesZatcaQr: usesSupplierZatcaQr, verify,
       layoutVariant, progressBilling, structure,

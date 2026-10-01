@@ -1,3 +1,6 @@
+import { useKV } from "@/lib/haseem/store";
+import { ScannedTemplatePreview } from "@/components/haseem/ScannedTemplatePreview";
+import { toast } from "sonner";
 import { useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { CheckCircle2, FileText, Plus, Pencil, Trash2, Eye, X, Save } from "lucide-react";
@@ -27,7 +30,9 @@ const EMPTY_DRAFT: Draft = {
 
 function TemplatesPage() {
   const [activeKind, setActiveKind] = useState<DocKind>("invoice");
-  const { all, custom, selectedId, setSelectedId, overrideBuiltin, resetBuiltin, isOverridden } = useInvoiceTemplates(activeKind);
+  const { all, custom, scanned, selectedId, setSelectedId: selectTemplate, overrideBuiltin, resetBuiltin, isOverridden } = useInvoiceTemplates(activeKind);
+  const [, setTemplateMode] = useKV<"template" | "custom">(`doc-tpl-mode:${activeKind}`, "custom");
+  const setSelectedId = (id: string) => { selectTemplate(id); setTemplateMode("template"); };
   const [editorOpen, setEditorOpen] = useState(false);
   const [previewId, setPreviewId] = useState<string | null>(null);
   const [draft, setDraft] = useState<Draft>(EMPTY_DRAFT);
@@ -40,6 +45,12 @@ function TemplatesPage() {
     setEditorOpen(true);
   };
   const openEdit = (t: InvoiceTemplate) => {
+    if (t.scannedLayout) {
+      const name = prompt("اسم القالب المستخرج", t.name);
+      const record = scanned.items.find(item => item.id === t.id);
+      if (name?.trim() && record) void scanned.save({ ...record, name: name.trim() }).catch(e => toast.error(e.message || "تعذر حفظ القالب"));
+      return;
+    }
     setDraft({ id: t.id, name: t.name, desc: t.desc ?? "", accent: t.accent, onAccent: t.onAccent, soft: t.soft });
     setEditingBuiltinId(t.builtin ? t.id : null);
     setEditorOpen(true);
@@ -61,7 +72,9 @@ function TemplatesPage() {
   };
   const removeCustom = (id: string) => {
     if (!confirm("حذف هذا القالب؟")) return;
-    custom.remove(id);
+    const record = scanned.items.find(t => t.id === id);
+    if (record) void scanned.remove(record).catch(e => toast.error(e.message || "تعذر حذف القالب"));
+    else custom.remove(id);
     if (selectedId === id) setSelectedId(all[0]?.id ?? "classic");
   };
   const duplicate = (t: InvoiceTemplate) => {
@@ -106,6 +119,8 @@ function TemplatesPage() {
       </div>
 
 
+      {activeKind === "bill" && <p className="text-sm">القوالب المستخرجة من المسح تُحفظ للمنشأة وتظهر هنا تلقائيًا. تبقى نسخة القالب داخل الفاتورة حتى عند حذف النموذج.</p>}
+      {scanned.error && <p role="alert" className="text-red-700">تعذر تحميل قوالب المسح من الخادم. أعد تحميل الصفحة.</p>}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {all.map((t) => {
           const isActive = selectedId === t.id;
@@ -122,7 +137,7 @@ function TemplatesPage() {
                 className="w-full text-right"
                 title="اختيار كافتراضي"
               >
-                <div
+                {t.scannedLayout ? <div className="h-32 mb-3 overflow-hidden pointer-events-none"><ScannedTemplatePreview layout={t.scannedLayout} /></div> : <div
                   className="rounded-lg h-32 mb-3 flex flex-col justify-between p-2"
                   style={{ background: `linear-gradient(180deg, ${t.accent}0d 0%, ${t.accent}22 100%)` }}
                 >
@@ -133,12 +148,13 @@ function TemplatesPage() {
                     <div className="h-1.5 w-1/2 rounded bg-[#0f2a1d]/20" />
                   </div>
                   <div className="h-4 w-20 rounded self-end" style={{ background: t.accent }} />
-                </div>
+                </div>}
                 <div className="flex items-center justify-between">
                   <div className="min-w-0">
                     <div className="font-semibold flex items-center gap-2">
                       <FileText className="w-4 h-4" style={{ color: t.accent }} />
                       <span className="truncate">{t.name}</span>
+                      {t.scannedLayout && <span className="text-[10px] bg-blue-50 text-blue-700 px-1 rounded">مستخرج من المسح</span>}
                       {t.builtin && (
                         <span className="text-[10px] bg-[#f2f0e8] text-[#0f2a1d]/70 px-1.5 py-0.5 rounded">افتراضي</span>
                       )}
@@ -350,6 +366,7 @@ function MiniPreview({ tpl }: { tpl: InvoiceTemplate }) {
 }
 
 function FullPreview({ tpl }: { tpl: InvoiceTemplate }) {
+  if (tpl.scannedLayout) return <ScannedTemplatePreview layout={tpl.scannedLayout} />;
   const rows = [
     { d: "استشارات فنية", q: 10, p: 50 },
     { d: "خدمة تركيب", q: 2, p: 250 },
