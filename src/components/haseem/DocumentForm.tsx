@@ -1,3 +1,6 @@
+import { selectScannedOriginals } from "@/lib/haseem/scanned-original";
+import { FilePreviewPane } from "./FilePreviewPane";
+import { toast } from "sonner";
 import type { InvoiceTemplate } from "@/lib/haseem/templates";
 import { useState, useRef, useEffect, useMemo } from "react";
 import { useNavigate } from "@tanstack/react-router";
@@ -348,22 +351,15 @@ export function DocumentForm({
       // For a purchase bill, fetch the supplier's original scanned file (if
       // one is linked in cloud storage) so it prints merged after the
       // generated digital invoice — one combined job for audit/review.
-      let attachment: { url: string; mime?: string; label?: string } | undefined;
-      if (printKind === "bill" && sourceScans.length) {
-        // Same signed URLs the Live View shows — print output matches it.
-        const latest = sourceScans[0];
-        attachment = { url: latest.url, mime: latest.mime || undefined, label: `النسخة الأصلية · ${latest.filename}` };
-      } else if (printKind === "bill" && currentOrgId && dbId) {
-        try {
-          const atts = await listAttachments(currentOrgId, "document", dbId);
-          const latest = atts[0];
-          if (latest) {
-            const url = await getSignedUrl(latest.storage_path);
-            if (url) attachment = { url, mime: latest.mime_type ?? undefined, label: `النسخة الأصلية · ${latest.filename}` };
-          }
-        } catch (e) {
-          console.error("[print] failed to load original attachment", e);
+      const attachments: { url: string; mime?: string; label?: string }[] = [];
+      if (printKind === "bill" && currentOrgId && dbId) {
+        const atts = selectScannedOriginals(await listAttachments(currentOrgId, "document", dbId), existing?.scannedOriginal?.filename);
+        for (const att of atts) {
+          const url = await getSignedUrl(att.storage_path);
+          if (!url) throw new Error("تعذر تحميل المستند الأصلي للطباعة؛ حاول مجددًا");
+          attachments.push({ url, mime: att.mime_type || (/\.pdf$/i.test(att.filename) ? "application/pdf" : undefined), label: `النسخة الأصلية · ${att.filename}` });
         }
+        if (existing?.scannedOriginal && !attachments.length) throw new Error("لم يكتمل رفع الأصل بعد؛ أعد رفعه من قائمة المسح أو أرفقه بالفاتورة قبل الطباعة");
       }
 
       await printDoc({
@@ -388,11 +384,13 @@ export function DocumentForm({
         tpl,
         scanExtras,
         verify,
-        attachment,
+        attachments,
         layoutVariant: tpl.layoutVariant,
         progressBilling: tpl.layoutVariant === "contracting" ? progressBilling : undefined,
         structure,
       });
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "تعذرت طباعة المستند الأصلي");
     } finally {
       setPrinting(false);
     }
@@ -415,38 +413,40 @@ export function DocumentForm({
   // for bills we surface it inside the Live View as extra pages after the
   // system-generated invoice, with a download action.
   const [sourceScans, setSourceScans] = useState<
-    { id: string; url: string; mime: string; filename: string }[]
+    { id: string; url: string; mime: string; filename: string; storagePath: string }[]
   >([]);
   useEffect(() => {
     let alive = true;
-    if (printKind !== "bill" || !currentOrgId || !dbId) {
-      setSourceScans([]);
-      return;
-    }
-    (async () => {
-      // A few bounded retries: right after a scan-save the upload may land a
-      // moment after this page mounts, so an empty first read isn't final.
-      for (const delay of [0, 2500, 7000]) {
-        if (delay) await new Promise((r) => setTimeout(r, delay));
-        if (!alive) return;
-        try {
-          const atts = await listAttachments(currentOrgId, "document", dbId);
-          const scans: { id: string; url: string; mime: string; filename: string }[] = [];
-          for (const att of atts) {
-            const url = await getSignedUrl(att.storage_path);
-            if (url) scans.push({ id: att.id, url, mime: att.mime_type ?? "", filename: att.filename ?? "scan" });
-          }
-          if (!alive) return;
-          setSourceScans(scans);
-          if (scans.length) return;
-        } catch (e) {
-          console.error("[live-view] failed to load original scanned file", e);
-          if (alive) setSourceScans([]);
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    setSourceScans([]);
+    if (printKind !== "bill" || !currentOrgId || !dbId) return;
+    const refresh = async () => {
+      if (timer) clearTimeout(timer);
+      try {
+        const atts = selectScannedOriginals(await listAttachments(currentOrgId, "document", dbId), existing?.scannedOriginal?.filename);
+        const scans = [];
+        for (const att of atts) {
+          const url = await getSignedUrl(att.storage_path);
+          if (url) scans.push({ id: att.id, url, mime: att.mime_type ?? "", filename: att.filename ?? "scan", storagePath: att.storage_path });
         }
+        if (!alive) return;
+        setSourceScans(scans);
+        if (!scans.length && existing?.scannedOriginal?.filename) timer = setTimeout(refresh, 5000);
+      } catch (error) {
+        console.error("[live-view] original file unavailable", error);
+        if (alive) timer = setTimeout(refresh, 10000);
       }
-    })();
-    return () => { alive = false; };
-  }, [printKind, currentOrgId, dbId]);
+    };
+    const onChanged = (event: Event) => {
+      const detail = (event as CustomEvent).detail;
+      if (detail?.orgId === currentOrgId && detail?.entityId === dbId) void refresh();
+    };
+    const onFocus = () => { void refresh(); };
+    window.addEventListener("focus", onFocus);
+    window.addEventListener("canar:attachments-changed", onChanged);
+    void refresh();
+    return () => { alive = false; if (timer) clearTimeout(timer); window.removeEventListener("canar:attachments-changed", onChanged); window.removeEventListener("focus", onFocus); };
+  }, [printKind, currentOrgId, dbId, existing?.scannedOriginal?.filename]);
   const [enablingCloud, setEnablingCloud] = useState(false);
   const [uploading, setUploading] = useState(false);
 
@@ -485,7 +485,7 @@ export function DocumentForm({
       verifyToken,
       currency: existing?.currency ?? "SAR",
       ...(kind === "bill" ? { scannedTemplate: activeScanTemplate ?? null } : {}),
-      ...(existing?.source === "ai-scan" ? { source: "ai-scan", scanExtras: existing.scanExtras, supplierRef: existing.supplierRef, zatcaQr: scannedQr ? existing.zatcaQr : null, supplierReviewSource: scannedQr ? "zatca-qr" : existing.zatcaQr ? "registered-supplier" : existing.supplierReviewSource } : {}),
+      ...(existing?.source === "ai-scan" ? { source: "ai-scan", scannedOriginal: existing.scannedOriginal, scanExtras: existing.scanExtras, supplierRef: existing.supplierRef, zatcaQr: scannedQr ? existing.zatcaQr : null, supplierReviewSource: scannedQr ? "zatca-qr" : existing.zatcaQr ? "registered-supplier" : existing.supplierReviewSource } : {}),
     };
     try {
       if (existing) await updateAsync(existing.id, payload);
@@ -669,7 +669,7 @@ export function DocumentForm({
           progressBilling={tpl.layoutVariant === "contracting" ? progressBilling : undefined}
           structure={structure}
         />
-        <SourceScanPages scans={sourceScans} />
+        <SourceScanPages scans={sourceScans} expected={!!existing?.scannedOriginal} />
       </div>
 
 
@@ -1057,7 +1057,7 @@ export function DocumentForm({
                 progressBilling={tpl.layoutVariant === "contracting" ? progressBilling : undefined}
                 structure={structure}
               />
-              <SourceScanPages scans={sourceScans} />
+              <SourceScanPages scans={sourceScans} expected={!!existing?.scannedOriginal} />
             </div>
           </div>
         </div>
@@ -1424,11 +1424,13 @@ function DocumentLivePreview({
 // system-generated invoice above; each original scanned file follows as its
 // own page with a download action (signed URL, fetched as a blob so the
 // browser saves it instead of navigating).
-function SourceScanPages({ scans }: { scans: { id: string; url: string; mime: string; filename: string }[] }) {
-  if (!scans.length) return null;
-  const download = async (scan: { url: string; filename: string }) => {
+function SourceScanPages({ scans, expected }: { expected?: boolean; scans: { id: string; url: string; mime: string; filename: string; storagePath: string }[] }) {
+  if (!scans.length) return expected ? <p role="status" className="p-4 bg-amber-50 rounded">المستند الأصلي لم يصل بعد. انتظر اكتمال الرفع؛ إذا تعذر، استخدم «إعادة رفع الأصل» في قائمة المسح أو أرفقه من مرفقات الفاتورة.</p> : null;
+  const download = async (scan: { url: string; filename: string; storagePath: string }) => {
     try {
-      const res = await fetch(scan.url);
+      const url = await getSignedUrl(scan.storagePath);
+      if (!url) throw new Error("تعذر تحميل الملف");
+      const res = await fetch(url);
       if (!res.ok) throw new Error(`http ${res.status}`);
       const blob = await res.blob();
       const objUrl = URL.createObjectURL(blob);
@@ -1440,13 +1442,13 @@ function SourceScanPages({ scans }: { scans: { id: string; url: string; mime: st
       a.remove();
       setTimeout(() => URL.revokeObjectURL(objUrl), 4000);
     } catch {
-      window.open(scan.url, "_blank", "noopener");
+      toast.error("تعذر تنزيل الأصل؛ أعد المحاولة بعد التحقق من الاتصال");
     }
   };
   return (
     <>
       {scans.map((scan, i) => {
-        const isPdf = (scan.mime || "").includes("pdf") || /\.pdf$/i.test(scan.filename);
+
         return (
           <div key={scan.id} className="mt-6 border-t-2 border-dashed border-[#eceae2] pt-5">
             <div className="flex items-center justify-between gap-3 flex-wrap mb-3">
@@ -1455,7 +1457,7 @@ function SourceScanPages({ scans }: { scans: { id: string; url: string; mime: st
                   الفاتورة الأصلية الممسوحة ضوئياً · Original Scanned Invoice
                 </div>
                 <div className="text-[11px] text-[#0f2a1d]/60">
-                  صفحة {i + 2} · {scan.filename}
+                  المستند {i + 1} · {scan.filename}
                 </div>
               </div>
               <OutlineBtn type="button" onClick={() => download(scan)}>
@@ -1463,20 +1465,7 @@ function SourceScanPages({ scans }: { scans: { id: string; url: string; mime: st
               </OutlineBtn>
             </div>
             <div className="rounded-lg border border-[#eceae2] bg-[#faf9f4] p-2 print:border-0 print:p-0">
-              {isPdf ? (
-                <iframe
-                  src={scan.url}
-                  title={scan.filename}
-                  className="w-full rounded bg-white"
-                  style={{ height: "80vh", minHeight: 480, border: 0 }}
-                />
-              ) : (
-                <img
-                  src={scan.url}
-                  alt={scan.filename}
-                  className="w-full h-auto rounded bg-white object-contain"
-                />
-              )}
+              <FilePreviewPane src={scan.url} mime={scan.mime} filename={scan.filename} />
             </div>
           </div>
         );

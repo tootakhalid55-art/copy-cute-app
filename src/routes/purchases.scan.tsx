@@ -31,7 +31,7 @@ export const Route = createFileRoute("/purchases/scan")({
 const ACCEPT = "application/pdf,image/jpeg,image/jpg,image/png,image/webp,image/tiff,image/heic,image/heif";
 const MAX_SIZE = 8 * 1024 * 1024; // 8MB
 
-type Status = "pending" | "saving" | "save-error" | "scanning" | "review" | "saved" | "error" | "duplicate";
+type Status = "pending" | "attachment-error" | "saving" | "save-error" | "scanning" | "review" | "saved" | "error" | "duplicate";
 type Job = {
   id: string;
   file: File;
@@ -172,6 +172,37 @@ function ScanPage() {
 
   const reviewJob = jobs.find((j) => j.id === reviewId) || null;
 
+  const saveOriginal = async (job: Job, billId: string): Promise<boolean> => {
+    try {
+      if (!currentOrgId) throw new Error("المنشأة غير متاحة");
+      const up = await uploadAttachmentAndWait(job.file, {
+        orgId: currentOrgId, entityType: "document", entityId: billId, purpose: "scanned-original",
+      });
+      if (up.status !== "done") throw new Error(up.error || "تعذر رفع الأصل");
+      updateJob(job.id, { status: "saved", error: undefined, billId });
+      return true;
+    } catch {
+      updateJob(job.id, { status: "attachment-error", billId, error: "الفاتورة محفوظة؛ لم يُحفظ الأصل بعد. اضغط إعادة رفع الأصل." });
+      return false;
+    }
+  };
+
+  const retryOriginal = async (job: Job) => {
+    if (!job.billId) return;
+    const key = `${scope}:${job.id}`;
+    if (activeSaves.has(key)) return;
+    activeSaves.add(key);
+    window.addEventListener("beforeunload", warnPendingSave);
+    updateJob(job.id, { status: "saving", error: undefined });
+    try {
+      if (await saveOriginal(job, job.billId)) toast.success("تم حفظ المستند الأصلي وربطه بالفاتورة");
+      else toast.error("تعذر رفع الأصل؛ يمكنك إعادة المحاولة دون إنشاء فاتورة جديدة");
+    } finally {
+      activeSaves.delete(key);
+      if (!activeSaves.size) window.removeEventListener("beforeunload", warnPendingSave);
+    }
+  };
+
   // Shared save routine — used by the review modal and the bulk
   // high-confidence approve button. Returns {ok:false, reason} instead of
   // throwing; in quiet mode duplicates are skipped without error toasts.
@@ -179,7 +210,7 @@ function ScanPage() {
     job: Job,
     payload: ReviewPayload,
     opts?: { quiet?: boolean; supplierCache?: Map<string, any> },
-  ): Promise<{ ok: boolean; billId?: string; reason?: "duplicate" | "error" | "vat-mismatch" }> => {
+  ): Promise<{ ok: boolean; billId?: string; attachmentSaved?: boolean; reason?: "duplicate" | "error" | "vat-mismatch" }> => {
     const quiet = !!opts?.quiet;
     const qr = payload.zatcaQr?.status === "decoded" ? payload.zatcaQr.data : undefined;
     if (payload.zatcaQr?.status === "ambiguous") {
@@ -284,6 +315,7 @@ function ScanPage() {
         total: payload.grandTotal,
         currency: payload.currency,
         source: "ai-scan",
+        scannedOriginal: { filename: job.file.name, mime: job.file.type, size: job.file.size },
         scannedTemplate: scannedTemplate ?? null,
         zatcaQr: payload.zatcaQr ?? null,
         supplierReviewSource: qr ? "zatca-qr" : payload.selectedSupplierId ? "registered-supplier" : "scan",
@@ -319,19 +351,9 @@ function ScanPage() {
     logClientEvent("scan-save", `success id=${bill?.id ?? "?"}`);
 
     updateJob(job.id, { billId: bill.id });
+    const attachmentSaved = await saveOriginal(job, bill.id);
+    if (!attachmentSaved) toast.warning("حُفظت الفاتورة، لكن الأصل يحتاج إعادة رفع من قائمة المسح.");
     try {
-    // Persist the original scanned file to cloud storage, awaited so the
-    // bill opens with the original already linked.
-    if (currentOrgId && bill?.id && !String(bill.id).startsWith("tmp_")) {
-      const up = await uploadAttachmentAndWait(job.file, {
-        orgId: currentOrgId, entityType: "document", entityId: bill.id,
-      });
-      if (up.status !== "done") {
-        logClientEvent("scan-save", `attachment upload ${up.status}: ${up.error ?? "?"}`);
-        toast.error("تم حفظ الفاتورة، لكن تعذّر رفع الملف الأصلي — سيُعاد رفعه من صفحة الفاتورة عبر زر المرفقات");
-      }
-    }
-
     addHistory({
       supplierName: payload.supplierName,
       invoiceNumber: payload.invoiceNumber,
@@ -344,10 +366,9 @@ function ScanPage() {
       orgName: org.name,
     });
     } catch {
-      toast.warning("حُفظت الفاتورة، لكن تعذر حفظ المرفق أو الأرشيف المحلي. يمكنك فتح الفاتورة لإرفاق الأصل.");
+      toast.warning("الفاتورة محفوظة؛ تعذر تحديث الأرشيف المحلي فقط.");
     }
-    updateJob(job.id, { status: "saved", error: undefined });
-    return { ok: true, billId: bill.id };
+    return { ok: true, billId: bill.id, attachmentSaved };
   };
 
   // Bulk approve: every reviewed-and-waiting invoice whose extraction
@@ -496,7 +517,7 @@ function ScanPage() {
                 key={j.id}
                 job={j}
                 onReview={() => { if (!bulkSaving) setReviewId(j.id); }}
-                onRetry={() => runScan(j)}
+                onRetry={() => j.status === "attachment-error" ? retryOriginal(j) : runScan(j)}
                 onRemove={() => setJobs((js) => js.filter((x) => x.id !== j.id))}
               />
             ))}
@@ -590,7 +611,7 @@ function ScanPage() {
                 if (!res.ok) throw new Error(res.reason === "duplicate"
                   ? "يوجد رقم فاتورة مكرر؛ راجع الفاتورة قبل إعادة الحفظ"
                   : "تعذر الحفظ؛ بيانات المراجعة محفوظة هنا لإعادة المحاولة");
-                toast.success("حُفظت الفاتورة. يمكنك فتحها للتحقق من حالة الاعتماد.", {
+                (res.attachmentSaved ? toast.success : toast.warning)(res.attachmentSaved ? "حُفظت الفاتورة مع المستند الأصلي." : "الفاتورة محفوظة؛ أعد رفع الأصل من قائمة المسح.", {
                   duration: 8000,
                   action: { label: "فتح الفاتورة", onClick: () => navigate({ to: "/purchases/bills/$id", params: { id: res.billId! } }) },
                 });
@@ -644,9 +665,9 @@ function JobRow({
           </PrimaryBtn>
         )}
         {job.billId && <Link to="/purchases/bills/$id" params={{ id: job.billId }} className="text-xs underline">فتح الفاتورة</Link>}
-        {job.status === "error" && (
+        {(job.status === "error" || job.status === "attachment-error") && (
           <OutlineBtn onClick={onRetry} className="!py-1.5 !px-3 text-xs">
-            <RefreshCw className="w-3.5 h-3.5" /> إعادة
+            <RefreshCw className="w-3.5 h-3.5" /> {job.status === "attachment-error" ? "إعادة رفع الأصل" : "إعادة"}
           </OutlineBtn>
         )}
         {job.status !== "scanning" && job.status !== "saving" && (
@@ -661,6 +682,7 @@ function JobRow({
 
 function StatusBadge({ status }: { status: Status }) {
   const map: Record<Status, { t: string; c: string }> = {
+    "attachment-error": { t: "محفوظة دون الأصل", c: "bg-amber-50 text-amber-700" },
     saving: { t: "جارٍ الحفظ في الخلفية…", c: "bg-blue-50 text-blue-700" },
     "save-error": { t: "تعذر الحفظ — راجع وأعد المحاولة", c: "bg-red-50 text-red-700" },
     pending:   { t: "في الانتظار", c: "bg-[#f7f6f0] text-[#0f2a1d]/70" },

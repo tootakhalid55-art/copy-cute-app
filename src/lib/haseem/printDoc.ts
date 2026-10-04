@@ -713,15 +713,23 @@ async function buildAttachmentPagesHtml(url: string, mime?: string, label?: stri
   const isPdf = mime === "application/pdf" || url.startsWith("data:application/pdf") || /\.pdf($|\?)/i.test(url);
   const header = `<div style="padding:14px 0 10px;text-align:center;font-size:11px;color:#6b7469;font-weight:700;letter-spacing:.04em">${esc(label || "النسخة الأصلية الممسوحة · Original Scanned Copy")}</div>`;
 
-  const pageWrap = (imgSrc: string) =>
-    `<div style="page-break-before:always;padding:8px 0;display:flex;align-items:center;justify-content:center">
-       <img src="${esc(imgSrc)}" style="max-width:100%;max-height:277mm;object-fit:contain" />
+  let firstPage = true;
+  const pageWrap = (imgSrc: string) => {
+    const html = `<div style="page-break-before:always;break-inside:avoid;padding:8px 0;display:flex;flex-direction:column;align-items:center;justify-content:center">
+       ${firstPage ? header : ""}<img src="${esc(imgSrc)}" style="max-width:100%;max-height:245mm;object-fit:contain" />
      </div>`;
+    firstPage = false;
+    return html;
+  };
 
   if (!isPdf) {
-    return `${header}${pageWrap(url)}`;
+    const image = new Image(); image.src = url;
+    try { await image.decode(); }
+    catch { throw new Error("تعذر تحميل صورة المستند الأصلي للطباعة؛ أعد المحاولة أو نزّل الأصل"); }
+    return pageWrap(url);
   }
 
+  let pdfDocument: { destroy(): Promise<void> } | undefined;
   try {
     const pdfjs: any = await import("pdfjs-dist");
     const workerUrl = (await import("pdfjs-dist/build/pdf.worker.min.mjs?url")).default;
@@ -739,6 +747,7 @@ async function buildAttachmentPagesHtml(url: string, mime?: string, label?: stri
     }
 
     const doc = await pdfjs.getDocument(source).promise;
+    pdfDocument = doc;
     let pages = "";
     for (let p = 1; p <= doc.numPages; p++) {
       const page = await doc.getPage(p);
@@ -747,19 +756,19 @@ async function buildAttachmentPagesHtml(url: string, mime?: string, label?: stri
       canvas.width = Math.floor(viewport.width);
       canvas.height = Math.floor(viewport.height);
       const ctx = canvas.getContext("2d");
-      if (!ctx) continue;
+      if (!ctx) throw new Error("تعذر تجهيز صفحة الطباعة");
       await page.render({ canvasContext: ctx, viewport, canvas }).promise;
       pages += pageWrap(canvas.toDataURL("image/png"));
     }
-    doc.destroy?.();
-    return pages ? `${header}${pages}` : "";
+    if (!pages) throw new Error("لا توجد صفحات قابلة للطباعة");
+    return pages;
   } catch (e) {
     console.error("[print] failed to rasterize original PDF for merge", e);
-    return "";
-  }
+    throw new Error("تعذر تحميل صفحات المستند الأصلي للطباعة؛ أعد المحاولة أو نزّل الأصل منفصلًا");
+  } finally { await pdfDocument?.destroy(); }
 }
 
-export async function printDoc(d: PrintDocData & { attachment?: { url: string; mime?: string; label?: string } }) {
+export async function printDoc(d: PrintDocData & { attachment?: { url: string; mime?: string; label?: string }; attachments?: { url: string; mime?: string; label?: string }[] }) {
   if (typeof window === "undefined") return;
   const safeDoc: PrintDocData = {
     ...d,
@@ -781,9 +790,10 @@ export async function printDoc(d: PrintDocData & { attachment?: { url: string; m
     tpl: d.tpl ?? { name: "Default", accent: "#0f2a1d", onAccent: "#ffffff", soft: "#fafaf7" },
   };
   const inner = buildDocHtml(safeDoc);
-  const attachmentHtml = d.attachment?.url
-    ? await buildAttachmentPagesHtml(d.attachment.url, d.attachment.mime, d.attachment.label)
-    : "";
+  let attachmentHtml = "";
+  for (const attachment of d.attachments ?? (d.attachment ? [d.attachment] : [])) {
+    attachmentHtml += await buildAttachmentPagesHtml(attachment.url, attachment.mime, attachment.label);
+  }
   const scanned = d.kind === "bill" ? parseScannedLayout(d.tpl?.scannedLayout) : undefined;
   const isThermal = !scanned && d.structure === "thermal";
   const thermalRollMm = d.thermalWidth === "57mm" ? 57 : 80;
@@ -901,7 +911,10 @@ export async function printDoc(d: PrintDocData & { attachment?: { url: string; m
   w.document.open();
   w.document.write(doc);
   w.document.close();
+  let triggered = false;
   const trigger = () => {
+    if (triggered) return;
+    triggered = true;
     const prevTitle = document.title;
     document.title = `${safeDoc.title} ${safeDoc.ref}`.trim();
     setTimeout(() => { document.title = prevTitle; }, 4000);
