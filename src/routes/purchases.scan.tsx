@@ -1,3 +1,4 @@
+import { applyRegisteredSupplier, resolveScanSupplier } from "@/lib/haseem/scan-supplier";
 import { captureScannedLogo } from "@/lib/haseem/scanned-logo";
 import { useScannedTemplates, type ScannedTemplate } from "@/lib/haseem/scanned-templates";
 import { scanPreviewData } from "@/lib/haseem/scan-preview-data";
@@ -154,9 +155,16 @@ function ScanPage() {
     // that was just created: the render-time `suppliers` list is stale
     // during the loop and would create the same supplier again.
     const supplierKey = String(payload.supplierName ?? "").trim();
-    let supplier =
-      opts?.supplierCache?.get(supplierKey) ??
-      suppliers.find((s: any) => s.name?.trim() === supplierKey);
+    let supplier;
+    try {
+      supplier = payload.selectedSupplierId
+        ? resolveScanSupplier(suppliers, payload.selectedSupplierId, supplierKey)
+        : opts?.supplierCache?.get(supplierKey) ?? resolveScanSupplier(suppliers, undefined, supplierKey);
+      if (payload.selectedSupplierId && supplier) payload = applyRegisteredSupplier(payload, supplier);
+    } catch (error) {
+      if (!quiet) toast.error(error instanceof Error ? error.message : "تعذر تحديد المورد");
+      return { ok: false, reason: "error" };
+    }
     if (!supplier && payload.createSupplier && supplierKey) {
       supplier = await addSupplierAsync({
         name: payload.supplierName,
@@ -232,6 +240,13 @@ function ScanPage() {
         currency: payload.currency,
         source: "ai-scan",
         scannedTemplate: scannedTemplate ?? null,
+        supplierReviewSource: payload.selectedSupplierId ? "registered-supplier" : "scan",
+        supplierInvoiceName: payload.supplierName,
+        supplierVatNumber: payload.supplierVatNumber,
+        supplierCrNumber: payload.supplierCrNumber,
+        supplierAddress: payload.supplierAddress,
+        supplierPhone: payload.supplierPhone,
+        supplierEmail: payload.supplierEmail,
         scanExtras: { discount: payload.discount, shipping: payload.shipping, otherCharges: payload.otherCharges, poNumber: payload.purchaseOrderNumber },
       });
     } catch (e) {
@@ -597,7 +612,7 @@ function StatusBadge({ status }: { status: Status }) {
   );
 }
 
-type ReviewPayload = ScanResult & { createSupplier: boolean; finalStatus: string; useSourceTemplate?: boolean };
+type ReviewPayload = ScanResult & { createSupplier: boolean; finalStatus: string; useSourceTemplate?: boolean; selectedSupplierId?: string };
 
 function ReviewModal({
   job, suppliers, onClose, onSave,
@@ -610,23 +625,24 @@ function ReviewModal({
   const r = job.result!;
   const [form, setForm] = useState<ScanResult>(() => JSON.parse(JSON.stringify(r)));
   const [createSupplier, setCreateSupplier] = useState(true);
+  const [selectedSupplierId, setSelectedSupplierId] = useState("");
   const [useSourceTemplate, setUseSourceTemplate] = useState(true);
   const [saving, setSaving] = useState(false);
   const submit = async (finalStatus: string) => {
     if (saving) return;
     setSaving(true);
     try {
-      await onSave({ ...form, createSupplier, finalStatus, useSourceTemplate });
+      await onSave({ ...form, createSupplier: selectedSupplierId ? false : createSupplier, finalStatus, useSourceTemplate, selectedSupplierId: selectedSupplierId || undefined });
     } finally {
       setSaving(false);
     }
   };
 
-  useEffect(() => { setForm(JSON.parse(JSON.stringify(r))); }, [r]);
+  useEffect(() => { setForm(JSON.parse(JSON.stringify(r))); setSelectedSupplierId(""); setCreateSupplier(true); }, [r]);
 
   const supplierMatch = useMemo(
-    () => suppliers.find((s: any) => s.name?.trim() === form.supplierName?.trim()),
-    [suppliers, form.supplierName]
+    () => selectedSupplierId ? suppliers.find((s: any) => s.id === selectedSupplierId) : (suppliers.filter((s: any) => s.name?.trim() === form.supplierName?.trim()).length === 1 ? suppliers.find((s: any) => s.name?.trim() === form.supplierName?.trim()) : undefined),
+    [suppliers, form.supplierName, selectedSupplierId]
   );
 
   useEffect(() => { if (supplierMatch) setCreateSupplier(false); }, [supplierMatch]);
@@ -714,13 +730,39 @@ function ReviewModal({
                   <div className="font-bold">بيانات الفاتورة داخل النظام</div>
                 </div>
                 <span className="text-[11px] px-2 py-0.5 rounded-full bg-[#eaf5ee] text-[#0f6b3a]">
-                  يطابق المستند الأصلي
+                  {selectedSupplierId ? "بيانات المورد من السجل" : "بيانات مستخرجة للمراجعة"}
                 </span>
               </div>
               <div className="p-4 grid grid-cols-2 gap-3">
+                <div className="col-span-2 space-y-2 rounded-lg border bg-blue-50 p-3">
+                  <label htmlFor="registered-scan-supplier" className="block font-semibold">اختيار مورد مسجل</label>
+                  <select id="registered-scan-supplier" value={selectedSupplierId} disabled={saving} className="w-full border rounded px-3 py-2 bg-white" onChange={e => {
+                    const id = e.target.value;
+                    setSelectedSupplierId(id);
+                    if (id) {
+                      const supplier = suppliers.find((item: any) => item.id === id);
+                      if (supplier) setForm(current => applyRegisteredSupplier(current, supplier));
+                      setCreateSupplier(false);
+                    } else {
+                      setForm(current => ({ ...current, supplierName: r.supplierName, supplierVatNumber: r.supplierVatNumber, supplierCrNumber: r.supplierCrNumber, supplierAddress: r.supplierAddress, supplierPhone: r.supplierPhone, supplierEmail: r.supplierEmail }));
+                      setCreateSupplier(true);
+                    }
+                  }}>
+                    <option value="">استخدام البيانات المستخرجة / إدخال يدوي</option>
+                    {suppliers.map((supplier: any) => <option key={supplier.id} value={supplier.id}>{supplier.name} — {supplier.taxNumber || "بدون رقم ضريبي"}{supplier.code ? ` — ${supplier.code}` : ""}</option>)}
+                  </select>
+                  {selectedSupplierId && <p role="status" className="text-xs">تم تعبئة بيانات المورد من سجله. لإدخال بيانات يدويًا اختر «استخدام البيانات المستخرجة».</p>}
+                  <dl className="grid grid-cols-2 gap-2 text-xs">
+                    <div><dt>السجل التجاري</dt><dd>{form.supplierCrNumber || "—"}</dd></div>
+                    <div><dt>الهاتف</dt><dd dir="ltr">{form.supplierPhone || "—"}</dd></div>
+                    <div><dt>البريد الإلكتروني</dt><dd>{form.supplierEmail || "—"}</dd></div>
+                    <div><dt>العنوان</dt><dd>{form.supplierAddress || "—"}</dd></div>
+                  </dl>
+                </div>
                 <FormField label="اسم المورد" extra={conf("supplierName")}>
                   <input
                     value={form.supplierName}
+                    readOnly={!!selectedSupplierId}
                     onChange={(e) => setForm({ ...form, supplierName: e.target.value })}
                     list="supplier-list"
                     className="border border-[#eceae2] rounded-lg px-3 py-2 w-full"
@@ -732,6 +774,7 @@ function ReviewModal({
                 <FormField label="الرقم الضريبي" extra={conf("supplierVatNumber")}>
                   <input
                     value={form.supplierVatNumber}
+                    readOnly={!!selectedSupplierId}
                     onChange={(e) => setForm({ ...form, supplierVatNumber: e.target.value })}
                     className="border border-[#eceae2] rounded-lg px-3 py-2 w-full font-mono"
                   />
