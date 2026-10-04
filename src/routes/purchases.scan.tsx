@@ -751,7 +751,7 @@ function ReviewModal({
                     <option value="">استخدام البيانات المستخرجة / إدخال يدوي</option>
                     {suppliers.map((supplier: any) => <option key={supplier.id} value={supplier.id}>{supplier.name} — {supplier.taxNumber || "بدون رقم ضريبي"}{supplier.code ? ` — ${supplier.code}` : ""}</option>)}
                   </select>
-                  {selectedSupplierId && <p role="status" className="text-xs">تم تعبئة بيانات المورد من سجله. لإدخال بيانات يدويًا اختر «استخدام البيانات المستخرجة».</p>}
+                  {selectedSupplierId && <p role="status" className="text-xs">تم جلب الرقم الضريبي وبقية بيانات المورد من سجله تلقائيًا.</p>}
                   <dl className="grid grid-cols-2 gap-2 text-xs">
                     <div><dt>السجل التجاري</dt><dd>{form.supplierCrNumber || "—"}</dd></div>
                     <div><dt>الهاتف</dt><dd dir="ltr">{form.supplierPhone || "—"}</dd></div>
@@ -762,8 +762,23 @@ function ReviewModal({
                 <FormField label="اسم المورد" extra={conf("supplierName")}>
                   <input
                     value={form.supplierName}
-                    readOnly={!!selectedSupplierId}
-                    onChange={(e) => setForm({ ...form, supplierName: e.target.value })}
+                    disabled={saving}
+                    onChange={(e) => {
+                      const name = e.target.value;
+                      const matches = suppliers.filter((supplier: any) => supplier.name?.trim() === name.trim());
+                      if (matches.length === 1) {
+                        setForm(current => applyRegisteredSupplier(current, matches[0]));
+                        setSelectedSupplierId(matches[0].id);
+                        setCreateSupplier(false);
+                      } else {
+                        setForm(current => selectedSupplierId
+                          ? { ...applyRegisteredSupplier(current, { id: "", name }), supplierName: name }
+                          : { ...current, supplierName: name });
+                        setSelectedSupplierId("");
+                        setCreateSupplier(true);
+                        if (matches.length > 1) toast.info("يوجد أكثر من مورد بهذا الاسم؛ اختر المورد من القائمة حسب الرقم الضريبي");
+                      }
+                    }}
                     list="supplier-list"
                     className="border border-[#eceae2] rounded-lg px-3 py-2 w-full"
                   />
