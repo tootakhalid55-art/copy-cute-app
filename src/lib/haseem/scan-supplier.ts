@@ -9,8 +9,8 @@ export type RegisteredScanSupplier = {
 
 export function applyRegisteredSupplier<T extends ScanResult>(invoice: T, supplier: RegisteredScanSupplier): T {
   return { ...invoice,
-    supplierName: supplier.name ?? "",
-    supplierVatNumber: supplier.taxNumber ?? "",
+    supplierName: invoice.zatcaQr?.data?.sellerName ?? supplier.name ?? "",
+    supplierVatNumber: invoice.zatcaQr?.data?.vatNumber ?? supplier.taxNumber ?? "",
     supplierCrNumber: supplier.cr_number ?? "",
     supplierAddress: supplier.address || [supplier.buildingNo, supplier.street, supplier.district, supplier.city, supplier.region, supplier.postalCode].filter(Boolean).join("، "),
     supplierPhone: supplier.phone ?? "",
