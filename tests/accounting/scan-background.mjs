@@ -19,7 +19,7 @@ const context = vm.createContext({
   window: { addEventListener: (name) => events.add(name), removeEventListener: (name) => events.delete(name) },
   updateJob: (_, patch) => Object.assign(job, patch),
   setReviewId: () => { closed = true; },
-  toast: { info() {}, error() {}, success() {} }, navigate() {},
+  toast: { info() {}, error() {}, success() {}, warning() {} }, navigate() {},
   saveScannedInvoice: () => { calls++; return new Promise((resolve) => { finish = resolve; }); },
 });
 vm.runInContext(code, context);
@@ -39,7 +39,7 @@ assert.equal(locks.size, 0);
 assert.equal(events.size, 0);
 context.submit(payload);
 assert.equal(calls, 2, 'retry allowed after failure');
-finish({ ok: true, billId: 'saved-bill' });
+finish({ ok: true, billId: 'saved-bill', attachmentSaved: true });
 await new Promise(setImmediate);
 assert.equal(locks.size, 0);
 console.log('Background save: immediate close, duplicate lock, retained corrections, retry and unload guard passed');

@@ -25,6 +25,7 @@ export type UploadOpts = {
   entityType: string; // "document" | "inbox" | ...
   entityId: string;
   onProgress?: (h: UploadHandle) => void;
+  purpose?: "scanned-original";
 };
 
 /** Sign a storage path (cached ~55m). Never returns a public URL. */
@@ -194,7 +195,7 @@ export function uploadAttachment(file: File, opts: UploadOpts): UploadHandle {
         medium_path: mediumPath,
         uploaded_by: uid.user?.id,
         ocr_status: "pending",
-        meta: {},
+        meta: opts.purpose ? { purpose: opts.purpose } : {},
       };
       const { data: att, error: iErr } = await (supabase.from("attachments") as any)
         .insert(insertRow)
@@ -203,6 +204,12 @@ export function uploadAttachment(file: File, opts: UploadOpts): UploadHandle {
       if (iErr) throw iErr;
       handle.attachmentId = att.id;
 
+      // The original is durable once storage and its document link are saved.
+      // Auxiliary notifications must not turn a successful upload into a failed retry.
+      handle.status = "done";
+      emit();
+      window.dispatchEvent(new CustomEvent("canar:attachments-changed", { detail: { orgId: opts.orgId, entityId: opts.entityId } }));
+      void (async () => {
       // OCR job placeholder — real worker attaches later.
       await (supabase.from("ocr_jobs") as any).insert({
         org_id: opts.orgId,
@@ -226,8 +233,7 @@ export function uploadAttachment(file: File, opts: UploadOpts): UploadHandle {
         title: `مرفق: ${file.name}`,
       });
 
-      handle.status = "done";
-      emit();
+      })().catch(error => console.warn("[attachments] notification failed", error));
     } catch (err: any) {
       if ((handle.status as string) === "cancelled") return;
       handle.status = "failed";
