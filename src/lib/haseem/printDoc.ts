@@ -1,3 +1,4 @@
+import { parseScannedLayout, renderScannedLayout, type ScannedLayout } from "./scanned-layout";
 // Self-contained printable document builder.
 // Renders an HTML string with inline styles (no Tailwind dependency),
 // then prints via a hidden iframe so popup blockers can't interfere.
@@ -13,7 +14,7 @@ export type ProgressBilling = {
 };
 export type PrintLineCalc = { net: number; taxAmt: number; gross: number };
 
-export type PrintTpl = { name: string; accent: string; onAccent: string; soft: string };
+export type PrintTpl = { scannedLayout?: ScannedLayout; name: string; accent: string; onAccent: string; soft: string };
 
 
 export function makeZatcaQrPayload(input: {
@@ -41,6 +42,7 @@ export function makeZatcaQrPayload(input: {
 }
 
 export type PrintDocData = {
+  scanExtras?: { discount?: number; shipping?: number; otherCharges?: number; poNumber?: string };
   kind?: "invoice" | "quotation" | "credit-note" | "debit-note" | "purchase-order" | "bill";
   title: string;              // e.g. "فاتورة ضريبية"
   titleEn?: string;           // e.g. "Tax Invoice"
@@ -115,6 +117,8 @@ const fmt = (n: number) =>
   });
 
 export function buildDocHtml(d: PrintDocData): string {
+  const scanned = d.kind === "bill" ? parseScannedLayout(d.tpl?.scannedLayout) : undefined;
+  if (scanned) return renderScannedLayout(scanned, d);
   const tpl = d.tpl ?? { name: "Default", accent: "#0f2a1d", onAccent: "#ffffff", soft: "#fafaf7" };
   const orgRaw = (d.org ?? { name: "", taxNumber: "", address: "" }) as { name: string; taxNumber: string; address?: string; commercialReg?: string; cr?: string };
   // The organization settings page stores the CR under `cr`; normalize so the
@@ -780,12 +784,15 @@ export async function printDoc(d: PrintDocData & { attachment?: { url: string; m
   const attachmentHtml = d.attachment?.url
     ? await buildAttachmentPagesHtml(d.attachment.url, d.attachment.mime, d.attachment.label)
     : "";
-  const isThermal = d.structure === "thermal";
+  const scanned = d.kind === "bill" ? parseScannedLayout(d.tpl?.scannedLayout) : undefined;
+  const isThermal = !scanned && d.structure === "thermal";
   const thermalRollMm = d.thermalWidth === "57mm" ? 57 : 80;
   // margin: 0 suppresses the browser's own print header/footer (date, page
   // URL) — those are drawn inside the page margins; the visual margin moves
   // to a body padding below instead.
-  const pageRule = isThermal
+  const pageRule = scanned
+    ? `@page { size: ${scanned.pageWidthMm}mm ${scanned.pageHeightMm}mm; margin: 0; }`
+    : isThermal
     ? `@page { size: ${thermalRollMm}mm auto; margin: 0; }`
     : `@page { size: A4; margin: 0; }`;
   // A4 structures reset .doc to full page width on print; a thermal receipt
@@ -801,7 +808,7 @@ export async function printDoc(d: PrintDocData & { attachment?: { url: string; m
   // Vertical page margins via a repeating table header/footer spacer: body
   // padding only pads the first/last page, while thead/tfoot repeat on every
   // page — so page 2+ no longer start flush with the paper edge.
-  const printBody = isThermal
+  const printBody = scanned || isThermal
     ? `${inner}${attachmentHtml}`
     : `${framePerPage ? '<div class="page-frame"></div>' : ""}
       <table class="print-layout"><thead><tr><td><div class="page-spacer"></div></td></tr></thead>
@@ -816,7 +823,7 @@ export async function printDoc(d: PrintDocData & { attachment?: { url: string; m
     <style>
       *{box-sizing:border-box}
       html,body{margin:0;padding:0;background:#fff}
-      body{font-family:Cairo,"Segoe UI",Tahoma,system-ui,sans-serif;padding:${isThermal ? "0" : "18px"};color:#0f2a1d;font-size:12px;line-height:1.5;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+      body{font-family:Cairo,"Segoe UI",Tahoma,system-ui,sans-serif;padding:${scanned || isThermal ? "0" : "18px"};color:#0f2a1d;font-size:12px;line-height:1.5;-webkit-print-color-adjust:exact;print-color-adjust:exact}
       ${pageRule}
       .avoid-break{break-inside:avoid;page-break-inside:avoid}
       .print-layout{width:100%;border-collapse:collapse}
@@ -824,7 +831,7 @@ export async function printDoc(d: PrintDocData & { attachment?: { url: string; m
       .page-spacer{height:0}
       .page-frame{display:none}
       @media print {
-        body{padding:${isThermal ? "0" : "0 12mm"}}
+        body{padding:${scanned || isThermal ? "0" : "0 12mm"}}
         ${docPrintWidthRule}
         thead{display:table-header-group}
         tfoot{display:table-footer-group}

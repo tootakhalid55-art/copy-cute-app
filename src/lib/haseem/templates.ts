@@ -1,3 +1,5 @@
+import type { ScannedLayout } from "./scanned-layout";
+import { useScannedTemplates } from "./scanned-templates";
 import { useCollection, useKV } from "./store";
 
 export type DocKind = "invoice" | "quotation" | "credit-note" | "debit-note" | "purchase-order" | "bill";
@@ -12,6 +14,9 @@ export const DOC_KINDS: { id: DocKind; label: string }[] = [
 ];
 
 export type InvoiceTemplate = {
+  scannedLayout?: ScannedLayout;
+  supplierId?: string;
+  source?: "scan";
   id: string;
   name: string;
   desc?: string;
@@ -112,11 +117,12 @@ function templateAllowedForKind(t: InvoiceTemplate, kind?: DocKind) {
 }
 
 export function useInvoiceTemplates(kind?: DocKind) {
+  const scanned = useScannedTemplates();
   const custom = useCollection<InvoiceTemplate>("invoice-templates");
   const [overrides, setOverrides] = useKV<Record<string, Override>>("invoice-template-overrides", {});
 
   const builtins = BUILTIN_TEMPLATES.map((t) => ({ ...t, ...(overrides[t.id] || {}) }));
-  const allUnfiltered: InvoiceTemplate[] = [...builtins, ...custom.items];
+  const allUnfiltered: InvoiceTemplate[] = [...builtins, ...custom.items, ...scanned.items];
   const all = kind ? allUnfiltered.filter((t) => templateAllowedForKind(t, kind)) : allUnfiltered;
 
   // Per-kind selected template (falls back to legacy "invoice-template" key for backward compat)
@@ -140,5 +146,5 @@ export function useInvoiceTemplates(kind?: DocKind) {
     });
   const isOverridden = (id: string) => Boolean(overrides[id]);
 
-  return { all, custom, selected, selectedId, setSelectedId, overrideBuiltin, resetBuiltin, isOverridden };
+  return { all, custom, scanned, selected, selectedId, setSelectedId, overrideBuiltin, resetBuiltin, isOverridden };
 }

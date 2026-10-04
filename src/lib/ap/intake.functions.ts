@@ -1,3 +1,4 @@
+import { editSupplierHints, SCAN_TEMPLATES_KEY } from "@/lib/haseem/supplier-layout-store";
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
@@ -98,7 +99,9 @@ async function loadLayoutHints(supabase: any, orgId: string, partyId: string | n
     .select("hints, sample_count")
     .eq("org_id", orgId).eq("party_id", partyId).maybeSingle();
   if (!data || !data.hints || data.sample_count < 3) return "";
-  return JSON.stringify(data.hints).slice(0, 1500);
+  const hints = { ...(data.hints as Record<string, unknown>) };
+  delete hints[SCAN_TEMPLATES_KEY];
+  return JSON.stringify(hints).slice(0, 1500);
 }
 
 // ---------- runIntakeExtraction ----------
@@ -422,21 +425,16 @@ export const createBillFromIntake = createServerFn({ method: "POST" })
         );
 
         // Update supplier layout hints (aggregate corrected values per field)
-        const { data: existing } = await supabase
-          .from("ap_supplier_layouts")
-          .select("hints, sample_count")
-          .eq("org_id", intake.org_id).eq("party_id", partyId).maybeSingle();
-        const hints: any = existing?.hints || {};
-        for (const c of corrections) {
-          hints[c.field_path] = hints[c.field_path] || [];
-          if (hints[c.field_path].length < 5)
-            hints[c.field_path].push(String(c.corrected).slice(0, 120));
-        }
-        await supabase.from("ap_supplier_layouts").upsert({
-          org_id: intake.org_id, party_id: partyId, hints,
-          sample_count: (existing?.sample_count || 0) + 1,
-          last_seen_at: new Date().toISOString(),
-        } as any, { onConflict: "org_id,party_id" });
+        await editSupplierHints(supabase, intake.org_id, partyId, hints => {
+          const next = { ...hints };
+          for (const c of corrections) {
+            if (c.field_path === SCAN_TEMPLATES_KEY) continue;
+            const values = Array.isArray(next[c.field_path]) ? [...next[c.field_path] as unknown[]] : [];
+            if (values.length < 5) values.push(String(c.corrected).slice(0, 120));
+            next[c.field_path] = values;
+          }
+          return next;
+        }, true);
       }
     } catch { /* learning is best-effort */ }
 

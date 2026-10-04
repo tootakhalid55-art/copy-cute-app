@@ -231,6 +231,7 @@ function toItemInsert(input: any, orgId: string) {
 function mapDocLine(l: any) {
   return {
     description: l.description ?? "",
+    unit: l.unit ?? "",
     qty: Number(l.qty ?? 1),
     price: Number(l.price ?? 0),
     tax: Number(l.tax_rate ?? 15),
@@ -291,6 +292,7 @@ function toDocPayload(key: string, input: any, orgId: string) {
         return {
           position: i + 1,
           description: l.description || "",
+          unit: l.unit || null,
           qty,
           price,
           discount,

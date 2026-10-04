@@ -1,3 +1,5 @@
+import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { parseScannedLayout, SCANNED_LAYOUT_PROMPT, type ScannedLayout } from "./scanned-layout";
 import { createServerFn } from "@tanstack/react-start";
 import { callAnthropicAI } from "@/lib/ai-gateway.server";
 
@@ -13,6 +15,8 @@ export type ScanLine = {
 };
 
 export type ScanResult = {
+  visualLayout?: ScannedLayout;
+  layoutWarning?: string;
   supplierName: string;
   supplierVatNumber: string;
   supplierCrNumber: string;
@@ -76,7 +80,8 @@ Return ONLY a JSON object matching this TypeScript type exactly, no markdown, no
     "discount": number, "shipping": number, "otherCharges": number, "grandTotal": number
   },
   "rawText": string,             // the full detected invoice text
-  "language": "ar" | "en" | "mixed"
+  "language": "ar" | "en" | "mixed",
+  "visualLayout": object | null // follow the design schema below
 }
 
 Rules:
@@ -98,8 +103,9 @@ async function extract(fileDataUrl: string, filename: string): Promise<ScanResul
 
   const raw = await callAnthropicAI({
     model: "claude-sonnet-5",
+    maxTokens: 16000,
     messages: [
-      { role: "system", content: SYSTEM },
+      { role: "system", content: SYSTEM + SCANNED_LAYOUT_PROMPT },
       { role: "user", content },
     ],
   });
@@ -141,7 +147,7 @@ async function extract(fileDataUrl: string, filename: string): Promise<ScanResul
         unit: str(l.unit),
         price: num(l.price),
         discount: num(l.discount),
-        tax: num(l.tax) || 15,
+        tax: l.tax == null || l.tax === "" ? 15 : num(l.tax),
         lineTotal: num(l.lineTotal),
         confidence: num(l.confidence),
       }))
@@ -173,10 +179,14 @@ async function extract(fileDataUrl: string, filename: string): Promise<ScanResul
       : "mixed",
   };
 
+  result.visualLayout = parseScannedLayout(parsed.visualLayout);
+  if (result.visualLayout) delete result.visualLayout.logoDataUrl;
+  else result.layoutWarning = "تعذر استخراج تصميم واضح؛ أعد المسح أو اختر إنشاء الفاتورة بالقالب المعتاد.";
   return result;
 }
 
 export const scanInvoice = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => {
     const i = input as { fileDataUrl?: string; filename?: string };
     if (!i?.fileDataUrl || typeof i.fileDataUrl !== "string") {
