@@ -1,3 +1,4 @@
+import { scanWithGatewayRecovery, scanFailureMessage } from "@/lib/haseem/scan-recovery";
 import { useAuth } from "@/lib/haseem/auth";
 import { applyRegisteredSupplier, resolveScanSupplier } from "@/lib/haseem/scan-supplier";
 import { captureScannedLogo } from "@/lib/haseem/scanned-logo";
@@ -106,9 +107,12 @@ function ScanPage() {
   }, [setJobs]);
 
   const runScan = useCallback(async (job: Job) => {
-    updateJob(job.id, { status: "scanning", progress: 10 });
+    updateJob(job.id, { status: "scanning", progress: 10, error: undefined });
     try {
-      const result = await scan({ data: { fileDataUrl: job.dataUrl, filename: job.file.name } });
+      const result = await scanWithGatewayRecovery(
+        () => scan({ data: { fileDataUrl: job.dataUrl, filename: job.file.name } }),
+        (attempt) => updateJob(job.id, { error: `انقطاع مؤقت؛ جارٍ إعادة الاتصال (${attempt}/2)…` }),
+      );
       if (result.visualLayout?.logoCrop) {
         try { result.visualLayout = await captureScannedLogo(job.dataUrl, result.visualLayout); }
         catch { result.layoutWarning = "تعذر نقل شعار المورد؛ راجع معاينة القالب أو أعد المسح."; }
@@ -124,9 +128,10 @@ function ScanPage() {
         result,
         duplicateOf: dup?.id,
         progress: 100,
+        error: undefined,
       });
     } catch (e: any) {
-      updateJob(job.id, { status: "error", error: e?.message || "فشل المسح", progress: 0 });
+      updateJob(job.id, { status: "error", error: scanFailureMessage(e), progress: 0 });
     }
   }, [scan, bills, updateJob]);
 
