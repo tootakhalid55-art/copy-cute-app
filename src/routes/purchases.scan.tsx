@@ -1,3 +1,4 @@
+import { useAuth } from "@/lib/haseem/auth";
 import { applyRegisteredSupplier, resolveScanSupplier } from "@/lib/haseem/scan-supplier";
 import { captureScannedLogo } from "@/lib/haseem/scanned-logo";
 import { useScannedTemplates, type ScannedTemplate } from "@/lib/haseem/scanned-templates";
@@ -6,7 +7,7 @@ import { ScannedTemplatePreview } from "@/components/haseem/ScannedTemplatePrevi
 import { FilePreviewPane } from "@/components/haseem/FilePreviewPane";
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { useCallback, useMemo, useRef, useState, useEffect } from "react";
+import { useCallback, useMemo, useRef, useState, useEffect, useSyncExternalStore } from "react";
 import {
   Upload, Camera, FileText, Loader2, X, Check, AlertTriangle,
   Trash2, Plus, ScanLine, RefreshCw, Download, Eye,
@@ -28,7 +29,7 @@ export const Route = createFileRoute("/purchases/scan")({
 const ACCEPT = "application/pdf,image/jpeg,image/jpg,image/png,image/webp,image/tiff,image/heic,image/heif";
 const MAX_SIZE = 8 * 1024 * 1024; // 8MB
 
-type Status = "pending" | "scanning" | "review" | "saved" | "error" | "duplicate";
+type Status = "pending" | "saving" | "save-error" | "scanning" | "review" | "saved" | "error" | "duplicate";
 type Job = {
   id: string;
   file: File;
@@ -38,7 +39,32 @@ type Job = {
   error?: string;
   duplicateOf?: string;
   progress?: number;
+  reviewPayload?: ReviewPayload;
+  billId?: string;
 };
+
+// Keep the queue alive across SPA navigation, isolated by account and organization.
+const queues = new Map<string, Job[]>();
+const listeners = new Set<() => void>();
+const emptyJobs: Job[] = [];
+const activeSaves = new Set<string>();
+function warnPendingSave(event: BeforeUnloadEvent) {
+  event.preventDefault();
+  event.returnValue = "";
+}
+function useScanQueue(scope: string) {
+  const subscribe = useCallback((listener: () => void) => {
+    listeners.add(listener);
+    return () => { listeners.delete(listener); };
+  }, []);
+  const snapshot = useCallback(() => queues.get(scope) ?? emptyJobs, [scope]);
+  const jobs = useSyncExternalStore(subscribe, snapshot, () => emptyJobs);
+  const setJobs = useCallback((update: (jobs: Job[]) => Job[]) => {
+    queues.set(scope, update(queues.get(scope) ?? emptyJobs));
+    listeners.forEach((listener) => listener());
+  }, [scope]);
+  return [jobs, setJobs] as const;
+}
 
 function fileToDataURL(f: File): Promise<string> {
   return new Promise((res, rej) => {
@@ -65,7 +91,9 @@ function ScanPage() {
     taxNumber: "312756062700003",
   });
 
-  const [jobs, setJobs] = useState<Job[]>([]);
+  const { user } = useAuth();
+  const scope = `${user?.id ?? ""}:${currentOrgId ?? ""}`;
+  const [jobs, setJobs] = useScanQueue(scope);
   const [reviewId, setReviewId] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [dragOver, setDragOver] = useState(false);
@@ -75,7 +103,7 @@ function ScanPage() {
 
   const updateJob = useCallback((id: string, patch: Partial<Job>) => {
     setJobs((js) => js.map((j) => (j.id === id ? { ...j, ...patch } : j)));
-  }, []);
+  }, [setJobs]);
 
   const runScan = useCallback(async (job: Job) => {
     updateJob(job.id, { status: "scanning", progress: 10 });
@@ -115,7 +143,7 @@ function ScanPage() {
       // fire and forget — sequential to be gentle on rate limits
       queueMicrotask(() => runScan(job));
     }
-  }, [runScan]);
+  }, [runScan, setJobs]);
 
   const onDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -132,7 +160,7 @@ function ScanPage() {
     );
   }, [scanHistory, search]);
 
-  useEffect(() => { setJobs([]); setReviewId(null); }, [currentOrgId]);
+  useEffect(() => { setReviewId(null); }, [scope]);
 
   const reviewJob = jobs.find((j) => j.id === reviewId) || null;
 
@@ -272,6 +300,8 @@ function ScanPage() {
     }
     logClientEvent("scan-save", `success id=${bill?.id ?? "?"}`);
 
+    updateJob(job.id, { billId: bill.id });
+    try {
     // Persist the original scanned file to cloud storage, awaited so the
     // bill opens with the original already linked.
     if (currentOrgId && bill?.id && !String(bill.id).startsWith("tmp_")) {
@@ -295,7 +325,10 @@ function ScanPage() {
       rawText: job.result?.rawText || "",
       orgName: org.name,
     });
-    updateJob(job.id, { status: "saved" });
+    } catch {
+      toast.warning("حُفظت الفاتورة، لكن تعذر حفظ المرفق أو الأرشيف المحلي. يمكنك فتح الفاتورة لإرفاق الأصل.");
+    }
+    updateJob(job.id, { status: "saved", error: undefined });
     return { ok: true, billId: bill.id };
   };
 
@@ -311,6 +344,10 @@ function ScanPage() {
     if (bulkSaving || !highConfJobs.length) return;
     if (!confirm(`سيتم حفظ واعتماد ${highConfJobs.length} فاتورة نسبة الثقة فيها ${HIGH_CONFIDENCE}% فأكثر.\nالفواتير المكررة سيتم تجاوزها تلقائياً. متابعة؟`)) return;
     setBulkSaving(true);
+    const batchIds = new Set(highConfJobs.map((job) => job.id));
+    highConfJobs.forEach((job) => activeSaves.add(`${scope}:${job.id}`));
+    window.addEventListener("beforeunload", warnPendingSave);
+    setJobs((current) => current.map((job) => batchIds.has(job.id) ? { ...job, status: "saving" } : job));
     let ok = 0;
     let dup = 0;
     let fail = 0;
@@ -359,6 +396,9 @@ function ScanPage() {
       if (fail || vatReview) toast.warning(parts, { duration: 10000 });
       else toast.success(parts || "لا شيء للاعتماد", { duration: 8000 });
     } finally {
+      highConfJobs.forEach((job) => activeSaves.delete(`${scope}:${job.id}`));
+      if (!activeSaves.size) window.removeEventListener("beforeunload", warnPendingSave);
+      setJobs((current) => current.map((job) => batchIds.has(job.id) && job.status === "saving" ? { ...job, status: "review" } : job));
       setBulkSaving(false);
     }
   };
@@ -427,7 +467,7 @@ function ScanPage() {
                 </PrimaryBtn>
               )}
               <button
-                onClick={() => setJobs((js) => js.filter((j) => j.status === "scanning"))}
+                onClick={() => setJobs((js) => js.filter((j) => j.status !== "saved"))}
                 className="text-xs text-[#0f2a1d]/60 hover:underline"
               >مسح المكتملة</button>
             </div>
@@ -437,7 +477,7 @@ function ScanPage() {
               <JobRow
                 key={j.id}
                 job={j}
-                onReview={() => setReviewId(j.id)}
+                onReview={() => { if (!bulkSaving) setReviewId(j.id); }}
                 onRetry={() => runScan(j)}
                 onRemove={() => setJobs((js) => js.filter((x) => x.id !== j.id))}
               />
@@ -518,27 +558,35 @@ function ScanPage() {
           job={reviewJob}
           suppliers={suppliers}
           onClose={() => setReviewId(null)}
-          onSave={async (payload) => {
-            const res = await saveScannedInvoice(reviewJob, payload);
-            if (!res.ok) return;
+          onSave={(payload) => {
+            const key = `${scope}:${reviewJob.id}`;
+            if (activeSaves.has(key)) return;
+            activeSaves.add(key);
+            window.addEventListener("beforeunload", warnPendingSave);
+            updateJob(reviewJob.id, { status: "saving", error: undefined, result: payload, reviewPayload: payload });
             setReviewId(null);
-            // Staying on the scan page while other invoices still await
-            // review — navigating away used to drop the whole in-memory
-            // queue, so reviewing one invoice made the rest vanish.
-            const remaining = jobs.filter(
-              (j) => j.id !== reviewJob.id && (j.status === "review" || j.status === "duplicate"),
-            ).length;
-            if (remaining > 0) {
-              toast.success(`حُفظت الفاتورة ✓ — تبقّى ${remaining} فاتورة بانتظار المراجعة`, {
-                duration: 6000,
-                action: {
-                  label: "فتح الفاتورة",
-                  onClick: () => navigate({ to: "/purchases/bills/$id", params: { id: res.billId! } }),
-                },
-              });
-            } else {
-              navigate({ to: "/purchases/bills/$id", params: { id: res.billId! } });
-            }
+            toast.info("جارٍ حفظ الفاتورة في الخلفية. يمكنك متابعة العمل داخل التطبيق؛ أبقِ علامة التبويب مفتوحة.");
+            void (async () => {
+              try {
+                const res = await saveScannedInvoice(reviewJob, payload);
+                if (!res.ok) throw new Error(res.reason === "duplicate"
+                  ? "يوجد رقم فاتورة مكرر؛ راجع الفاتورة قبل إعادة الحفظ"
+                  : "تعذر الحفظ؛ بيانات المراجعة محفوظة هنا لإعادة المحاولة");
+                toast.success("حُفظت الفاتورة. يمكنك فتحها للتحقق من حالة الاعتماد.", {
+                  duration: 8000,
+                  action: { label: "فتح الفاتورة", onClick: () => navigate({ to: "/purchases/bills/$id", params: { id: res.billId! } }) },
+                });
+              } catch (error) {
+                const message = error instanceof Error ? error.message : "تعذر حفظ الفاتورة";
+                updateJob(reviewJob.id, { status: "save-error", error: message });
+                toast.error(message, { duration: 12000, action: {
+                  label: "مراجعة المحاولة", onClick: () => { void navigate({ to: "/purchases/scan" }); },
+                } });
+              } finally {
+                activeSaves.delete(key);
+                if (!activeSaves.size) window.removeEventListener("beforeunload", warnPendingSave);
+              }
+            })();
           }}
         />
       )}
@@ -572,17 +620,18 @@ function JobRow({
         </div>
       </div>
       <div className="flex items-center gap-1 shrink-0">
-        {(job.status === "review" || job.status === "duplicate") && (
+        {(job.status === "review" || job.status === "duplicate" || job.status === "save-error") && (
           <PrimaryBtn onClick={onReview} className="!py-1.5 !px-3 text-xs">
             <Eye className="w-3.5 h-3.5" /> مراجعة
           </PrimaryBtn>
         )}
+        {job.billId && <Link to="/purchases/bills/$id" params={{ id: job.billId }} className="text-xs underline">فتح الفاتورة</Link>}
         {job.status === "error" && (
           <OutlineBtn onClick={onRetry} className="!py-1.5 !px-3 text-xs">
             <RefreshCw className="w-3.5 h-3.5" /> إعادة
           </OutlineBtn>
         )}
-        {job.status !== "scanning" && (
+        {job.status !== "scanning" && job.status !== "saving" && (
           <button onClick={onRemove} className="p-1.5 text-red-500 hover:bg-red-50 rounded" title="إزالة">
             <X className="w-4 h-4" />
           </button>
@@ -594,6 +643,8 @@ function JobRow({
 
 function StatusBadge({ status }: { status: Status }) {
   const map: Record<Status, { t: string; c: string }> = {
+    saving: { t: "جارٍ الحفظ في الخلفية…", c: "bg-blue-50 text-blue-700" },
+    "save-error": { t: "تعذر الحفظ — راجع وأعد المحاولة", c: "bg-red-50 text-red-700" },
     pending:   { t: "في الانتظار", c: "bg-[#f7f6f0] text-[#0f2a1d]/70" },
     scanning:  { t: "جاري القراءة...", c: "bg-blue-50 text-blue-700" },
     review:    { t: "جاهزة للمراجعة", c: "bg-[#eaf5ee] text-[#0f6b3a]" },
@@ -604,7 +655,7 @@ function StatusBadge({ status }: { status: Status }) {
   const m = map[status];
   return (
     <span className={`inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full ${m.c}`}>
-      {status === "scanning" && <Loader2 className="w-3 h-3 animate-spin" />}
+      {(status === "scanning" || status === "saving") && <Loader2 className="w-3 h-3 animate-spin" />}
       {status === "duplicate" && <AlertTriangle className="w-3 h-3" />}
       {status === "saved" && <Check className="w-3 h-3" />}
       {m.t}
@@ -624,9 +675,9 @@ function ReviewModal({
 }) {
   const r = job.result!;
   const [form, setForm] = useState<ScanResult>(() => JSON.parse(JSON.stringify(r)));
-  const [createSupplier, setCreateSupplier] = useState(true);
-  const [selectedSupplierId, setSelectedSupplierId] = useState("");
-  const [useSourceTemplate, setUseSourceTemplate] = useState(true);
+  const [createSupplier, setCreateSupplier] = useState(job.reviewPayload?.createSupplier ?? true);
+  const [selectedSupplierId, setSelectedSupplierId] = useState(job.reviewPayload?.selectedSupplierId ?? "");
+  const [useSourceTemplate, setUseSourceTemplate] = useState(job.reviewPayload?.useSourceTemplate ?? true);
   const [saving, setSaving] = useState(false);
   const submit = async (finalStatus: string) => {
     if (saving) return;
@@ -638,7 +689,7 @@ function ReviewModal({
     }
   };
 
-  useEffect(() => { setForm(JSON.parse(JSON.stringify(r))); setSelectedSupplierId(""); setCreateSupplier(true); }, [r]);
+
 
   const supplierMatch = useMemo(
     () => selectedSupplierId ? suppliers.find((s: any) => s.id === selectedSupplierId) : (suppliers.filter((s: any) => s.name?.trim() === form.supplierName?.trim()).length === 1 ? suppliers.find((s: any) => s.name?.trim() === form.supplierName?.trim()) : undefined),
