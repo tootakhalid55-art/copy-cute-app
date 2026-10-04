@@ -1,3 +1,4 @@
+import { applyQrIdentity } from "@/lib/haseem/zatca-qr";
 import { scanWithGatewayRecovery, scanFailureMessage } from "@/lib/haseem/scan-recovery";
 import { useAuth } from "@/lib/haseem/auth";
 import { applyRegisteredSupplier, resolveScanSupplier } from "@/lib/haseem/scan-supplier";
@@ -109,10 +110,12 @@ function ScanPage() {
   const runScan = useCallback(async (job: Job) => {
     updateJob(job.id, { status: "scanning", progress: 10, error: undefined });
     try {
-      const result = await scanWithGatewayRecovery(
+      const qr = await (await import("@/lib/haseem/scan-qr")).readInvoiceQr(job.dataUrl);
+      const extracted = await scanWithGatewayRecovery(
         () => scan({ data: { fileDataUrl: job.dataUrl, filename: job.file.name } }),
         (attempt) => updateJob(job.id, { error: `انقطاع مؤقت؛ جارٍ إعادة الاتصال (${attempt}/2)…` }),
       );
+      const result = applyQrIdentity(extracted, qr);
       if (result.visualLayout?.logoCrop) {
         try { result.visualLayout = await captureScannedLogo(job.dataUrl, result.visualLayout); }
         catch { result.layoutWarning = "تعذر نقل شعار المورد؛ راجع معاينة القالب أو أعد المسح."; }
@@ -178,6 +181,12 @@ function ScanPage() {
     opts?: { quiet?: boolean; supplierCache?: Map<string, any> },
   ): Promise<{ ok: boolean; billId?: string; reason?: "duplicate" | "error" | "vat-mismatch" }> => {
     const quiet = !!opts?.quiet;
+    const qr = payload.zatcaQr?.status === "decoded" ? payload.zatcaQr.data : undefined;
+    if (payload.zatcaQr?.status === "ambiguous") {
+      if (!quiet) toast.error("يوجد أكثر من رمز فاتورة مختلف؛ ارفع كل فاتورة منفصلة قبل الحفظ");
+      return { ok: false, reason: "error" };
+    }
+    if (qr) payload = { ...payload, supplierName: qr.sellerName, supplierVatNumber: qr.vatNumber };
     if (payload.useSourceTemplate !== false && !payload.visualLayout) {
       if (!quiet) toast.error("تعذر استخراج التصميم؛ أعد المسح أو اختر القالب المعتاد من نافذة المراجعة");
       return { ok: false, reason: "error" };
@@ -190,9 +199,12 @@ function ScanPage() {
     const supplierKey = String(payload.supplierName ?? "").trim();
     let supplier;
     try {
+      const vatMatches = qr ? suppliers.filter((s: any) => vatDigits(s.taxNumber) === qr.vatNumber) : [];
+      if (!payload.selectedSupplierId && vatMatches.length > 1) throw new Error("يوجد أكثر من مورد برقم QR الضريبي؛ اختر المورد من القائمة");
       supplier = payload.selectedSupplierId
         ? resolveScanSupplier(suppliers, payload.selectedSupplierId, supplierKey)
-        : opts?.supplierCache?.get(supplierKey) ?? resolveScanSupplier(suppliers, undefined, supplierKey);
+        : vatMatches[0] ?? opts?.supplierCache?.get(supplierKey) ?? resolveScanSupplier(suppliers, undefined, supplierKey);
+      if (qr && supplier && vatDigits(supplier.taxNumber) !== qr.vatNumber) throw new Error("الرقم الضريبي للمورد المسجل لا يطابق رمز QR؛ اختر المورد الصحيح أو صحح سجله أولًا");
       if (payload.selectedSupplierId && supplier) payload = applyRegisteredSupplier(payload, supplier);
     } catch (error) {
       if (!quiet) toast.error(error instanceof Error ? error.message : "تعذر تحديد المورد");
@@ -261,7 +273,7 @@ function ScanPage() {
         date: payload.invoiceDate || new Date().toISOString().slice(0, 10),
         dueDate: payload.dueDate || payload.invoiceDate || new Date().toISOString().slice(0, 10),
         partyId: supplier?.id || "",
-        partyName: supplier?.name || payload.supplierName,
+        partyName: qr?.sellerName || supplier?.name || payload.supplierName,
         notes: `تم إنشاؤها بالمسح الذكي · PO: ${payload.purchaseOrderNumber || "—"}`,
         // "مؤكد" posts the invoice to the ledger server-side (the adapter
         // falls back to a saved draft with a toast on failure).
@@ -273,7 +285,8 @@ function ScanPage() {
         currency: payload.currency,
         source: "ai-scan",
         scannedTemplate: scannedTemplate ?? null,
-        supplierReviewSource: payload.selectedSupplierId ? "registered-supplier" : "scan",
+        zatcaQr: payload.zatcaQr ?? null,
+        supplierReviewSource: qr ? "zatca-qr" : payload.selectedSupplierId ? "registered-supplier" : "scan",
         supplierInvoiceName: payload.supplierName,
         supplierVatNumber: payload.supplierVatNumber,
         supplierCrNumber: payload.supplierCrNumber,
@@ -342,7 +355,7 @@ function ScanPage() {
   // skipped quietly, and one invoice failing never stops the rest.
   const HIGH_CONFIDENCE = 85;
   const highConfJobs = jobs.filter(
-    (j) => j.status === "review" && j.result && averageConfidence(j.result) >= HIGH_CONFIDENCE,
+    (j) => j.status === "review" && j.result && j.result.zatcaQr?.status !== "ambiguous" && !j.result.zatcaQr?.differences?.length && averageConfidence(j.result) >= HIGH_CONFIDENCE,
   );
   const [bulkSaving, setBulkSaving] = useState(false);
   const approveHighConfidence = async () => {
@@ -681,11 +694,19 @@ function ReviewModal({
   const r = job.result!;
   const [form, setForm] = useState<ScanResult>(() => JSON.parse(JSON.stringify(r)));
   const [createSupplier, setCreateSupplier] = useState(job.reviewPayload?.createSupplier ?? true);
-  const [selectedSupplierId, setSelectedSupplierId] = useState(job.reviewPayload?.selectedSupplierId ?? "");
+  const [selectedSupplierId, setSelectedSupplierId] = useState(() => {
+    if (job.reviewPayload?.selectedSupplierId) return job.reviewPayload.selectedSupplierId;
+    const matches = r.zatcaQr?.data ? suppliers.filter((s: any) => vatDigits(s.taxNumber) === r.zatcaQr!.data!.vatNumber) : [];
+    return matches.length === 1 ? matches[0].id : "";
+  });
   const [useSourceTemplate, setUseSourceTemplate] = useState(job.reviewPayload?.useSourceTemplate ?? true);
   const [saving, setSaving] = useState(false);
   const submit = async (finalStatus: string) => {
     if (saving) return;
+    if (form.zatcaQr?.status === "ambiguous") { toast.error("ارفع كل فاتورة في ملف منفصل لتحديد رمز QR الصحيح"); return; }
+    const qrVat = form.zatcaQr?.data?.vatNumber;
+    const selected = suppliers.find((s: any) => s.id === selectedSupplierId);
+    if (qrVat && selected && vatDigits(selected.taxNumber) !== qrVat) { toast.error("المورد المختار لا يطابق الرقم الضريبي في QR"); return; }
     setSaving(true);
     try {
       await onSave({ ...form, createSupplier: selectedSupplierId ? false : createSupplier, finalStatus, useSourceTemplate, selectedSupplierId: selectedSupplierId || undefined });
@@ -786,9 +807,18 @@ function ReviewModal({
                   <div className="font-bold">بيانات الفاتورة داخل النظام</div>
                 </div>
                 <span className="text-[11px] px-2 py-0.5 rounded-full bg-[#eaf5ee] text-[#0f6b3a]">
-                  {selectedSupplierId ? "بيانات المورد من السجل" : "بيانات مستخرجة للمراجعة"}
+                  {form.zatcaQr?.data ? "الاسم والرقم الضريبي من QR" : selectedSupplierId ? "بيانات المورد من السجل" : "بيانات مستخرجة للمراجعة"}
                 </span>
               </div>
+              {form.zatcaQr && <div role="status" className="m-4 p-3 rounded border bg-amber-50 text-sm space-y-1">
+                {form.zatcaQr.data ? <>
+                  <p>تم اعتماد اسم المورد ورقمه الضريبي من رمز QR: <strong>{form.zatcaQr.data.sellerName} — {form.zatcaQr.data.vatNumber}</strong></p>
+                  {!!form.zatcaQr.differences?.length && <p>اختلاف عن قراءة الذكاء الاصطناعي: {form.zatcaQr.differences.join("، ")}. راجع الفاتورة قبل الاعتماد.</p>}
+                  {!!form.zatcaQr.differences?.length && <p>القراءة الأصلية: {form.zatcaQr.originalName || "—"} — {form.zatcaQr.originalVat || "—"}</p>}
+                  <p>إجمالي QR: {form.zatcaQr.data.total} · الضريبة: {form.zatcaQr.data.vat} · التاريخ: {form.zatcaQr.data.timestamp}</p>
+                  <p className="text-xs">تمت قراءة بيانات الرمز؛ لم يتم التحقق من التوقيع الإلكتروني لدى الهيئة. المبالغ تبقى قابلة للمراجعة.</p>
+                </> : <p>{form.zatcaQr.warning}</p>}
+              </div>}
               <div className="p-4 grid grid-cols-2 gap-3">
                 <div className="col-span-2 space-y-2 rounded-lg border bg-blue-50 p-3">
                   <label htmlFor="registered-scan-supplier" className="block font-semibold">اختيار مورد مسجل</label>
@@ -805,7 +835,7 @@ function ReviewModal({
                     }
                   }}>
                     <option value="">استخدام البيانات المستخرجة / إدخال يدوي</option>
-                    {suppliers.map((supplier: any) => <option key={supplier.id} value={supplier.id}>{supplier.name} — {supplier.taxNumber || "بدون رقم ضريبي"}{supplier.code ? ` — ${supplier.code}` : ""}</option>)}
+                    {suppliers.map((supplier: any) => <option key={supplier.id} value={supplier.id} disabled={!!form.zatcaQr?.data && vatDigits(supplier.taxNumber) !== form.zatcaQr.data.vatNumber}>{supplier.name} — {supplier.taxNumber || "بدون رقم ضريبي"}{supplier.code ? ` — ${supplier.code}` : ""}</option>)}
                   </select>
                   {selectedSupplierId && <p role="status" className="text-xs">تم جلب الرقم الضريبي وبقية بيانات المورد من سجله تلقائيًا.</p>}
                   <dl className="grid grid-cols-2 gap-2 text-xs">
@@ -818,6 +848,7 @@ function ReviewModal({
                 <FormField label="اسم المورد" extra={conf("supplierName")}>
                   <input
                     value={form.supplierName}
+                    readOnly={!!form.zatcaQr?.data}
                     disabled={saving}
                     onChange={(e) => {
                       const name = e.target.value;
@@ -845,7 +876,7 @@ function ReviewModal({
                 <FormField label="الرقم الضريبي" extra={conf("supplierVatNumber")}>
                   <input
                     value={form.supplierVatNumber}
-                    readOnly={!!selectedSupplierId}
+                    readOnly={!!selectedSupplierId || !!form.zatcaQr?.data}
                     onChange={(e) => setForm({ ...form, supplierVatNumber: e.target.value })}
                     className="border border-[#eceae2] rounded-lg px-3 py-2 w-full font-mono"
                   />

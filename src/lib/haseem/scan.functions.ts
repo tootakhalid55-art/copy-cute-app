@@ -1,3 +1,4 @@
+import type { QrReview } from "./zatca-qr";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { parseScannedLayout, SCANNED_LAYOUT_PROMPT, type ScannedLayout } from "./scanned-layout";
 import { createServerFn } from "@tanstack/react-start";
@@ -15,6 +16,7 @@ export type ScanLine = {
 };
 
 export type ScanResult = {
+  zatcaQr?: QrReview;
   visualLayout?: ScannedLayout;
   layoutWarning?: string;
   supplierName: string;

@@ -180,7 +180,10 @@ export function DocumentForm({
     }
   };
 
-  const party = parties.find((p) => p.id === partyId);
+  const registeredParty = parties.find((p) => p.id === partyId);
+  // Preserve the supplier identity observed in the original QR on this invoice.
+  const scannedQr = (kind === "bill" || storageKey === "bills") && existing?.partyId === partyId && existing?.zatcaQr?.status === "decoded" ? existing.zatcaQr.data : undefined;
+  const party = useMemo(() => scannedQr ? { ...registeredParty, name: scannedQr.sellerName, taxNumber: scannedQr.vatNumber } : registeredParty, [registeredParty, scannedQr]);
   const partyName = party?.name ?? "—";
   const statusLabel = existing?.status ?? "مسودة";
   const approvalLabel = existing?.status === "مؤكد" ? "معتمد" : "";
@@ -482,7 +485,7 @@ export function DocumentForm({
       verifyToken,
       currency: existing?.currency ?? "SAR",
       ...(kind === "bill" ? { scannedTemplate: activeScanTemplate ?? null } : {}),
-      ...(existing?.source === "ai-scan" ? { source: "ai-scan", scanExtras: existing.scanExtras, supplierRef: existing.supplierRef } : {}),
+      ...(existing?.source === "ai-scan" ? { source: "ai-scan", scanExtras: existing.scanExtras, supplierRef: existing.supplierRef, zatcaQr: scannedQr ? existing.zatcaQr : null, supplierReviewSource: scannedQr ? "zatca-qr" : existing.zatcaQr ? "registered-supplier" : existing.supplierReviewSource } : {}),
     };
     try {
       if (existing) await updateAsync(existing.id, payload);
