@@ -75,6 +75,7 @@ export type PrintDocData = {
   originalRef?: string;
   currency: string;           // "ر.س" | "$" | ...
   qrDataUrl?: string;
+  sourceQrPayload?: string;
   branding?: { logo?: string; stamp?: string };
   tpl: PrintTpl;
   poNumber?: string;

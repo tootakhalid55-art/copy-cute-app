@@ -284,6 +284,13 @@ export function DocumentForm({
   }, [contractValue, previousCertified, retentionPct, advanceRecoveryPct, subtotal, total]);
 
   useEffect(() => {
+    if (usesSupplierZatcaQr && existing?.source === "ai-scan") {
+      let alive = true;
+      setQrDataUrl(""); setVerifyQrDataUrl("");
+      if (scannedQr?.raw) void QRCode.toDataURL(scannedQr.raw, { margin: 4, width: 360, errorCorrectionLevel: "M" })
+        .then(url => { if (alive) setQrDataUrl(url); }).catch(() => { if (alive) setQrDataUrl(""); });
+      return () => { alive = false; };
+    }
     const iso = new Date(`${date}T00:00:00`).toISOString();
     if (usesZatcaQr) {
       const payload = makeZatcaQrPayload({
@@ -322,7 +329,7 @@ export function DocumentForm({
     QRCode.toDataURL(buildTokenVerifyUrl(ref, verifyToken), { margin: 1, width: 180 })
       .then(setVerifyQrDataUrl)
       .catch(() => setVerifyQrDataUrl(""));
-  }, [org.name, org.taxNumber, date, total, tax, usesZatcaQr, usesSupplierZatcaQr, party?.name, party?.taxNumber, usesVerifyQr, cloudKind, ref]);
+  }, [org.name, org.taxNumber, date, total, tax, usesZatcaQr, usesSupplierZatcaQr, party?.name, party?.taxNumber, usesVerifyQr, cloudKind, ref, existing?.source, scannedQr?.raw]);
 
   // ZATCA-aware document heading — never the "إنشاء/تعديل" form title
   const docTitle = useMemo(
@@ -379,7 +386,7 @@ export function DocumentForm({
         notes,
         partyRole: printKind === "bill" ? "العميل" : printKind === "purchase-order" ? "المورد" : "العميل",
         currency: CUR,
-        qrDataUrl: usesZatcaQr || usesSupplierZatcaQr ? qrDataUrl : undefined,
+        qrDataUrl: scannedQr?.raw ? await QRCode.toDataURL(scannedQr.raw, { margin: 4, width: 360, errorCorrectionLevel: "M" }) : usesZatcaQr || usesSupplierZatcaQr ? qrDataUrl : undefined,
         branding,
         tpl,
         scanExtras,

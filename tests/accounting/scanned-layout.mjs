@@ -89,3 +89,36 @@ test("permission/network failures surface and never report a locally saved templ
   const q = { select() { return q; }, eq() { return q; }, async maybeSingle() { return { error: denied }; } };
   await assert.rejects(editSupplierHints({ from: () => q }, "org-a", "supplier-a", () => ({})), /permission denied/);
 });
+
+test("scanned templates bind only the current document QR, including older layouts", () => {
+  const layout = parseScannedLayout({...fixture, qrDataUrl: 'data:image/png;base64,T0xE', sourceQrPayload: 'old-invoice'});
+  assert.equal(layout.qrDataUrl, undefined);
+  const first = renderScannedLayout(layout, {...data, qrDataUrl: 'data:image/png;base64,TkVX'});
+  assert.match(first, /src="data:image\/png;base64,TkVX"/);
+  assert.doesNotMatch(first, /T0xE/);
+  const second = renderScannedLayout(layout, {...data, qrDataUrl: 'data:image/png;base64,TkVYVA=='});
+  assert.doesNotMatch(second, /base64,TkVX"/);
+  assert.match(renderScannedLayout(layout, data), /رمز الفاتورة غير متاح/);
+  assert.doesNotMatch(renderScannedLayout(layout, {...data,qrDataUrl:'https://example.test/qr.png'}), /https:\/\/example/);
+});
+
+test("explicit QR slots render one QR; undersized slots fall back to readable footer", () => {
+ const layout=parseScannedLayout({...fixture,footer:[...fixture.footer,{type:'qr',x:150,y:5,width:30,height:30}]});
+ const html=renderScannedLayout(layout,{...data,qrDataUrl:'data:image/png;base64,TkVX'});
+ assert.equal((html.match(/alt="QR/g)||[]).length,1);
+ assert.match(html,/width:30mm;height:30mm/);
+ const tiny=parseScannedLayout({...fixture,footer:[...fixture.footer,{type:'qr',x:150,y:5,width:8,height:8}]});
+ assert.match(renderScannedLayout(tiny,{...data,qrDataUrl:'data:image/png;base64,TkVX'}),/width:35mm;height:35mm/);
+});
+
+test("original payload survives QR re-encoding, including binary phase-two fields", async () => {
+ const {default:QRCode}=await import('qrcode');
+ const {default:jsQR}=await import('jsqr');
+ const {createCanvas,loadImage}=await import('@napi-rs/canvas');
+ const raw=Buffer.concat(['شركة اختبار','300000000000003','2026-10-05T10:00:00Z','115','15'].map((v,i)=>{const b=Buffer.from(v);return Buffer.concat([Buffer.from([i+1,b.length]),b]);}).concat([Buffer.from([6,3,255,0,128])])).toString('base64');
+ const png=await QRCode.toDataURL(raw,{margin:4,width:360,errorCorrectionLevel:'M'});
+ const html=renderScannedLayout(parseScannedLayout(fixture),{...data,qrDataUrl:png});
+ const embedded=html.match(/alt="QR[^\"]*" src="([^\"]+)"/)[1];
+ const image=await loadImage(embedded),canvas=createCanvas(image.width,image.height),ctx=canvas.getContext('2d');ctx.drawImage(image,0,0);
+ assert.equal(jsQR(ctx.getImageData(0,0,image.width,image.height).data,image.width,image.height).data,raw);
+});
