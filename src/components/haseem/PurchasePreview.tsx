@@ -9,7 +9,7 @@ export function PurchasePreview(props: any) {
   const {
     tpl, scanExtras, org, party: partyProp, partyName, partyLabel, partyAddress, ref_, date, dueDate, issuedAtIso,
     lines, lineCalcs, subtotal, tax, total, notes, branding, currency, kind,
-    qrDataUrl, usesZatcaQr, verify, layoutVariant, progressBilling, structure,
+    qrDataUrl, qrLabel, usesZatcaQr, verify, layoutVariant, progressBilling, structure,
   } = props;
 
   const isBill = kind === "bill";
@@ -39,6 +39,7 @@ export function PurchasePreview(props: any) {
       total,
       notes,
       currency,
+      qrLabel,
       qrDataUrl: isBill && usesZatcaQr ? qrDataUrl : undefined,
       verify: !isBill ? verify : undefined,
       branding,
@@ -51,8 +52,8 @@ export function PurchasePreview(props: any) {
     return buildDocHtml(data);
   }, [
     tpl, scanExtras, org, party, partyLabel, partyAddress, ref_, date, dueDate, issuedAtIso,
-    lines, lineCalcs, subtotal, tax, total, notes, branding, currency, kind,
-    qrDataUrl, usesZatcaQr, verify, layoutVariant, progressBilling, structure, isBill,
+    lines, lineCalcs, subtotal, tax, total, notes, branding, currency,
+    qrDataUrl, qrLabel, usesZatcaQr, verify, layoutVariant, progressBilling, structure, isBill,
   ]);
 
   return (
