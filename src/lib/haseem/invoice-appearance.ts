@@ -1,3 +1,4 @@
+import { salesReferenceTemplate } from "./sales-reference-templates";
 /** One invoice appearance, independent of older per-browser or scanned templates. */
 import type { InvoiceTemplate } from "./templates";
 export const UNIFIED_INVOICE_TEMPLATE: InvoiceTemplate = {
@@ -7,5 +8,6 @@ export const UNIFIED_INVOICE_TEMPLATE: InvoiceTemplate = {
 };
 export function isUnifiedInvoice(kind?: string) { return kind === "invoice" || kind === "bill"; }
 export function unifiedInvoiceAppearance<T extends { kind?: string; tpl?: unknown; structure?: string; layoutVariant?: string }>(doc: T): T {
-  return isUnifiedInvoice(doc.kind) ? { ...doc, tpl: UNIFIED_INVOICE_TEMPLATE, structure: "boxed", layoutVariant: undefined } : doc;
+  const reference = doc.kind === "invoice" ? salesReferenceTemplate((doc.tpl as { id?: string } | undefined)?.id) : undefined;
+  return isUnifiedInvoice(doc.kind) ? { ...doc, tpl: reference ?? UNIFIED_INVOICE_TEMPLATE, structure: "boxed", layoutVariant: undefined } : doc;
 }

@@ -229,7 +229,7 @@ export function DocumentForm({
   const layoutVariant = supportsContentVariant && contentVariant !== "standard" ? contentVariant : undefined;
   const scanTemplate = kind === "bill" && (savedScanTemplate || (tplMode === "template" ? selectedTpl : null));
   const activeScanTemplate = !unified && scanTemplate && scanTemplate.scannedLayout && scanTemplate.supplierId === partyId ? scanTemplate : null;
-  const tpl = unified ? UNIFIED_INVOICE_TEMPLATE : activeScanTemplate ? activeScanTemplate : tplMode === "custom" || !selectedTpl
+  const tpl = unified ? (printKind === "invoice" ? selectedTpl : UNIFIED_INVOICE_TEMPLATE) : activeScanTemplate ? activeScanTemplate : tplMode === "custom" || !selectedTpl
     ? { name: "مخصص", accent: docColor, onAccent: contrastColorFor(docColor), soft: tintColorFor(docColor), layoutVariant }
     : { name: selectedTpl.name, accent: selectedTpl.accent, onAccent: selectedTpl.onAccent, soft: selectedTpl.soft, layoutVariant: selectedTpl.layoutVariant ?? layoutVariant };
   // ZATCA QR is exclusive to sales invoices (usesZatcaQr) and purchase bills
@@ -529,7 +529,7 @@ export function DocumentForm({
           </div>
         </div>
         <div className="flex gap-2 flex-wrap items-center">
-          {unified ? <span className="text-sm px-3 py-2">قالب كنار الموحد</span> : <>
+          {unified ? (printKind === "invoice" ? <label className="text-sm">قالب المبيعات: <select aria-label="قالب المبيعات" value={tplId} onChange={e => setTplId(e.target.value)} className="border rounded px-3 py-2">{tplList.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}</select></label> : <span className="text-sm px-3 py-2">قالب كنار الموحد</span>) : <>
           <div className="flex items-center gap-1.5 border border-[#eceae2] rounded-lg px-2 py-1 bg-white">
             <span className="text-xs text-[#0f2a1d]/60">القالب:</span>
             <select

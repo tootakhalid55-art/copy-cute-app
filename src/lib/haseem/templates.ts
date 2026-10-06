@@ -1,3 +1,4 @@
+import { SALES_REFERENCE_TEMPLATES } from "./sales-reference-templates";
 import { UNIFIED_INVOICE_TEMPLATE, isUnifiedInvoice } from "./invoice-appearance";
 import type { ScannedLayout } from "./scanned-layout";
 import { useScannedTemplates } from "./scanned-templates";
@@ -124,7 +125,7 @@ export function useInvoiceTemplates(kind?: DocKind) {
 
   const builtins = BUILTIN_TEMPLATES.map((t) => ({ ...t, ...(overrides[t.id] || {}) }));
   const allUnfiltered: InvoiceTemplate[] = [...builtins, ...custom.items, ...scanned.items];
-  const all = isUnifiedInvoice(kind) ? [UNIFIED_INVOICE_TEMPLATE] : kind ? allUnfiltered.filter((t) => templateAllowedForKind(t, kind)) : allUnfiltered;
+  const all = kind === "invoice" ? [UNIFIED_INVOICE_TEMPLATE, ...SALES_REFERENCE_TEMPLATES] : isUnifiedInvoice(kind) ? [UNIFIED_INVOICE_TEMPLATE] : kind ? allUnfiltered.filter((t) => templateAllowedForKind(t, kind)) : allUnfiltered;
 
   // Per-kind selected template (falls back to legacy "invoice-template" key for backward compat)
   const kindKey = kind ? `invoice-template:${kind}` : "invoice-template";
@@ -147,5 +148,5 @@ export function useInvoiceTemplates(kind?: DocKind) {
     });
   const isOverridden = (id: string) => Boolean(overrides[id]);
 
-  return { all, custom, scanned, selected, selectedId: isUnifiedInvoice(kind) ? UNIFIED_INVOICE_TEMPLATE.id : selectedId, setSelectedId, overrideBuiltin, resetBuiltin, isOverridden };
+  return { all, custom, scanned, selected, selectedId: isUnifiedInvoice(kind) ? selected.id : selectedId, setSelectedId, overrideBuiltin, resetBuiltin, isOverridden };
 }
