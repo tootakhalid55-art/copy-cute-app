@@ -201,7 +201,7 @@ function ScanPage() {
     job: Job,
     payload: ReviewPayload,
     opts?: { quiet?: boolean; supplierCache?: Map<string, any> },
-  ): Promise<{ ok: boolean; billId?: string; attachmentSaved?: boolean; reason?: "duplicate" | "error" | "vat-mismatch" }> => {
+  ): Promise<{ ok: boolean; billId?: string; attachmentSaved?: boolean; error?: string; reason?: "duplicate" | "error" | "vat-mismatch" }> => {
     const quiet = !!opts?.quiet;
     const qr = payload.zatcaQr?.status === "decoded" ? payload.zatcaQr.data : undefined;
     if (payload.zatcaQr?.status === "ambiguous") {
@@ -320,7 +320,7 @@ function ScanPage() {
         return { ok: false, reason: "duplicate" };
       }
       if (!quiet) toast.error(msg || "تعذر حفظ الفاتورة");
-      return { ok: false, reason: "error" };
+      return { ok: false, reason: "error", error: msg || "تعذر حفظ الفاتورة" };
     }
     logClientEvent("scan-save", `success id=${bill?.id ?? "?"}`);
 
@@ -584,7 +584,7 @@ function ScanPage() {
                 const res = await saveScannedInvoice(reviewJob, payload);
                 if (!res.ok) throw new Error(res.reason === "duplicate"
                   ? "يوجد رقم فاتورة مكرر؛ راجع الفاتورة قبل إعادة الحفظ"
-                  : "تعذر الحفظ؛ بيانات المراجعة محفوظة هنا لإعادة المحاولة");
+                  : res.error || "تعذر الحفظ؛ بيانات المراجعة محفوظة هنا لإعادة المحاولة");
                 (res.attachmentSaved ? toast.success : toast.warning)(res.attachmentSaved ? "حُفظت الفاتورة مع المستند الأصلي." : "الفاتورة محفوظة؛ أعد رفع الأصل من قائمة المسح.", {
                   duration: 8000,
                   action: { label: "فتح الفاتورة", onClick: () => navigate({ to: "/purchases/bills/$id", params: { id: res.billId! } }) },

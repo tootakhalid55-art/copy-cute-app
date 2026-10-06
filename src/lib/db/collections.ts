@@ -7,6 +7,7 @@ import { useCallback, useEffect } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrg } from "./org";
+import { createDocument, updateDocument } from "./documents";
 // Static import on purpose: a dynamic import() here fetched a chunk that no
 // longer exists after a redeploy ("Failed to fetch dynamically imported
 // module"), which broke the posting self-heal exactly when it was needed.
@@ -464,7 +465,6 @@ async function fetchDocRow(orgId: string, id: string) {
 
 async function insertOne(key: string, orgId: string, input: any) {
   if (DOC_KEYS[key]) {
-    const { createDocument } = await import("./documents");
     const { org_id: _o, ...payload } = toDocPayload(key, input, orgId);
     const doc = await createDocument({ orgId, ...payload } as any);
     // The document is already saved — a posting failure must not roll the UI
@@ -542,7 +542,6 @@ async function insertOne(key: string, orgId: string, input: any) {
 
 async function updateOne(key: string, orgId: string, id: string, patch: any) {
   if (DOC_KEYS[key]) {
-    const { updateDocument } = await import("./documents");
     const { org_id: _o, kind: _k, lines, ...payload } = toDocPayload(key, patch, orgId);
     // Never regenerate identifiers on partial patches.
     if (!patch?.ref) delete (payload as any).doc_number;
