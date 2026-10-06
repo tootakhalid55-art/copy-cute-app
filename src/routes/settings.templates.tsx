@@ -1,3 +1,5 @@
+import { ReferenceTemplatePreview } from "@/components/haseem/ReferenceTemplatePreview";
+import { salesReferenceTemplate } from "@/lib/haseem/sales-reference-templates";
 import { isUnifiedInvoice } from "@/lib/haseem/invoice-appearance";
 import { useKV } from "@/lib/haseem/store";
 import { ScannedTemplatePreview } from "@/components/haseem/ScannedTemplatePreview";
@@ -121,7 +123,7 @@ function TemplatesPage() {
       </div>
 
 
-      {unified && <p className="text-sm">تستخدم فواتير المبيعات والمشتريات قالب كنار الموحد. تم إيقاف استخراج التصاميم من المسح.</p>}
+      {unified && <p className="text-sm">{activeKind === "invoice" ? "اختر قالب كنار الموحد أو أحد القوالب الثلاثة المبنية من المراجع. تُعبّأ ببيانات فاتورة المبيعات الحالية." : "تستخدم المشتريات قالب كنار الموحد، ويظل استخراج التصاميم أثناء المسح متوقفًا."}</p>}
       {scanned.error && <p role="alert" className="text-red-700">تعذر تحميل قوالب المسح من الخادم. أعد تحميل الصفحة.</p>}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {all.map((t) => {
@@ -139,7 +141,7 @@ function TemplatesPage() {
                 className="w-full text-right"
                 title="اختيار كافتراضي"
               >
-                {t.scannedLayout ? <div className="h-32 mb-3 overflow-hidden pointer-events-none"><ScannedTemplatePreview layout={t.scannedLayout} /></div> : <div
+                {salesReferenceTemplate(t.id) ? <div className="h-32 mb-3 overflow-hidden pointer-events-none"><ReferenceTemplatePreview tpl={t} compact /></div> : t.scannedLayout ? <div className="h-32 mb-3 overflow-hidden pointer-events-none"><ScannedTemplatePreview layout={t.scannedLayout} /></div> : <div
                   className="rounded-lg h-32 mb-3 flex flex-col justify-between p-2"
                   style={{ background: `linear-gradient(180deg, ${t.accent}0d 0%, ${t.accent}22 100%)` }}
                 >
@@ -368,6 +370,7 @@ function MiniPreview({ tpl }: { tpl: InvoiceTemplate }) {
 }
 
 function FullPreview({ tpl }: { tpl: InvoiceTemplate }) {
+  if (salesReferenceTemplate(tpl.id)) return <ReferenceTemplatePreview tpl={tpl} />;
   if (tpl.scannedLayout) return <ScannedTemplatePreview layout={tpl.scannedLayout} />;
   const rows = [
     { d: "استشارات فنية", q: 10, p: 50 },

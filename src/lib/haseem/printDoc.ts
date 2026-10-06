@@ -1,3 +1,4 @@
+import { renderSalesReference, salesReferenceTemplate } from "./sales-reference-templates";
 import { unifiedInvoiceAppearance } from "./invoice-appearance";
 import { parseScannedLayout, renderScannedLayout, type ScannedLayout } from "./scanned-layout";
 // Self-contained printable document builder.
@@ -15,7 +16,7 @@ export type ProgressBilling = {
 };
 export type PrintLineCalc = { net: number; taxAmt: number; gross: number };
 
-export type PrintTpl = { scannedLayout?: ScannedLayout; name: string; accent: string; onAccent: string; soft: string };
+export type PrintTpl = { id?: string; scannedLayout?: ScannedLayout; name: string; accent: string; onAccent: string; soft: string };
 
 
 export function makeZatcaQrPayload(input: {
@@ -121,6 +122,7 @@ const fmt = (n: number) =>
 
 export function buildDocHtml(d: PrintDocData): string {
   d = unifiedInvoiceAppearance(d);
+  if (d.kind === "invoice" && salesReferenceTemplate(d.tpl.id)) return renderSalesReference(d);
   const scanned = d.kind === "bill" ? parseScannedLayout(d.tpl?.scannedLayout) : undefined;
   if (scanned) return renderScannedLayout(scanned, d);
   const tpl = d.tpl ?? { name: "Default", accent: "#0f2a1d", onAccent: "#ffffff", soft: "#fafaf7" };
