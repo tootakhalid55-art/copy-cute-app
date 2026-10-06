@@ -1,3 +1,4 @@
+import { UNIFIED_INVOICE_TEMPLATE, isUnifiedInvoice } from "@/lib/haseem/invoice-appearance";
 import { selectScannedOriginals } from "@/lib/haseem/scanned-original";
 import { FilePreviewPane } from "./FilePreviewPane";
 import { toast } from "sonner";
@@ -211,7 +212,8 @@ export function DocumentForm({
   };
   const kindForKV = kind ?? "invoice";
   const [structureId, setStructureId] = useKV<string>(`doc-structure:${kindForKV}`, "boxed");
-  const structure = structureId as "boxed" | "banner" | "minimal" | "corporate" | "thermal";
+  const unified = isUnifiedInvoice(printKind);
+  const structure = (unified ? "boxed" : structureId) as "boxed" | "banner" | "minimal" | "corporate" | "thermal";
   const [docColor, setDocColor] = useKV<string>(`doc-color:${kindForKV}`, DEFAULT_DOC_COLOR[kindForKV] ?? "#1b6ea8");
   // Per-kind named templates (settings → قوالب المستندات) — quotations get
   // quotation templates, invoices invoice templates, and so on.
@@ -222,12 +224,12 @@ export function DocumentForm({
   const [tplMode, setTplMode] = useKV<"template" | "custom">(`doc-tpl-mode:${kindForKV}`, "custom");
   // Content variant (progress billing / supply / services) only makes sense
   // where line items represent billable work — invoices and purchase bills.
-  const supportsContentVariant = kind === "invoice" || kind === "bill";
+  const supportsContentVariant = !unified && (kind === "invoice" || kind === "bill");
   const [contentVariant, setContentVariant] = useKV<ContentVariant>(`doc-content-variant:${kindForKV}`, "standard");
   const layoutVariant = supportsContentVariant && contentVariant !== "standard" ? contentVariant : undefined;
   const scanTemplate = kind === "bill" && (savedScanTemplate || (tplMode === "template" ? selectedTpl : null));
-  const activeScanTemplate = scanTemplate && scanTemplate.scannedLayout && scanTemplate.supplierId === partyId ? scanTemplate : null;
-  const tpl = activeScanTemplate ? activeScanTemplate : tplMode === "custom" || !selectedTpl
+  const activeScanTemplate = !unified && scanTemplate && scanTemplate.scannedLayout && scanTemplate.supplierId === partyId ? scanTemplate : null;
+  const tpl = unified ? UNIFIED_INVOICE_TEMPLATE : activeScanTemplate ? activeScanTemplate : tplMode === "custom" || !selectedTpl
     ? { name: "مخصص", accent: docColor, onAccent: contrastColorFor(docColor), soft: tintColorFor(docColor), layoutVariant }
     : { name: selectedTpl.name, accent: selectedTpl.accent, onAccent: selectedTpl.onAccent, soft: selectedTpl.soft, layoutVariant: selectedTpl.layoutVariant ?? layoutVariant };
   // ZATCA QR is exclusive to sales invoices (usesZatcaQr) and purchase bills
@@ -284,13 +286,9 @@ export function DocumentForm({
   }, [contractValue, previousCertified, retentionPct, advanceRecoveryPct, subtotal, total]);
 
   useEffect(() => {
-    if (usesSupplierZatcaQr && existing?.source === "ai-scan") {
-      let alive = true;
-      setQrDataUrl(""); setVerifyQrDataUrl("");
-      if (scannedQr?.raw) void QRCode.toDataURL(scannedQr.raw, { margin: 4, width: 360, errorCorrectionLevel: "M" })
-        .then(url => { if (alive) setQrDataUrl(url); }).catch(() => { if (alive) setQrDataUrl(""); });
-      return () => { alive = false; };
-    }
+    let alive = true;
+    setQrDataUrl("");
+    const cleanup = () => { alive = false; };
     const iso = new Date(`${date}T00:00:00`).toISOString();
     if (usesZatcaQr) {
       const payload = makeZatcaQrPayload({
@@ -300,36 +298,37 @@ export function DocumentForm({
         totalWithVat: total,
         vatAmount: tax,
       });
-      QRCode.toDataURL(payload, { margin: 1, width: 180 })
-        .then(setQrDataUrl)
-        .catch(() => setQrDataUrl(""));
+      QRCode.toDataURL(payload, { margin: 4, width: 360 })
+        .then(url => { if (alive) setQrDataUrl(url); })
+        .catch(() => { if (alive) setQrDataUrl(""); });
       setVerifyQrDataUrl("");
-      return;
+      return cleanup;
     }
     if (usesSupplierZatcaQr) {
-      const payload = makeZatcaQrPayload({
+      const payload = scannedQr?.raw || makeZatcaQrPayload({
         sellerName: party?.name || "",
         vatNumber: party?.taxNumber || "",
         issuedAtIso: iso,
         totalWithVat: total,
         vatAmount: tax,
       });
-      QRCode.toDataURL(payload, { margin: 1, width: 180 })
-        .then(setQrDataUrl)
-        .catch(() => setQrDataUrl(""));
+      QRCode.toDataURL(payload, { margin: 4, width: 360 })
+        .then(url => { if (alive) setQrDataUrl(url); })
+        .catch(() => { if (alive) setQrDataUrl(""); });
       setVerifyQrDataUrl("");
-      return;
+      return cleanup;
     }
     setQrDataUrl("");
     if (!usesVerifyQr) {
       setVerifyQrDataUrl("");
       setVerifyToken("");
-      return;
+      return cleanup;
     }
     QRCode.toDataURL(buildTokenVerifyUrl(ref, verifyToken), { margin: 1, width: 180 })
-      .then(setVerifyQrDataUrl)
-      .catch(() => setVerifyQrDataUrl(""));
-  }, [org.name, org.taxNumber, date, total, tax, usesZatcaQr, usesSupplierZatcaQr, party?.name, party?.taxNumber, usesVerifyQr, cloudKind, ref, existing?.source, scannedQr?.raw]);
+      .then(url => { if (alive) setVerifyQrDataUrl(url); })
+      .catch(() => { if (alive) setVerifyQrDataUrl(""); });
+    return cleanup;
+  }, [org.name, org.taxNumber, date, total, tax, usesZatcaQr, usesSupplierZatcaQr, party?.name, party?.taxNumber, usesVerifyQr, cloudKind, ref, existing?.source, scannedQr?.raw, verifyToken]);
 
   // ZATCA-aware document heading — never the "إنشاء/تعديل" form title
   const docTitle = useMemo(
@@ -352,6 +351,7 @@ export function DocumentForm({
   }, [party]);
 
   const [printing, setPrinting] = useState(false);
+  const purchaseQrLabel = scannedQr?.raw ? "رمز المورد الأصلي" : "QR مولّد داخل النظام — ليس الرمز الأصلي للمورد";
   const handlePrint = async () => {
     setPrinting(true);
     try {
@@ -386,7 +386,8 @@ export function DocumentForm({
         notes,
         partyRole: printKind === "bill" ? "العميل" : printKind === "purchase-order" ? "المورد" : "العميل",
         currency: CUR,
-        qrDataUrl: scannedQr?.raw ? await QRCode.toDataURL(scannedQr.raw, { margin: 4, width: 360, errorCorrectionLevel: "M" }) : usesZatcaQr || usesSupplierZatcaQr ? qrDataUrl : undefined,
+        qrLabel: usesSupplierZatcaQr ? purchaseQrLabel : undefined,
+        qrDataUrl: usesSupplierZatcaQr ? await QRCode.toDataURL(scannedQr?.raw || makeZatcaQrPayload({ sellerName: party?.name || "", vatNumber: party?.taxNumber || "", issuedAtIso: new Date(`${date}T00:00:00`).toISOString(), totalWithVat: total, vatAmount: tax }), { margin: 4, width: 360, errorCorrectionLevel: "M" }) : usesZatcaQr ? qrDataUrl : undefined,
         branding,
         tpl,
         scanExtras,
@@ -528,6 +529,7 @@ export function DocumentForm({
           </div>
         </div>
         <div className="flex gap-2 flex-wrap items-center">
+          {unified ? <span className="text-sm px-3 py-2">قالب كنار الموحد</span> : <>
           <div className="flex items-center gap-1.5 border border-[#eceae2] rounded-lg px-2 py-1 bg-white">
             <span className="text-xs text-[#0f2a1d]/60">القالب:</span>
             <select
@@ -587,6 +589,7 @@ export function DocumentForm({
               className="w-6 h-6 rounded border border-[#eceae2] cursor-pointer bg-transparent p-0"
             />
           </label>
+          </>}
           <OutlineBtn type="button" onClick={() => navigate({ to: backTo })}>
             رجوع
           </OutlineBtn>
@@ -665,7 +668,7 @@ export function DocumentForm({
           reason={existing?.reason}
           usesZatcaQr={usesZatcaQr}
           usesSupplierZatcaQr={usesSupplierZatcaQr}
-          qrDataUrl={qrDataUrl}
+          qrDataUrl={qrDataUrl} qrLabel={usesSupplierZatcaQr ? purchaseQrLabel : undefined}
           usesVerifyQr={usesVerifyQr}
           verifyQrDataUrl={verifyQrDataUrl}
           verify={verify}
@@ -989,7 +992,7 @@ export function DocumentForm({
             <div className="qr">
               {qrDataUrl && <img src={qrDataUrl} alt="ZATCA QR" width={150} height={150} />}
               <div className="cap">
-                {usesZatcaQr ? "رمز الفاتورة (ZATCA)" : "رمز التحقق من المستند"}
+                {usesSupplierZatcaQr ? purchaseQrLabel : usesZatcaQr ? "رمز الفاتورة (ZATCA)" : "رمز التحقق من المستند"}
               </div>
               {branding.stamp && <img src={branding.stamp} alt="stamp" style={{maxHeight:100,marginTop:8}} />}
             </div>
@@ -1053,7 +1056,7 @@ export function DocumentForm({
                 reason={existing?.reason}
                 usesZatcaQr={usesZatcaQr}
                 usesSupplierZatcaQr={usesSupplierZatcaQr}
-                qrDataUrl={qrDataUrl}
+                qrDataUrl={qrDataUrl} qrLabel={usesSupplierZatcaQr ? purchaseQrLabel : undefined}
                 usesVerifyQr={usesVerifyQr}
                 verifyQrDataUrl={verifyQrDataUrl}
                 verify={verify}
@@ -1400,6 +1403,7 @@ function DocumentLivePreview({
   usesZatcaQr,
   usesSupplierZatcaQr,
   qrDataUrl,
+  qrLabel,
   usesVerifyQr,
   verifyQrDataUrl,
   verify,
@@ -1420,7 +1424,7 @@ function DocumentLivePreview({
     return <PurchasePreview {...{
       tpl, scanExtras, org, party, partyName, partyLabel, partyAddress, ref_, date, dueDate, issuedAtIso,
       lines, lineCalcs, subtotal, tax, total, notes, branding, currency, kind,
-      qrDataUrl, usesZatcaQr: usesSupplierZatcaQr, verify,
+      qrDataUrl, qrLabel, usesZatcaQr: usesSupplierZatcaQr, verify,
       layoutVariant, progressBilling, structure,
     }} />;
   }

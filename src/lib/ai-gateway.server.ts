@@ -138,8 +138,10 @@ export async function callAnthropicAI(opts: {
   }
 
   const data = (await res.json()) as {
+    stop_reason?: string;
     content?: Array<{ type: string; text?: string }>;
   };
+  if (data.stop_reason === "max_tokens") throw new Error("AI_RESPONSE_TOO_LONG: الفاتورة طويلة؛ قسّم الملف وأعد المسح لتجنب فقد بنود الفاتورة");
   const textBlock = data.content?.find((b) => b.type === "text");
   return textBlock?.text ?? "";
 }

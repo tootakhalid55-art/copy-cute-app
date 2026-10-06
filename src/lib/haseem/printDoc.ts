@@ -1,3 +1,4 @@
+import { unifiedInvoiceAppearance } from "./invoice-appearance";
 import { parseScannedLayout, renderScannedLayout, type ScannedLayout } from "./scanned-layout";
 // Self-contained printable document builder.
 // Renders an HTML string with inline styles (no Tailwind dependency),
@@ -75,6 +76,7 @@ export type PrintDocData = {
   originalRef?: string;
   currency: string;           // "ر.س" | "$" | ...
   qrDataUrl?: string;
+  qrLabel?: string;
   sourceQrPayload?: string;
   branding?: { logo?: string; stamp?: string };
   tpl: PrintTpl;
@@ -118,6 +120,7 @@ const fmt = (n: number) =>
   });
 
 export function buildDocHtml(d: PrintDocData): string {
+  d = unifiedInvoiceAppearance(d);
   const scanned = d.kind === "bill" ? parseScannedLayout(d.tpl?.scannedLayout) : undefined;
   if (scanned) return renderScannedLayout(scanned, d);
   const tpl = d.tpl ?? { name: "Default", accent: "#0f2a1d", onAccent: "#ffffff", soft: "#fafaf7" };
@@ -256,7 +259,7 @@ export function buildDocHtml(d: PrintDocData): string {
   const qrBlock = showsZatcaQr && d.qrDataUrl
     ? `<div style="text-align:center;background:#fff;padding:10px;border:1px solid ${line};border-radius:12px;display:inline-block">
          <img src="${esc(d.qrDataUrl)}" alt="ZATCA QR" width="118" height="118" />
-         <div style="font-size:9.5px;color:${muted};margin-top:4px;font-weight:600;letter-spacing:.04em">ZATCA · هيئة الزكاة</div>
+         <div style="font-size:9.5px;color:${muted};margin-top:4px;font-weight:600;letter-spacing:.04em">${esc(d.qrLabel || "ZATCA · هيئة الزكاة")}</div>
        </div>`
     : "";
 
@@ -771,6 +774,7 @@ async function buildAttachmentPagesHtml(url: string, mime?: string, label?: stri
 
 export async function printDoc(d: PrintDocData & { attachment?: { url: string; mime?: string; label?: string }; attachments?: { url: string; mime?: string; label?: string }[] }) {
   if (typeof window === "undefined") return;
+  d = unifiedInvoiceAppearance(d);
   const safeDoc: PrintDocData = {
     ...d,
     title: d.title || "Document",

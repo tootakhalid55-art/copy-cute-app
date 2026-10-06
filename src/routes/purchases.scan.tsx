@@ -2,10 +2,6 @@ import { applyQrIdentity } from "@/lib/haseem/zatca-qr";
 import { scanWithGatewayRecovery, scanFailureMessage } from "@/lib/haseem/scan-recovery";
 import { useAuth } from "@/lib/haseem/auth";
 import { applyRegisteredSupplier, resolveScanSupplier } from "@/lib/haseem/scan-supplier";
-import { captureScannedLogo } from "@/lib/haseem/scanned-logo";
-import { useScannedTemplates, type ScannedTemplate } from "@/lib/haseem/scanned-templates";
-import { scanPreviewData } from "@/lib/haseem/scan-preview-data";
-import { ScannedTemplatePreview } from "@/components/haseem/ScannedTemplatePreview";
 import { FilePreviewPane } from "@/components/haseem/FilePreviewPane";
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
@@ -83,7 +79,6 @@ function newId() {
 
 function ScanPage() {
   const scan = useServerFn(scanInvoice);
-  const scannedTemplates = useScannedTemplates();
   const { currentOrgId } = useOrg();
   const { items: bills, addAsync: addBillAsync } = useCollection<any>("bills");
   const { items: suppliers, addAsync: addSupplierAsync } = useCollection<any>("suppliers");
@@ -116,10 +111,6 @@ function ScanPage() {
         (attempt) => updateJob(job.id, { error: `انقطاع مؤقت؛ جارٍ إعادة الاتصال (${attempt}/2)…` }),
       );
       const result = applyQrIdentity(extracted, qr);
-      if (result.visualLayout?.logoCrop) {
-        try { result.visualLayout = await captureScannedLogo(job.dataUrl, result.visualLayout); }
-        catch { result.layoutWarning = "تعذر نقل شعار المورد؛ راجع معاينة القالب أو أعد المسح."; }
-      }
       // Duplicate detection: same supplier + invoice number + total
       const dup = bills.find((b) =>
         b.partyName?.trim() === result.supplierName?.trim() &&
@@ -218,10 +209,6 @@ function ScanPage() {
       return { ok: false, reason: "error" };
     }
     if (qr) payload = { ...payload, supplierName: qr.sellerName, supplierVatNumber: qr.vatNumber };
-    if (payload.useSourceTemplate !== false && !payload.visualLayout) {
-      if (!quiet) toast.error("تعذر استخراج التصميم؛ أعد المسح أو اختر القالب المعتاد من نافذة المراجعة");
-      return { ok: false, reason: "error" };
-    }
     // Find or create supplier — must await the REAL DB record (the sync
     // add() returns an optimistic tmp_ stub that breaks the partyId link).
     // The cache covers a bulk run where several invoices share a supplier
@@ -284,20 +271,7 @@ function ScanPage() {
       }
     }
     let bill: any;
-    let scannedTemplate: ScannedTemplate | undefined;
     try {
-      if (payload.useSourceTemplate !== false) {
-        if (!payload.visualLayout) throw new Error("لم يُستخرج تصميم صالح؛ أعد المسح أو اختر القالب المعتاد من المراجعة");
-        if (!supplier?.id) throw new Error("اختر أو أنشئ المورد لحفظ القالب ضمن نماذجه");
-        scannedTemplate = await scannedTemplates.save({
-          id: `scan-${job.id}`, name: `قالب ${payload.supplierName || "مورد"} — ${payload.invoiceNumber || job.file.name}`.slice(0, 100),
-          desc: "تصميم مستخرج من فاتورة ممسوحة؛ تُملأ حقوله من بيانات الفاتورة الحالية.",
-          source: "scan", supplierId: supplier.id, createdAt: new Date().toISOString(), kinds: ["bill"],
-          accent: payload.visualLayout.table.headerBackground, onAccent: payload.visualLayout.table.headerColor,
-          soft: payload.visualLayout.table.stripe, scannedLayout: payload.visualLayout,
-        });
-      }
-
       bill = await addBillAsync({
         ref: payload.invoiceNumber || `BILL-${Math.floor(100000 + Math.random() * 900000)}`,
         supplierRef: payload.invoiceNumber,
@@ -316,7 +290,7 @@ function ScanPage() {
         currency: payload.currency,
         source: "ai-scan",
         scannedOriginal: { filename: job.file.name, mime: job.file.type, size: job.file.size },
-        scannedTemplate: scannedTemplate ?? null,
+        scannedTemplate: null,
         zatcaQr: payload.zatcaQr ?? null,
         supplierReviewSource: qr ? "zatca-qr" : payload.selectedSupplierId ? "registered-supplier" : "scan",
         supplierInvoiceName: payload.supplierName,
@@ -345,7 +319,7 @@ function ScanPage() {
         }
         return { ok: false, reason: "duplicate" };
       }
-      if (!quiet) toast.error(msg || "تعذر حفظ الفاتورة والقالب");
+      if (!quiet) toast.error(msg || "تعذر حفظ الفاتورة");
       return { ok: false, reason: "error" };
     }
     logClientEvent("scan-save", `success id=${bill?.id ?? "?"}`);
@@ -703,7 +677,7 @@ function StatusBadge({ status }: { status: Status }) {
   );
 }
 
-type ReviewPayload = ScanResult & { createSupplier: boolean; finalStatus: string; useSourceTemplate?: boolean; selectedSupplierId?: string };
+type ReviewPayload = ScanResult & { createSupplier: boolean; finalStatus: string; selectedSupplierId?: string };
 
 function ReviewModal({
   job, suppliers, onClose, onSave,
@@ -721,7 +695,6 @@ function ReviewModal({
     const matches = r.zatcaQr?.data ? suppliers.filter((s: any) => vatDigits(s.taxNumber) === r.zatcaQr!.data!.vatNumber) : [];
     return matches.length === 1 ? matches[0].id : "";
   });
-  const [useSourceTemplate, setUseSourceTemplate] = useState(job.reviewPayload?.useSourceTemplate ?? true);
   const [saving, setSaving] = useState(false);
   const submit = async (finalStatus: string) => {
     if (saving) return;
@@ -731,7 +704,7 @@ function ReviewModal({
     if (qrVat && selected && vatDigits(selected.taxNumber) !== qrVat) { toast.error("المورد المختار لا يطابق الرقم الضريبي في QR"); return; }
     setSaving(true);
     try {
-      await onSave({ ...form, createSupplier: selectedSupplierId ? false : createSupplier, finalStatus, useSourceTemplate, selectedSupplierId: selectedSupplierId || undefined });
+      await onSave({ ...form, createSupplier: selectedSupplierId ? false : createSupplier, finalStatus, selectedSupplierId: selectedSupplierId || undefined });
     } finally {
       setSaving(false);
     }
@@ -815,13 +788,7 @@ function ReviewModal({
           </div>
 
           <div className="space-y-4 text-sm">
-            <section className="rounded-xl border p-4 space-y-3">
-              <label className="flex items-center gap-2 font-semibold"><input type="checkbox" checked={useSourceTemplate} onChange={e => setUseSourceTemplate(e.target.checked)} />إنشاء الفاتورة بتصميم الأصل وحفظه في نماذج القوالب</label>
-              <p className="text-xs text-gray-600">راجع التصميم مقابل الأصل. يمكن إعادة استخدامه مع فواتير المورد، وتتغير الحقول والمبالغ حسب بيانات كل فاتورة. الأختام والتوقيعات محفوظة في المرفق الأصلي فقط.</p>
-              {form.layoutWarning && <p role="alert" className="text-amber-800">{form.layoutWarning}</p>}
-              {useSourceTemplate && form.visualLayout && <ScannedTemplatePreview layout={form.visualLayout} data={scanPreviewData(form)} />}
-              {useSourceTemplate && !form.visualLayout && <p role="alert">لم يُستخرج قالب صالح. أعد المسح أو ألغِ هذا الخيار لاستخدام القالب المعتاد.</p>}
-            </section>
+            <p className="rounded-xl border p-3 bg-green-50">تُنشأ الفاتورة بقالب كنار الموحد، مع الاحتفاظ بالمستند الأصلي.</p>
             <div className="rounded-xl border border-[#eceae2] bg-white overflow-hidden shadow-sm">
               <div className="px-4 py-3 border-b border-[#eceae2] bg-[#fafaf7] flex items-center justify-between">
                 <div>

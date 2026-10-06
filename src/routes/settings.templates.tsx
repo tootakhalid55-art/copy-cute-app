@@ -1,3 +1,4 @@
+import { isUnifiedInvoice } from "@/lib/haseem/invoice-appearance";
 import { useKV } from "@/lib/haseem/store";
 import { ScannedTemplatePreview } from "@/components/haseem/ScannedTemplatePreview";
 import { toast } from "sonner";
@@ -30,6 +31,7 @@ const EMPTY_DRAFT: Draft = {
 
 function TemplatesPage() {
   const [activeKind, setActiveKind] = useState<DocKind>("invoice");
+  const unified = isUnifiedInvoice(activeKind);
   const { all, custom, scanned, selectedId, setSelectedId: selectTemplate, overrideBuiltin, resetBuiltin, isOverridden } = useInvoiceTemplates(activeKind);
   const [, setTemplateMode] = useKV<"template" | "custom">(`doc-tpl-mode:${activeKind}`, "custom");
   const setSelectedId = (id: string) => { selectTemplate(id); setTemplateMode("template"); };
@@ -94,7 +96,7 @@ function TemplatesPage() {
       <PageHeader
         title="قوالب المستندات"
         subtitle="لكل نوع مستند قوالبه الخاصة — اختر النوع ثم عدّل أو أنشئ قالباً"
-        action={
+        action={unified ? undefined :
           <PrimaryBtn onClick={openCreate}>
             <Plus className="w-4 h-4" /> قالب جديد
           </PrimaryBtn>
@@ -119,7 +121,7 @@ function TemplatesPage() {
       </div>
 
 
-      {activeKind === "bill" && <p className="text-sm">القوالب المستخرجة من المسح تُحفظ للمنشأة وتظهر هنا تلقائيًا. تبقى نسخة القالب داخل الفاتورة حتى عند حذف النموذج.</p>}
+      {unified && <p className="text-sm">تستخدم فواتير المبيعات والمشتريات قالب كنار الموحد. تم إيقاف استخراج التصاميم من المسح.</p>}
       {scanned.error && <p role="alert" className="text-red-700">تعذر تحميل قوالب المسح من الخادم. أعد تحميل الصفحة.</p>}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {all.map((t) => {
@@ -172,7 +174,7 @@ function TemplatesPage() {
                 >
                   <Eye className="w-3.5 h-3.5" /> استعراض
                 </button>
-                {t.builtin ? (
+                {unified ? null : t.builtin ? (
                   <>
                     <button
                       type="button"

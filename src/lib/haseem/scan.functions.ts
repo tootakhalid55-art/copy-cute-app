@@ -1,6 +1,6 @@
 import type { QrReview } from "./zatca-qr";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { parseScannedLayout, SCANNED_LAYOUT_PROMPT, type ScannedLayout } from "./scanned-layout";
+import { type ScannedLayout } from "./scanned-layout";
 import { createServerFn } from "@tanstack/react-start";
 import { callAnthropicAI } from "@/lib/ai-gateway.server";
 
@@ -81,14 +81,14 @@ Return ONLY a JSON object matching this TypeScript type exactly, no markdown, no
     "purchaseOrderNumber": number, "subtotal": number, "vat": number,
     "discount": number, "shipping": number, "otherCharges": number, "grandTotal": number
   },
-  "rawText": string,             // the full detected invoice text
-  "language": "ar" | "en" | "mixed",
-  "visualLayout": object | null // follow the design schema below
+  "rawText": "",                 // do not duplicate the invoice text
+  "language": "ar" | "en" | "mixed"
 }
 
 Rules:
 - Numbers must be plain JSON numbers (no currency symbols, no commas).
 - If a value is missing, use "" for strings, 0 for numbers, and confidence 0.
+- Extract data only. Do not describe layout, design, colors, logos, or repeat the full OCR text. Return compact JSON.
 - Detect Arabic and Latin digits; convert Arabic-Indic digits to Latin.
 - Prefer values printed on the invoice over recomputed values.
 `;
@@ -105,9 +105,9 @@ async function extract(fileDataUrl: string, filename: string): Promise<ScanResul
 
   const raw = await callAnthropicAI({
     model: "claude-sonnet-5",
-    maxTokens: 16000,
+    maxTokens: 8000,
     messages: [
-      { role: "system", content: SYSTEM + SCANNED_LAYOUT_PROMPT },
+      { role: "system", content: SYSTEM },
       { role: "user", content },
     ],
   });
@@ -181,9 +181,6 @@ async function extract(fileDataUrl: string, filename: string): Promise<ScanResul
       : "mixed",
   };
 
-  result.visualLayout = parseScannedLayout(parsed.visualLayout);
-  if (result.visualLayout) delete result.visualLayout.logoDataUrl;
-  else result.layoutWarning = "تعذر استخراج تصميم واضح؛ أعد المسح أو اختر إنشاء الفاتورة بالقالب المعتاد.";
   return result;
 }
 
