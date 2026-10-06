@@ -131,14 +131,14 @@ function TemplatesPage() {
           return (
             <div
               key={t.id}
-              className={`text-right rounded-xl border-2 p-4 bg-white transition ${
+              className={`min-w-0 overflow-hidden text-right rounded-xl border-2 p-4 bg-white transition ${
                 isActive ? "border-[#0f2a1d] shadow" : "border-[#eceae2] hover:border-[#0f2a1d]/40"
               }`}
             >
               <button
                 type="button"
                 onClick={() => setSelectedId(t.id)}
-                className="w-full text-right"
+                className="w-full min-w-0 text-right"
                 title="اختيار كافتراضي"
               >
                 {salesReferenceTemplate(t.id) ? <div className="h-32 mb-3 overflow-hidden pointer-events-none"><ReferenceTemplatePreview tpl={t} compact /></div> : t.scannedLayout ? <div className="h-32 mb-3 overflow-hidden pointer-events-none"><ScannedTemplatePreview layout={t.scannedLayout} /></div> : <div
@@ -155,9 +155,9 @@ function TemplatesPage() {
                 </div>}
                 <div className="flex items-center justify-between">
                   <div className="min-w-0">
-                    <div className="font-semibold flex items-center gap-2">
+                    <div className="font-semibold flex flex-wrap items-center gap-2">
                       <FileText className="w-4 h-4" style={{ color: t.accent }} />
-                      <span className="truncate">{t.name}</span>
+                      <span className="break-words">{t.name}</span>
                       {t.scannedLayout && <span className="text-[10px] bg-blue-50 text-blue-700 px-1 rounded">مستخرج من المسح</span>}
                       {t.builtin && (
                         <span className="text-[10px] bg-[#f2f0e8] text-[#0f2a1d]/70 px-1.5 py-0.5 rounded">افتراضي</span>
