@@ -436,7 +436,7 @@ export function buildDocHtml(d: PrintDocData): string {
       .map((row: any, i: number) => `
         <tr class="avoid-break">
           <td style="${tdBorder};padding:9px 8px;text-align:center;color:${muted};font-variant-numeric:tabular-nums">${String(i + 1).padStart(2, "0")}</td>
-          <td style="${tdBorder};padding:9px 10px;text-align:right;color:${ink};font-weight:600">${esc(row.line.description || "—")}</td>
+          <td style="${tdBorder};padding:9px 10px;text-align:right;color:${ink};font-weight:600;white-space:pre-wrap;overflow-wrap:anywhere">${esc(row.line.description || "—")}</td>
           ${isSupply ? `<td style="${tdBorder};padding:9px 8px;text-align:center;color:${muted}">${esc(row.line.unit || "—")}</td>` : ""}
           <td style="${tdBorder};padding:9px 8px;text-align:center;font-variant-numeric:tabular-nums">${esc(row.line.qty)}</td>
           <td style="${tdBorder};padding:9px 8px;text-align:center;font-variant-numeric:tabular-nums">${fmt(row.line.price)}</td>
@@ -654,7 +654,7 @@ export function buildDocHtml(d: PrintDocData): string {
       const c = lineCalcs[i] || { net: 0, taxAmt: 0, gross: 0 };
       return `
         <div style="padding:6px 0;border-bottom:1px dashed ${line}">
-          <div style="font-size:11px;font-weight:700;color:${ink}">${esc(l.description || "—")}</div>
+          <div style="font-size:11px;font-weight:700;color:${ink};white-space:pre-wrap;overflow-wrap:anywhere">${esc(l.description || "—")}</div>
           <div style="display:flex;justify-content:space-between;font-size:10px;color:${muted};margin-top:2px">
             <span>${esc(l.qty)} × ${fmt(l.price)}${isSupply && l.unit ? ` ${esc(l.unit)}` : ""}</span>
             <span style="font-weight:700;color:${ink}">${fmt(c.gross)}</span>

@@ -786,14 +786,21 @@ export function DocumentForm({
                 <tr key={i} className="border-t border-[#eceae2]">
                   <td className="py-2">{i + 1}</td>
                   <td>
-                    <input
+                    {kind === "invoice" ? <textarea
+                      value={l.description}
+                      onChange={(e) => updateLine(i, { description: e.target.value })}
+                      rows={2}
+                      aria-label={`وصف البند ${i + 1}`}
+                      placeholder="الوصف — اضغط Enter لإضافة سطر"
+                      className="border border-[#eceae2] rounded px-2 py-1 w-full min-h-[60px] resize-y"
+                    /> : (<input
                       value={l.description}
                       onChange={(e) =>
                         updateLine(i, { description: e.target.value })
                       }
                       placeholder="الوصف"
                       className="border border-[#eceae2] rounded px-2 py-1 w-full"
-                    />
+                    />)}
                   </td>
                   {tpl.layoutVariant === "supply" && (
                     <td>
