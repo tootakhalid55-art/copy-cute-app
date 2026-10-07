@@ -194,7 +194,7 @@ export function buildDocHtml(d: PrintDocData): string {
        <div style="display:grid;gap:3px;font-size:11px;color:${muted}">
          ${recipientParty.taxNumber ? `<div><span style="color:${accent};font-weight:600">الرقم الضريبي · VAT No. </span>${esc(recipientParty.taxNumber)}</div>` : ""}
          ${(recipientParty as any).commercialReg ? `<div><span style="color:${accent};font-weight:600">السجل التجاري · CR No. </span>${esc((recipientParty as any).commercialReg)}</div>` : ""}
-         ${!simplified && recipientParty.address ? `<div><span style="color:${accent};font-weight:600">العنوان · Address </span>${esc(recipientParty.address)}</div>` : ""}
+         ${(!simplified || d.kind === "invoice") && recipientParty.address ? `<div><span style="color:${accent};font-weight:600">العنوان · Address </span>${esc(recipientParty.address)}</div>` : ""}
          ${recipientParty.phone ? `<div><span style="color:${accent};font-weight:600">الجوال · Phone </span>${esc(recipientParty.phone)}</div>` : ""}
          ${!simplified && recipientParty.email ? `<div><span style="color:${accent};font-weight:600">البريد · Email </span>${esc(recipientParty.email)}</div>` : ""}
        </div>`

@@ -1,3 +1,4 @@
+import { fullAddress } from "@/lib/haseem/full-address";
 import { UNIFIED_INVOICE_TEMPLATE, isUnifiedInvoice } from "@/lib/haseem/invoice-appearance";
 import { selectScannedOriginals } from "@/lib/haseem/scanned-original";
 import { FilePreviewPane } from "./FilePreviewPane";
@@ -347,7 +348,7 @@ export function DocumentForm({
   const issuedAtIso = useMemo(() => docTimestamp(date, existing?.issuedAt), [date, existing?.issuedAt]);
   const partyAddress = useMemo(() => {
     if (!party) return "";
-    return [party.street, party.district, party.city, party.region].filter(Boolean).join("، ");
+    return fullAddress(party);
   }, [party]);
 
   const [printing, setPrinting] = useState(false);
