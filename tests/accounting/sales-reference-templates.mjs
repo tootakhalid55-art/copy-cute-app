@@ -15,6 +15,8 @@ for(const tpl of SALES_REFERENCE_TEMPLATES){
   assert.equal(unifiedInvoiceAppearance({...base,tpl,kind:'bill'}).tpl.id,'canar-unified-invoice');
   const html=buildDocHtml({...base,tpl});
   for(const value of ['TEST-100','كنار الحديثة','310000000000003','230.00',base.qrDataUrl])assert.ok(html.includes(value));
+  const multiline=buildDocHtml({...base,tpl,lines:[{...base.lines[0],description:'First line\nSecond line'}]});
+  assert.ok(multiline.includes('First line\nSecond line'));assert.ok(multiline.includes('white-space:pre-wrap'));
   assert.ok(html.includes('data-template="'+tpl.id+'"'));
   const changed=buildDocHtml({...base,tpl,ref:'NEW-200',party:{name:'<script>alert(1)</script>'}});
   assert.ok(changed.includes('NEW-200'));assert.ok(!changed.includes('TEST-100'));assert.ok(!changed.includes('<script>'));assert.ok(changed.includes('&lt;script&gt;'));

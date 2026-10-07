@@ -27,7 +27,7 @@ export function renderSalesReference(d: PrintDocData): string {
     const net=l.qty*l.price-(l.discount||0),calc=d.lineCalcs[i],tax=calc?.taxAmt??net*l.tax/100;
     const extra=l as typeof l & {code?:string;location?:string};
     const values=detailed?[i+1,extra.code||"—",l.description,extra.location||"—",l.qty,money(l.price),money(calc?.net??net),money(l.discount),`${l.tax}%`,money(tax),money(calc?.gross??net+tax)]:[i+1,l.description,l.qty,l.unit||"—",money(l.price),money(calc?.net??net),`${l.tax}%`,money(tax)];
-    return `<tr style="break-inside:avoid">${values.map((v,j)=>`<td style="${rule}text-align:${j===(detailed?2:1)?"start":"center"}">${esc(v)}</td>`).join("")}</tr>`;
+    return `<tr style="break-inside:avoid">${values.map((v,j)=>`<td style="${rule}white-space:pre-wrap;text-align:${j===(detailed?2:1)?"start":"center"}">${esc(v)}</td>`).join("")}</tr>`;
   }).join("");
   const totalRow=(label:string,value:unknown,bold=false)=>`<tr style="${bold?`font-weight:bold;background:${t.soft}`:""}"><td style="${rule}">${label}</td><td dir="ltr" style="${rule}width:30%;text-align:right">${money(value)}</td></tr>`;
   const totals=`<table style="border-collapse:collapse;width:100%;font-size:12px">${totalRow("الإجمالي قبل الضريبة · Subtotal",d.subtotal)}${totalRow("الخصومات · Discount",d.discAmt??d.scanExtras?.discount)}${totalRow("ضريبة القيمة المضافة · VAT",d.tax)}${totalRow(`الإجمالي المستحق · Total (${esc(d.currency)})`,d.total,true)}</table>`;
