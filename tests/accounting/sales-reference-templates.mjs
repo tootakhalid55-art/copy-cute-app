@@ -13,7 +13,8 @@ for(const tpl of SALES_REFERENCE_TEMPLATES){
   assert.deepEqual(tpl.kinds,['invoice']);
   assert.equal(unifiedInvoiceAppearance({...base,tpl}).tpl.id,tpl.id);
   assert.equal(unifiedInvoiceAppearance({...base,tpl,kind:'bill'}).tpl.id,'canar-unified-invoice');
-  const html=buildDocHtml({...base,tpl});
+  const html=buildDocHtml({...base,tpl,issuedAtIso:'2026-10-06T12:34:56Z'});
+  assert.ok(!html.includes('12:34:56'));assert.ok(html.includes(base.date));
   for(const value of ['TEST-100','كنار الحديثة','310000000000003','230.00',base.qrDataUrl])assert.ok(html.includes(value));
   const multiline=buildDocHtml({...base,tpl,lines:[{...base.lines[0],description:'First line\nSecond line'}]});
   assert.ok(multiline.includes('First line\nSecond line'));assert.ok(multiline.includes('white-space:pre-wrap'));
