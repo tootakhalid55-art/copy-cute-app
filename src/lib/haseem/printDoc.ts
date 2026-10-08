@@ -216,7 +216,7 @@ export function buildDocHtml(d: PrintDocData): string {
       <div style="font-size:12px;color:${ink};font-weight:600;font-variant-numeric:tabular-nums;word-break:break-word">${value || "—"}</div>
     </div>`;
 
-  const stamp = d.issuedAtIso ? formatTs(d.issuedAtIso) : "";
+  const stamp = d.kind !== "invoice" && d.issuedAtIso ? formatTs(d.issuedAtIso) : "";
 
   const metaGrid = [
     metaCell("التاريخ", "Date", esc(d.date)),
@@ -674,7 +674,7 @@ export function buildDocHtml(d: PrintDocData): string {
 
       <div style="text-align:center;padding:10px 0;border-bottom:1px dashed ${ink}">
         <div style="font-size:9.5px;color:${muted}">${esc(d.ref)}</div>
-        <div style="font-size:9px;color:${muted};margin-top:2px;direction:ltr;display:inline-block">${esc(d.issuedAtIso ? formatTs(d.issuedAtIso) : d.date)}</div>
+        <div style="font-size:9px;color:${muted};margin-top:2px;direction:ltr;display:inline-block">${esc(d.kind !== "invoice" && d.issuedAtIso ? formatTs(d.issuedAtIso) : d.date)}</div>
       </div>
 
       <div style="padding:8px 0">${itemRows || `<div style="text-align:center;padding:16px 0;color:#b7bdb2;font-size:10px">لا توجد بنود</div>`}</div>
