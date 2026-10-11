@@ -20,3 +20,10 @@ org={...org,ready:false,currentOrgId:null};const disabled=settle(()=>ctx.api.use
 assert.ok(storage.has('haseem:customers'),'unowned legacy records preserved, not deleted');
 console.log('Scoped settings, scope switches, safe cloud loading, local drafts and disabled writes passed');
 
+
+slots=[];org={...org,ready:true,currentOrgId:'O2'};
+let saved=settle(()=>ctx.api.useKV('branding',{logo:'previous'}));
+const originalSet=ctx.localStorage.setItem;ctx.localStorage.setItem=()=>{throw new Error('quota')};
+assert.throws(()=>saved[1]({logo:'replacement'}));
+saved=render(()=>ctx.api.useKV('branding',{logo:'previous'}));assert.equal(saved[0].logo,'previous');
+ctx.localStorage.setItem=originalSet;

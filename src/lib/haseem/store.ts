@@ -121,14 +121,16 @@ export function useKV<T>(key: string, initial: T) {
     setState({key: storageKey, value});
   }, [storageKey, enabled, fallback]);
   const value = enabled && state?.key === storageKey ? state.value : fallback;
+  const latest = useRef({key: storageKey, value});
+  latest.current = {key: storageKey, value};
   const set = useCallback((v: T | ((prev: T) => T)) => {
     if (!enabled) throw new Error("اختر منشأة مصرحًا بها أولًا");
-    setState(prev => {
-      const old = prev?.key === storageKey ? prev.value : fallback;
-      const next = typeof v === "function" ? (v as (prev: T) => T)(old) : v;
-      if (isBrowser()) localStorage.setItem(storageKey, JSON.stringify(next));
-      return {key: storageKey, value: next};
-    });
+    const old = latest.current.key === storageKey ? latest.current.value : fallback;
+    const next = typeof v === "function" ? (v as (prev: T) => T)(old) : v;
+    try { if (isBrowser()) localStorage.setItem(storageKey, JSON.stringify(next)); }
+    catch { throw new Error("تعذر حفظ الإعدادات في المتصفح؛ مساحة التخزين ممتلئة أو غير متاحة. جرّب صورة أصغر، ولا تمسح البيانات غير المحفوظة."); }
+    latest.current = {key: storageKey, value: next};
+    setState(latest.current);
   }, [enabled, storageKey, fallback]);
   return [value, set] as const;
 }

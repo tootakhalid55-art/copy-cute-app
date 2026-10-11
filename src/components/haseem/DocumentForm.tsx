@@ -1,3 +1,4 @@
+import { prepareBrandingImage } from "@/lib/haseem/branding-image";
 import { fullAddress } from "@/lib/haseem/full-address";
 import { UNIFIED_INVOICE_TEMPLATE, isUnifiedInvoice } from "@/lib/haseem/invoice-appearance";
 import { selectScannedOriginals } from "@/lib/haseem/scanned-original";
@@ -26,14 +27,7 @@ import { listAttachments, getSignedUrl } from "@/lib/db/attachments";
 import { logClientEvent } from "@/lib/db/collections";
 
 // Read a File as base64 data URL
-function fileToDataURL(f: File): Promise<string> {
-  return new Promise((res, rej) => {
-    const r = new FileReader();
-    r.onload = () => res(String(r.result || ""));
-    r.onerror = () => rej(r.error);
-    r.readAsDataURL(f);
-  });
-}
+
 
 // ZATCA phase-1 TLV encoder (base64)
 function zatcaTLV(seller: string, vat: string, iso: string, total: string, taxAmt: string) {
@@ -1574,9 +1568,10 @@ function ImagePicker({
         onChange={async (e) => {
           const f = e.target.files?.[0];
           if (!f) return;
-          const url = await fileToDataURL(f);
-          onChange(url);
-          e.target.value = "";
+          const input = e.currentTarget;
+          try { onChange(await prepareBrandingImage(f)); toast.success("تم حفظ الصورة"); }
+          catch (error) { toast.error(error instanceof Error ? error.message : "تعذر حفظ الصورة"); }
+          finally { input.value = ""; }
         }}
       />
     </div>

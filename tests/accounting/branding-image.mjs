@@ -1,0 +1,13 @@
+import assert from 'node:assert/strict';
+import {readFile} from 'node:fs/promises';
+import ts from 'typescript';
+import vm from 'node:vm';
+const source=await readFile(new URL('../../src/lib/haseem/branding-image.ts',import.meta.url),'utf8');
+const js=ts.transpileModule(source,{compilerOptions:{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.ESNext}}).outputText.replace(/export /g,'');
+let revoked=0,fail=false;const canvas={width:0,height:0,getContext:()=>({drawImage(){}}),toDataURL:type=>{assert.equal(type,'image/png');return 'data:image/png;base64,TEST'}};
+const ctx=vm.createContext({URL:{createObjectURL:()=> 'blob:test',revokeObjectURL:()=>revoked++},Image:class{naturalWidth=4000;naturalHeight=2000;set src(v){queueMicrotask(()=>fail?this.onerror():this.onload())}},document:{createElement:()=>canvas}});
+vm.runInContext(js+'\nglobalThis.prepare=prepareBrandingImage',ctx);
+assert.equal(await ctx.prepare({type:'image/png',size:4000}),'data:image/png;base64,TEST');assert.equal(canvas.width,1000);assert.equal(canvas.height,500);assert.equal(revoked,1);
+await assert.rejects(ctx.prepare({type:'application/pdf',size:100}));await assert.rejects(ctx.prepare({type:'image/png',size:21*1024*1024}));
+fail=true;await assert.rejects(ctx.prepare({type:'image/png',size:100}));assert.equal(revoked,2);
+console.log('Branding resize, PNG transparency format, type/size validation, decode failure and URL cleanup passed');
