@@ -1,3 +1,4 @@
+import { useAuth } from "@/lib/haseem/auth";
 // Supabase-backed replacement for `useCollection`, keyed by legacy storage keys.
 // Public API matches useCollection: { items, add, update, remove } for keys we've migrated.
 // Migrated: parties/items, all document collections (documents table),
@@ -674,10 +675,11 @@ function surfaceError(err: unknown, context?: string) {
 }
 
 export function useCloudCollection<T extends Rec = Rec>(key: string) {
+  const { user } = useAuth();
   const { currentOrgId, ready } = useOrg();
   const qc = useQueryClient();
-  const enabled = ready && !!currentOrgId && CLOUD_KEYS.has(key);
-  const queryKey = ["coll", key, currentOrgId] as const;
+  const enabled = !!user && ready && !!currentOrgId && CLOUD_KEYS.has(key);
+  const queryKey = ["coll", key, currentOrgId, user?.id] as const;
 
   const q = useQuery({
     queryKey,
@@ -705,7 +707,7 @@ export function useCloudCollection<T extends Rec = Rec>(key: string) {
   const invalidate = () => qc.invalidateQueries({ queryKey: ["coll", key, currentOrgId] });
 
   const addM = useMutation({
-    mutationFn: (input: Omit<T, "id">) => insertOne(key, currentOrgId!, input),
+    mutationFn: (input: Omit<T, "id">) => { if (!enabled) throw new Error("اختر منشأة مصرحًا بها أولًا"); return insertOne(key, currentOrgId!, input); },
     onMutate: async (input) => {
       await qc.cancelQueries({ queryKey });
       const prev = qc.getQueryData<Rec[]>(queryKey) ?? [];
@@ -728,7 +730,7 @@ export function useCloudCollection<T extends Rec = Rec>(key: string) {
   });
 
   const updateM = useMutation({
-    mutationFn: ({ id, patch }: { id: string; patch: Partial<T> }) => updateOne(key, currentOrgId!, id, patch),
+    mutationFn: ({ id, patch }: { id: string; patch: Partial<T> }) => { if (!enabled) throw new Error("اختر منشأة مصرحًا بها أولًا"); return updateOne(key, currentOrgId!, id, patch); },
     onMutate: async ({ id, patch }) => {
       await qc.cancelQueries({ queryKey });
       const prev = qc.getQueryData<Rec[]>(queryKey) ?? [];
@@ -743,7 +745,7 @@ export function useCloudCollection<T extends Rec = Rec>(key: string) {
   });
 
   const removeM = useMutation({
-    mutationFn: (id: string) => deleteOne(key, currentOrgId!, id),
+    mutationFn: (id: string) => { if (!enabled) throw new Error("اختر منشأة مصرحًا بها أولًا"); return deleteOne(key, currentOrgId!, id); },
     onMutate: async (id) => {
       await qc.cancelQueries({ queryKey });
       const prev = qc.getQueryData<Rec[]>(queryKey) ?? [];

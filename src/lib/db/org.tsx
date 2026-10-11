@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, useCallback, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useState, useCallback, Fragment, type ReactNode } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/haseem/auth";
@@ -13,6 +13,9 @@ export type Org = {
   currency: string | null;
   logo_url: string | null;
   stamp_url: string | null;
+  address?: unknown;
+  phone?: string | null;
+  email?: string | null;
 };
 
 export type OrgRole = "owner" | "admin" | "accountant" | "user" | "viewer";
@@ -69,6 +72,10 @@ export function OrgProvider({ children }: { children: ReactNode }) {
   const [ready, setReady] = useState(false);
 
   const load = useCallback(async () => {
+    setReady(false);
+    setOrgs([]);
+    setCurrentOrgIdState(null);
+    setRolesByOrgId({});
     if (!user) {
       setOrgs([]);
       setCurrentOrgIdState(null);
@@ -102,10 +109,10 @@ export function OrgProvider({ children }: { children: ReactNode }) {
       // Impersonation doesn't resolve the target user's org_members.role
       // today — leave roles empty rather than guess a role for them.
       setRolesByOrgId({});
-      const saved = typeof window !== "undefined" ? localStorage.getItem(LS_KEY) : null;
+      const saved = typeof window !== "undefined" ? localStorage.getItem(`${LS_KEY}:${user.id}`) : null;
       const pick = saved && context.orgs.find((o) => o.id === saved) ? saved : context.orgs[0]?.id ?? null;
       setCurrentOrgIdState(pick);
-      if (pick && typeof window !== "undefined") localStorage.setItem(LS_KEY, pick);
+      if (pick && typeof window !== "undefined") localStorage.setItem(`${LS_KEY}:${user.id}`, pick);
       setReady(true);
       return;
     }
@@ -133,7 +140,7 @@ export function OrgProvider({ children }: { children: ReactNode }) {
     }
     const { data: rows, error: oErr } = await supabase
       .from("organizations")
-      .select("id,name,name_en,vat_number,cr_number,currency,logo_url,stamp_url")
+      .select("id,name,name_en,vat_number,cr_number,currency,logo_url,stamp_url,address,phone,email")
       .in("id", ids)
       .order("created_at", { ascending: true });
     if (oErr) {
@@ -143,10 +150,10 @@ export function OrgProvider({ children }: { children: ReactNode }) {
     }
     const list = (rows ?? []) as Org[];
     setOrgs(list);
-    const saved = typeof window !== "undefined" ? localStorage.getItem(LS_KEY) : null;
+    const saved = typeof window !== "undefined" ? localStorage.getItem(`${LS_KEY}:${user.id}`) : null;
     const pick = saved && list.find((o) => o.id === saved) ? saved : list[0]?.id ?? null;
     setCurrentOrgIdState(pick);
-    if (pick && typeof window !== "undefined") localStorage.setItem(LS_KEY, pick);
+    if (pick && typeof window !== "undefined") localStorage.setItem(`${LS_KEY}:${user.id}`, pick);
     setImpersonation({ active: false, targetUserId: null, targetUserName: null, targetUserEmail: null });
     if (typeof window !== "undefined") localStorage.removeItem(IMPERSONATION_KEY);
     setReady(true);
@@ -173,12 +180,13 @@ export function OrgProvider({ children }: { children: ReactNode }) {
   }, [authReady, load]);
 
   const setCurrentOrg = useCallback((id: string) => {
+    if (!orgs.some(org => org.id === id)) return;
     setCurrentOrgIdState(id);
-    if (typeof window !== "undefined") localStorage.setItem(LS_KEY, id);
+    if (typeof window !== "undefined") localStorage.setItem(`${LS_KEY}:${user?.id}`, id);
     if (impersonation.active && impersonation.targetUserId) {
       void logSwitchFn({ data: { targetUserId: impersonation.targetUserId, orgId: id } });
     }
-  }, [impersonation.active, impersonation.targetUserId, logSwitchFn]);
+  }, [impersonation.active, impersonation.targetUserId, logSwitchFn, orgs, user?.id]);
 
   const createOrg = useCallback<Ctx["createOrg"]>(
     async (input) => {
@@ -191,7 +199,7 @@ export function OrgProvider({ children }: { children: ReactNode }) {
           cr_number: input.cr_number ?? null,
           created_by: user.id,
         })
-        .select("id,name,name_en,vat_number,cr_number,currency,logo_url,stamp_url")
+        .select("id,name,name_en,vat_number,cr_number,currency,logo_url,stamp_url,address,phone,email")
         .single();
       if (error || !data) {
         console.error("[OrgProvider] createOrg failed", error);
@@ -199,7 +207,8 @@ export function OrgProvider({ children }: { children: ReactNode }) {
       }
       // The add_org_owner trigger auto-creates the owner membership.
       await load();
-      setCurrentOrg(data.id);
+      setCurrentOrgIdState(data.id);
+      if (typeof window !== "undefined") localStorage.setItem(`${LS_KEY}:${user.id}`, data.id);
       return data as Org;
     },
     [user, load, setCurrentOrg],
@@ -213,7 +222,7 @@ export function OrgProvider({ children }: { children: ReactNode }) {
     <OrgCtx.Provider
       value={{ ready, orgs, currentOrgId, currentOrg, currentRole, isOrgOwner, setCurrentOrg, createOrg, reload: load, impersonation }}
     >
-      {children}
+      {ready ? <Fragment key={currentOrgId ?? "no-org"}>{children}</Fragment> : <div role="status" dir="rtl">جارٍ التحقق من المنشأة…</div>}
     </OrgCtx.Provider>
   );
 }

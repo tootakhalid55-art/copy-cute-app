@@ -1,4 +1,5 @@
-import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import { createContext, useContext, useEffect, useState, useRef, Fragment, type ReactNode } from "react";
 import type { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -25,19 +26,30 @@ function toAuthUser(u: User | null | undefined): AuthUser | null {
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
+  const queryClient = useQueryClient();
+  const identity = useRef<string | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<AuthUser | null>(null);
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
+    const accept = (s: Session | null) => {
+      const next = s?.user.id ?? null;
+      if (identity.current !== next) {
+        queryClient.clear();
+        if (typeof window !== "undefined") localStorage.removeItem("haseem:adminImpersonation");
+        identity.current = next;
+      }
+      setSession(s);
+      const nextUser = toAuthUser(s?.user ?? null);
+      setUser(prev => prev?.id === nextUser?.id && prev?.name === nextUser?.name && prev?.email === nextUser?.email ? prev : nextUser);
+    };
     // Register listener first, then hydrate.
     const { data: sub } = supabase.auth.onAuthStateChange((_event, s) => {
-      setSession(s);
-      setUser(toAuthUser(s?.user ?? null));
+      accept(s);
     });
     supabase.auth.getSession().then(({ data }) => {
-      setSession(data.session);
-      setUser(toAuthUser(data.session?.user ?? null));
+      accept(data.session);
       setReady(true);
     });
     return () => {
@@ -81,7 +93,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   return (
     <AuthCtx.Provider value={{ user, session, ready, signIn, signUp, resetPassword, logout, updateName, login }}>
-      {children}
+      <Fragment key={user?.id ?? "anonymous"}>{children}</Fragment>
     </AuthCtx.Provider>
   );
 }
