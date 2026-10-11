@@ -32,7 +32,7 @@ export function resolveDocTitle(kind: string, buyerVatNumber?: string | null): D
   if (kind === "invoice" || kind === "sales_invoice") {
     return isVatRegistered(buyerVatNumber)
       ? { ar: "فاتورة ضريبية", en: "Tax Invoice", variant: "standard" }
-      : { ar: "فاتورة ضريبية مبسطة", en: "Simplified Tax Invoice", variant: "simplified" };
+      : { ar: "فاتورة ضريبية", en: "Tax Invoice", variant: "simplified" };
   }
   return TITLES[kind] ?? { ar: "مستند", en: "Document" };
 }
