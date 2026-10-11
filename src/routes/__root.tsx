@@ -14,7 +14,7 @@ import { BRAND } from "../lib/brand";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { AuthProvider } from "../lib/haseem/auth";
 import { OrgProvider } from "../lib/db/org";
-import { MigrationGate } from "../lib/db/migrate";
+
 import { startAccountingSubscriber } from "../lib/accounting/subscribe";
 
 // Register the posting engine subscriber once, on module load (browser + SSR safe).
@@ -132,7 +132,7 @@ function RootComponent() {
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <OrgProvider>
-          <MigrationGate />
+          {/* Unowned legacy browser data must never be imported into a new account. */}
           {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
           <Outlet />
         </OrgProvider>
