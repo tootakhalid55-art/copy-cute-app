@@ -1,3 +1,4 @@
+import { useImageKV } from "@/lib/haseem/use-image-kv";
 import { toast } from "sonner";
 import { prepareBrandingImage } from "@/lib/haseem/branding-image";
 import { useState, useEffect, useMemo } from "react";
@@ -59,7 +60,7 @@ export function QuotationForm({ docId }: { docId?: string }) {
     name: "شركة كنار الحديثة للمقاولات",
     taxNumber: "312756062700003",
   });
-  const [branding, setBranding] = useKV<{ logo: string; stamp: string }>(
+  const [branding, setBranding] = useImageKV<{ logo: string; stamp: string }>(
     "branding",
     { logo: "", stamp: "" }
   );
@@ -488,13 +489,13 @@ export function QuotationForm({ docId }: { docId?: string }) {
                         const f = e.target.files?.[0];
                         if (!f) return;
                         const input = e.currentTarget;
-                        try { setBranding({ ...branding, logo: await prepareBrandingImage(f) }); toast.success("تم حفظ الصورة"); }
+                        try { const image = await prepareBrandingImage(f); await setBranding(previous => ({ ...previous, logo: image })); toast.success("تم حفظ الصورة"); }
                         catch (error) { toast.error(error instanceof Error ? error.message : "تعذر حفظ الصورة"); }
                         finally { input.value = ""; }
                       }} />
                   </label>
                   {branding.logo && (
-                    <button type="button" onClick={() => setBranding({ ...branding, logo: "" })}
+                    <button type="button" onClick={async () => { try { await setBranding(previous => ({ ...previous, logo: "" })); } catch (error) { toast.error(error instanceof Error ? error.message : "تعذر حذف الصورة"); } }}
                       className="p-1 text-red-500 hover:bg-red-50 rounded" title="حذف الشعار">
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>
@@ -795,7 +796,7 @@ export function QuotationForm({ docId }: { docId?: string }) {
                 {branding.stamp ? (
                   <div className="mt-3 border-2 border-dashed border-[#eceae2] rounded-lg p-3 text-center relative">
                     <img src={branding.stamp} alt="stamp" className="max-h-32 mx-auto object-contain" />
-                    <button type="button" onClick={() => setBranding({ ...branding, stamp: "" })}
+                    <button type="button" onClick={async () => { try { await setBranding(previous => ({ ...previous, stamp: "" })); } catch (error) { toast.error(error instanceof Error ? error.message : "تعذر حذف الصورة"); } }}
                       className="absolute top-1 left-1 p-1 text-red-500 hover:bg-red-50 rounded" title="حذف الختم">
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>
@@ -806,7 +807,7 @@ export function QuotationForm({ docId }: { docId?: string }) {
                           const f = e.target.files?.[0];
                           if (!f) return;
                           const input = e.currentTarget;
-                        try { setBranding({ ...branding, stamp: await prepareBrandingImage(f) }); toast.success("تم حفظ الصورة"); }
+                        try { const image = await prepareBrandingImage(f); await setBranding(previous => ({ ...previous, stamp: image })); toast.success("تم حفظ الصورة"); }
                         catch (error) { toast.error(error instanceof Error ? error.message : "تعذر حفظ الصورة"); }
                         finally { input.value = ""; }
                         }} />
@@ -820,7 +821,7 @@ export function QuotationForm({ docId }: { docId?: string }) {
                         const f = e.target.files?.[0];
                         if (!f) return;
                         const input = e.currentTarget;
-                        try { setBranding({ ...branding, stamp: await prepareBrandingImage(f) }); toast.success("تم حفظ الصورة"); }
+                        try { const image = await prepareBrandingImage(f); await setBranding(previous => ({ ...previous, stamp: image })); toast.success("تم حفظ الصورة"); }
                         catch (error) { toast.error(error instanceof Error ? error.message : "تعذر حفظ الصورة"); }
                         finally { input.value = ""; }
                       }} />
