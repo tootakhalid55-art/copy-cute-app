@@ -1,3 +1,4 @@
+import { useImageKV } from "@/lib/haseem/use-image-kv";
 import { prepareBrandingImage } from "@/lib/haseem/branding-image";
 import { fullAddress } from "@/lib/haseem/full-address";
 import { UNIFIED_INVOICE_TEMPLATE, isUnifiedInvoice } from "@/lib/haseem/invoice-appearance";
@@ -77,7 +78,7 @@ export function DocumentForm({
     taxNumber: "312756062700003",
   });
 
-  const [branding, setBranding] = useKV<{ logo: string; stamp: string }>(
+  const [branding, setBranding] = useImageKV<{ logo: string; stamp: string }>(
     "branding",
     { logo: "", stamp: "" }
   );
@@ -919,12 +920,12 @@ export function DocumentForm({
               <ImagePicker
                 label="الشعار"
                 value={branding.logo}
-                onChange={(v) => setBranding({ ...branding, logo: v })}
+                onChange={(v) => setBranding(previous => ({ ...previous, logo: v }))}
               />
               <ImagePicker
                 label="الختم"
                 value={branding.stamp}
-                onChange={(v) => setBranding({ ...branding, stamp: v })}
+                onChange={(v) => setBranding(previous => ({ ...previous, stamp: v }))}
               />
             </div>
           </div>
@@ -1525,7 +1526,7 @@ function ImagePicker({
 }: {
   label: string;
   value: string;
-  onChange: (v: string) => void;
+  onChange: (v: string) => void | Promise<void>;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [uploadingImage, setUploadingImage] = useState(false);
@@ -1546,7 +1547,7 @@ function ImagePicker({
             </button>
             <button
               type="button"
-              onClick={() => onChange("")}
+              onClick={async () => { try { await onChange(""); } catch (error) { toast.error(error instanceof Error ? error.message : "تعذر حذف الصورة"); } }}
               className="text-[11px] px-2 py-0.5 rounded border border-red-200 text-red-600 hover:bg-red-50 inline-flex items-center gap-1"
             >
               <Trash2 className="w-3 h-3" /> حذف
@@ -1574,7 +1575,7 @@ function ImagePicker({
           if (!f) return;
           const input = e.currentTarget;
           setUploadingImage(true); setImageMessage("جارٍ تجهيز الصورة…");
-          try { onChange(await prepareBrandingImage(f)); setImageMessage("تم حفظ الصورة"); toast.success("تم حفظ الصورة"); }
+          try { await onChange(await prepareBrandingImage(f)); setImageMessage("تم حفظ الصورة"); toast.success("تم حفظ الصورة"); }
           catch (error) { const message = error instanceof Error ? error.message : "تعذر حفظ الصورة"; setImageMessage(message); toast.error(message); }
           finally { input.value = ""; setUploadingImage(false); }
         }}
