@@ -1528,6 +1528,8 @@ function ImagePicker({
   onChange: (v: string) => void;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const [imageMessage, setImageMessage] = useState("");
   return (
     <div className="border border-[#eceae2] rounded-lg p-2 text-center">
       <div className="text-[11px] text-[#0f2a1d]/60 mb-1">{label}</div>
@@ -1564,16 +1566,20 @@ function ImagePicker({
         ref={inputRef}
         type="file"
         accept="image/*"
-        className="hidden"
+        aria-label={`اختيار ملف ${label}`}
+        disabled={uploadingImage}
+        className="block w-full mt-2 text-xs border rounded p-2"
         onChange={async (e) => {
           const f = e.target.files?.[0];
           if (!f) return;
           const input = e.currentTarget;
-          try { onChange(await prepareBrandingImage(f)); toast.success("تم حفظ الصورة"); }
-          catch (error) { toast.error(error instanceof Error ? error.message : "تعذر حفظ الصورة"); }
-          finally { input.value = ""; }
+          setUploadingImage(true); setImageMessage("جارٍ تجهيز الصورة…");
+          try { onChange(await prepareBrandingImage(f)); setImageMessage("تم حفظ الصورة"); toast.success("تم حفظ الصورة"); }
+          catch (error) { const message = error instanceof Error ? error.message : "تعذر حفظ الصورة"; setImageMessage(message); toast.error(message); }
+          finally { input.value = ""; setUploadingImage(false); }
         }}
       />
+      {imageMessage && <p role="status" className="text-xs mt-2">{imageMessage}</p>}
     </div>
   );
 }
