@@ -1,3 +1,5 @@
+import { toast } from "sonner";
+import { prepareBrandingImage } from "@/lib/haseem/branding-image";
 import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import {
@@ -15,14 +17,7 @@ import { QuotationPreview } from "./QuotationPreview";
 import { useOrg } from "@/lib/db/org";
 import { toDocKind } from "@/lib/db/document-bridge";
 
-function fileToDataURL(f: File): Promise<string> {
-  return new Promise((res, rej) => {
-    const r = new FileReader();
-    r.onload = () => res(String(r.result || ""));
-    r.onerror = () => rej(r.error);
-    r.readAsDataURL(f);
-  });
-}
+
 
 type TermsSection = { title: string; text: string };
 const DEFAULT_TERMS_SECTIONS: TermsSection[] = [
@@ -492,8 +487,10 @@ export function QuotationForm({ docId }: { docId?: string }) {
                       onChange={async (e) => {
                         const f = e.target.files?.[0];
                         if (!f) return;
-                        setBranding({ ...branding, logo: await fileToDataURL(f) });
-                        e.target.value = "";
+                        const input = e.currentTarget;
+                        try { setBranding({ ...branding, logo: await prepareBrandingImage(f) }); toast.success("تم حفظ الصورة"); }
+                        catch (error) { toast.error(error instanceof Error ? error.message : "تعذر حفظ الصورة"); }
+                        finally { input.value = ""; }
                       }} />
                   </label>
                   {branding.logo && (
@@ -808,8 +805,10 @@ export function QuotationForm({ docId }: { docId?: string }) {
                         onChange={async (e) => {
                           const f = e.target.files?.[0];
                           if (!f) return;
-                          setBranding({ ...branding, stamp: await fileToDataURL(f) });
-                          e.target.value = "";
+                          const input = e.currentTarget;
+                        try { setBranding({ ...branding, stamp: await prepareBrandingImage(f) }); toast.success("تم حفظ الصورة"); }
+                        catch (error) { toast.error(error instanceof Error ? error.message : "تعذر حفظ الصورة"); }
+                        finally { input.value = ""; }
                         }} />
                     </label>
                   </div>
@@ -820,8 +819,10 @@ export function QuotationForm({ docId }: { docId?: string }) {
                       onChange={async (e) => {
                         const f = e.target.files?.[0];
                         if (!f) return;
-                        setBranding({ ...branding, stamp: await fileToDataURL(f) });
-                        e.target.value = "";
+                        const input = e.currentTarget;
+                        try { setBranding({ ...branding, stamp: await prepareBrandingImage(f) }); toast.success("تم حفظ الصورة"); }
+                        catch (error) { toast.error(error instanceof Error ? error.message : "تعذر حفظ الصورة"); }
+                        finally { input.value = ""; }
                       }} />
                   </label>
                 )}
