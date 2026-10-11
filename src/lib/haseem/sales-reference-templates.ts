@@ -2,6 +2,7 @@ import type { InvoiceTemplate } from "./templates";
 import type { PrintDocData } from "./printDoc";
 
 export const SALES_REFERENCE_TEMPLATES: InvoiceTemplate[] = [
+  { id: "sales-reference-simple-tax", name: "مبيعات — الضريبي البسيط", desc: "تصميم أبيض من مرجع Invoice: شعار جانبي، جدول مفتوح ومجاميع وشروط مع QR", kinds: ["invoice"], builtin: true, accent: "#111111", onAccent: "#ffffff", soft: "#eeeeee" },
   { id: "sales-reference-detailed", name: "مبيعات — الجدول التفصيلي", desc: "مستخرج من مرجع Receipt: عنوان مركزي، بيانات طرفين وجدول تفصيلي بأزرق فاتح", kinds: ["invoice"], builtin: true, accent: "#263640", onAccent: "#ffffff", soft: "#e1f1f6" },
   { id: "sales-reference-green", name: "مبيعات — الأخضر التجاري", desc: "مستخرج من مرجع SBT: ترويسة جانبية، جدول أخضر وملخص بجوار QR", kinds: ["invoice"], builtin: true, accent: "#66ad35", onAccent: "#ffffff", soft: "#e3efd8" },
   { id: "sales-reference-blue", name: "مبيعات — الأزرق الهندسي", desc: "مستخرج من مرجع كنار: عنوان مؤطر، جدول أزرق وبيانات استلام وبنك", kinds: ["invoice"], builtin: true, accent: "#3446c9", onAccent: "#ffffff", soft: "#e9ebfa" },
@@ -14,6 +15,7 @@ const money = (v: unknown) => Number(v || 0).toLocaleString("en-US", {minimumFra
 export function renderSalesReference(d: PrintDocData): string {
   const t = salesReferenceTemplate(d.tpl.id);
   if (!t) throw new Error("Unknown sales reference template");
+  if (t.id === "sales-reference-simple-tax") return renderSimpleTax(d);
   const detailed = t.id === "sales-reference-detailed", blue = t.id === "sales-reference-blue";
   const rule = "border:1px solid #333;padding:5px 6px;overflow-wrap:anywhere;";
   const row = (label: string,value: unknown) => `<tr><td style="${rule}width:36%;font-size:10px">${label}</td><td style="${rule}">${esc(value || "—")}</td></tr>`;
@@ -44,3 +46,31 @@ export function renderSalesReference(d: PrintDocData): string {
   </div>`;
 }
 
+
+/** Open, monochrome tax invoice adapted from the supplied PDF reference. */
+function renderSimpleTax(d: PrintDocData): string {
+  const org = d.org as PrintDocData['org'] & {cr?:string;phone?:string};
+  const detail = (label:string,value:unknown) => value ? `<div style="margin:5px 0;overflow-wrap:anywhere"><b>${label}: </b>${esc(value)}</div>` : '';
+  const amount = (value:number) => `<span dir="ltr" style="display:inline-block">${money(value)} ${esc(d.currency)}</span>`;
+  const header = (ar:string,en:string) => `${ar}<br/><span style="font-size:9px">${en}</span>`;
+  const labels=[header('م','#'),header('المنتج','Products'),header('الكمية','Qty'),header('سعر الوحدة','Unit Price'),header('الخصم','Discount'),header('الإجمالي قبل الضريبة','Total Before VAT'),header('الضريبة %','VAT %'),header('الضريبة','VAT'),header('الإجمالي','Amount')];
+  const rows=d.lines.map((line,i)=>{
+    const calc=d.lineCalcs[i],net=calc?.net??line.qty*line.price-(line.discount||0),tax=calc?.taxAmt??net*line.tax/100;
+    const values=[String(i+1),esc(line.description),`${esc(line.qty)}<br/>${esc(line.unit||'')}`,money(line.price),money(line.discount),money(net),`${esc(line.tax)}%`,money(tax),money(calc?.gross??net+tax)];
+    return `<tr style="break-inside:avoid">${values.map((v,j)=>`<td style="padding:16px 4px;vertical-align:top;text-align:${j===1?'right':'center'};white-space:pre-wrap;overflow-wrap:anywhere;${j===1?'font-weight:600':''}">${v}</td>`).join('')}</tr>`;
+  }).join('');
+  const totalRow=(label:string,value:number,border=false)=>`<tr><th style="text-align:right;padding:9px 4px;${border?'border-top:1px solid #ccc':''}">${label}:</th><td style="text-align:left;padding:9px 4px;${border?'border-top:1px solid #ccc':''}">${amount(value)}</td></tr>`;
+  return `<div class="doc sales-reference" data-template="sales-reference-simple-tax" dir="rtl" style="max-width:186mm;width:100%;margin:auto;color:#111;background:white;font:12px Arial,Tahoma,sans-serif;line-height:1.5">
+    <div style="display:flex;justify-content:space-between;gap:30px;border-bottom:1px solid #ddd;padding-bottom:14px;break-inside:avoid">
+      <div style="width:29%;text-align:right">${d.branding?.logo?`<img src="${esc(d.branding.logo)}" alt="شعار المنشأة" style="max-width:125px;width:100%;height:110px;object-fit:contain"/>`:''}</div>
+      <div style="width:65%;text-align:left"><div style="font-size:28px;line-height:1.15">${esc(d.title||'فاتورة ضريبية')}</div><b>${esc(d.titleEn||'Tax Invoice')}</b><div style="font-weight:700">${esc(org.name)}</div><div style="white-space:pre-wrap;overflow-wrap:anywhere">${esc(org.address||'')}</div>${detail('الهاتف',org.phone)}<div style="margin-top:12px">${detail('الرقم الضريبي',org.taxNumber)}${detail('رقم السجل التجاري',org.commercialReg||org.cr)}</div></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1.5fr 1fr;gap:35px;margin:12px 0 22px;break-inside:avoid">
+      <div><b style="color:#89969e;font-size:15px">تفاصيل بيانات العميل</b><div style="font-size:16px">${esc(d.party?.name||'—')}</div><div style="white-space:pre-wrap;overflow-wrap:anywhere">${esc(d.party?.address||'')}</div>${d.party?.taxNumber?`<b style="display:block;color:#89969e;margin-top:10px">الرقم الضريبي</b><div dir="ltr" style="text-align:right">${esc(d.party.taxNumber)}</div>`:''}</div>
+      <div style="font-size:11px">${detail('المرجع',d.ref)}${detail('نوع الفاتورة',d.title||'فاتورة ضريبية')}${detail('تاريخ الإصدار',d.date)}${detail('تاريخ الاستحقاق',d.dueDate)}<div style="background:#ddd;padding:7px;margin-top:6px"><b>إجمالي الفاتورة: </b>${amount(d.total)}</div></div>
+    </div>
+    <table dir="rtl" style="width:100%;table-layout:fixed;border-collapse:collapse;font-size:11px"><colgroup>${[3,32,7,10,8,11,7,10,12].map(w=>`<col style="width:${w}%"/>`).join('')}</colgroup><thead style="display:table-header-group"><tr>${labels.map(label=>`<th style="padding:5px 3px;vertical-align:top">${label}</th>`).join('')}</tr></thead><tbody>${rows}</tbody></table>
+    <div style="display:flex;justify-content:flex-end;margin-top:30px;break-inside:avoid"><table style="width:44%;border-collapse:collapse;font-size:13px;font-weight:700">${totalRow('الإجمالي قبل الضريبة',d.subtotal)}${d.discAmt?totalRow('الخصم',d.discAmt):''}${totalRow('إجمالي الضريبة',d.tax)}${totalRow('المجموع',d.total)}${totalRow('إجمالي الفاتورة',d.total,true)}</table></div>
+    <div style="margin-top:38px;break-inside:avoid"><div style="color:#888;border-bottom:1px solid #dbe5ea">الشروط والأحكام</div><div style="white-space:pre-wrap;overflow-wrap:anywhere;margin-top:6px">${esc([d.terms,d.notes].filter(Boolean).filter((v,i,a)=>a.indexOf(v)===i).join('\n'))}</div>${d.qrDataUrl?`<img src="${esc(d.qrDataUrl)}" alt="QR الفاتورة الحالية" style="display:block;width:38mm;height:38mm;object-fit:contain;margin-top:8px"/>`:''}</div>
+  </div>`;
+}
