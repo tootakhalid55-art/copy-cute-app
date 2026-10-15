@@ -38,3 +38,12 @@ test('all sales templates include complete issuer address independently of custo
   assert.ok(!html.includes('Issuer <HQ>'));
  }
 });
+
+test('every sales template renders the issuer registration stored as cr', () => {
+ for (const tpl of [...SALES_REFERENCE_TEMPLATES, {id:'canar-unified-invoice',accent:'#123456',soft:'#ffffff'}]) {
+  for (const variant of ['standard','simplified']) {
+   const html=buildDocHtml({...base,tpl,variant,org:{...base.org,cr:'7043264105'},party:{name:'Customer'}});
+   assert.ok(html.includes('7043264105'),tpl.id+' '+variant);
+  }
+ }
+});
