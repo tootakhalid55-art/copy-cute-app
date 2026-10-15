@@ -1,3 +1,4 @@
+import { fullAddress } from "./full-address";
 import { renderSalesReference, salesReferenceTemplate } from "./sales-reference-templates";
 import { unifiedInvoiceAppearance } from "./invoice-appearance";
 import { parseScannedLayout, renderScannedLayout, type ScannedLayout } from "./scanned-layout";
@@ -122,6 +123,7 @@ const fmt = (n: number) =>
 
 export function buildDocHtml(d: PrintDocData): string {
   d = unifiedInvoiceAppearance(d);
+  if (d.kind === "invoice") d = { ...d, org: { ...d.org, address: fullAddress(d.org) } };
   if (d.kind === "invoice" && salesReferenceTemplate(d.tpl.id)) return renderSalesReference(d);
   const scanned = d.kind === "bill" ? parseScannedLayout(d.tpl?.scannedLayout) : undefined;
   if (scanned) return renderScannedLayout(scanned, d);
@@ -524,7 +526,7 @@ export function buildDocHtml(d: PrintDocData): string {
           ${isBill ? `<div style="font-size:9px;opacity:.85;font-weight:700;letter-spacing:.08em">البائع · SELLER</div>` : ""}
           <div style="font-size:18px;font-weight:800">${esc(headerOrg.name)}</div>
           <div style="font-size:10.5px;opacity:.85">VAT ${esc(headerOrg.taxNumber)}${headerOrg.commercialReg ? ` · CR ${esc(headerOrg.commercialReg)}` : ""}</div>
-          ${isBill && (headerOrg.address || (headerOrg as any).phone) ? `<div style="font-size:10px;opacity:.8">${esc(headerOrg.address || "")}${(headerOrg as any).phone ? ` · ${esc((headerOrg as any).phone)}` : ""}</div>` : ""}
+          ${(headerOrg.address || (isBill && (headerOrg as any).phone)) ? `<div style="font-size:10px;opacity:.8;white-space:pre-wrap;overflow-wrap:anywhere">${esc(headerOrg.address || "")}${(headerOrg as any).phone ? ` · ${esc((headerOrg as any).phone)}` : ""}</div>` : ""}
         </div>
       </div>
       <div style="text-align:left">
@@ -777,6 +779,7 @@ async function buildAttachmentPagesHtml(url: string, mime?: string, label?: stri
 export async function printDoc(d: PrintDocData & { attachment?: { url: string; mime?: string; label?: string }; attachments?: { url: string; mime?: string; label?: string }[] }) {
   if (typeof window === "undefined") return;
   d = unifiedInvoiceAppearance(d);
+  if (d.kind === "invoice") d = { ...d, org: { ...d.org, address: fullAddress(d.org) } };
   const safeDoc: PrintDocData = {
     ...d,
     title: d.title || "Document",
