@@ -123,7 +123,7 @@ const fmt = (n: number) =>
 
 export function buildDocHtml(d: PrintDocData): string {
   d = unifiedInvoiceAppearance(d);
-  if (d.kind === "invoice") d = { ...d, org: { ...d.org, address: fullAddress(d.org) } };
+  if (d.kind === "invoice") d = { ...d, org: { ...d.org, address: fullAddress(d.org), commercialReg: d.org.commercialReg || (d.org as typeof d.org & { cr?: string }).cr } };
   if (d.kind === "invoice" && salesReferenceTemplate(d.tpl.id)) return renderSalesReference(d);
   const scanned = d.kind === "bill" ? parseScannedLayout(d.tpl?.scannedLayout) : undefined;
   if (scanned) return renderScannedLayout(scanned, d);
@@ -779,7 +779,7 @@ async function buildAttachmentPagesHtml(url: string, mime?: string, label?: stri
 export async function printDoc(d: PrintDocData & { attachment?: { url: string; mime?: string; label?: string }; attachments?: { url: string; mime?: string; label?: string }[] }) {
   if (typeof window === "undefined") return;
   d = unifiedInvoiceAppearance(d);
-  if (d.kind === "invoice") d = { ...d, org: { ...d.org, address: fullAddress(d.org) } };
+  if (d.kind === "invoice") d = { ...d, org: { ...d.org, address: fullAddress(d.org), commercialReg: d.org.commercialReg || (d.org as typeof d.org & { cr?: string }).cr } };
   const safeDoc: PrintDocData = {
     ...d,
     title: d.title || "Document",
