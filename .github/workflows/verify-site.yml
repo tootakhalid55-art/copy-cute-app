@@ -10,28 +10,30 @@ jobs:
       - name: Check the deployed site
         run: |
           echo '== HTTPS =='
-          curl -sS -o /tmp/page.html -w "code=%{http_code} time=%{time_total}s\n" --max-time 30 "https://accounting.canarmodern.com/" || true
+          curl -sS -o /tmp/page.html -w "code=%{http_code} time=%{time_total}s\n" --max-time 30 "https://accounting.canarmodern.online/" || true
           echo '== HTTP (IP with Host header) =='
-          curl -sS -o /dev/null -w "code=%{http_code}\n" --max-time 30 "http://69.164.245.35/" -H "Host: accounting.canarmodern.com" || true
+          curl -sS -o /dev/null -w "code=%{http_code}\n" --max-time 30 "http://69.164.245.35/" -H "Host: accounting.canarmodern.online" || true
           echo '== Page head =='
           head -c 400 /tmp/page.html 2>/dev/null || echo '(no body)'
           echo
           echo '== Deployed commit (/version.txt) =='
-          curl -sS --max-time 30 "https://accounting.canarmodern.com/version.txt" || echo '(missing — build predates version stamping or deploy failed)'
+          curl -sS --max-time 30 "https://accounting.canarmodern.online/version.txt" || echo '(missing — build predates version stamping or deploy failed)'
           echo
           echo '== Storage buckets =='
-          curl -sS --max-time 30 "https://accounting.canarmodern.com/api/public/ensure-storage" || echo '(endpoint not deployed yet)'
+          curl -sS --max-time 30 "https://accounting.canarmodern.online/api/public/ensure-storage" || echo '(endpoint not deployed yet)'
           echo
           echo '== Recent client-side save errors =='
-          curl -sS --max-time 30 "https://accounting.canarmodern.com/api/public/client-log" | tail -60 || echo '(endpoint not deployed yet)'
+          curl -sS --max-time 30 "https://accounting.canarmodern.online/api/public/client-log" | tail -60 || echo '(endpoint not deployed yet)'
           echo
           echo '== Last deploy log tail =='
-          curl -sS --max-time 30 "https://accounting.canarmodern.com/api/public/client-log?what=deploy" | tail -40 || echo '(endpoint not deployed yet)'
+          curl -sS --max-time 30 "https://accounting.canarmodern.online/api/public/client-log?what=deploy" | tail -40 || echo '(endpoint not deployed yet)'
           echo
+          echo '== Old domain (accounting.canarmodern.com) should be gone =='
+          curl -sS -o /dev/null -w "old-domain code=%{http_code}\n" --max-time 20 "https://accounting.canarmodern.com/" || echo '(old domain unreachable — removed ✓)'
           echo '== Old trial banner still in served bundles? =='
           FOUND=no
           for A in $(grep -o '/_build/assets/[A-Za-z0-9_.-]*\.js\|/assets/[A-Za-z0-9_.-]*\.js' /tmp/page.html | sort -u | head -10); do
-            if curl -sS --max-time 30 "https://accounting.canarmodern.com$A" | grep -q '14 يوم متبقي'; then
+            if curl -sS --max-time 30 "https://accounting.canarmodern.online$A" | grep -q '14 يوم متبقي'; then
               echo "banner marker FOUND in $A (old build still served)"; FOUND=yes
             fi
           done
@@ -40,7 +42,7 @@ jobs:
           ASSET=$(grep -o '/assets/[A-Za-z0-9_.-]*\.js' /tmp/page.html | head -1 || true)
           echo "asset: $ASSET"
           if [ -n "$ASSET" ]; then
-            curl -sS --max-time 30 "https://accounting.canarmodern.com$ASSET" -o /tmp/app.js || true
+            curl -sS --max-time 30 "https://accounting.canarmodern.online$ASSET" -o /tmp/app.js || true
             grep -o 'https://[a-z]*\.supabase\.co' /tmp/app.js | sort -u | head -3 || echo '(url not found in this chunk)'
             grep -o 'sb_publishable_[A-Za-z0-9_-]*' /tmp/app.js | sort -u | head -3 || echo '(publishable key not found in this chunk)'
           fi

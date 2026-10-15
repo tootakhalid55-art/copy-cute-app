@@ -61,4 +61,7 @@ echo "== Ensure storage buckets"
 curl -s --max-time 30 http://127.0.0.1:3001/api/public/ensure-storage || true
 echo
 
+# One-time domain migration (marker-gated, waits for DNS; see the script).
+bash "$APP_DIR/scripts/migrate-domain.sh" || true
+
 echo "== Deployed $(git rev-parse --short HEAD) OK"
