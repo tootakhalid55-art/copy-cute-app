@@ -47,3 +47,13 @@ test('every sales template renders the issuer registration stored as cr', () => 
   }
  }
 });
+
+test('seller-table templates omit duplicate header address but preserve seller address', () => {
+ for (const tpl of SALES_REFERENCE_TEMPLATES.filter(t=>t.id!=='sales-reference-simple-tax')) {
+  const html=buildDocHtml({...base,tpl,org:{...base.org,address:'UNIQUE_SELLER_ADDRESS'}});
+  const sellerStart=html.indexOf('البائع · Seller');
+  assert.ok(sellerStart>0);
+  assert.ok(!html.slice(0,sellerStart).includes('UNIQUE_SELLER_ADDRESS'));
+  assert.ok(html.slice(sellerStart).includes('UNIQUE_SELLER_ADDRESS'));
+ }
+});
