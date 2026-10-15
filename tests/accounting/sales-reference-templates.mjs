@@ -31,3 +31,10 @@ if(process.env.RENDER_REFERENCE_PREVIEWS){
  await mkdir('tmp/template-previews',{recursive:true});
  for(const tpl of SALES_REFERENCE_TEMPLATES)await writeFile('tmp/template-previews/'+tpl.id+'.html','<!doctype html><meta charset="utf-8"><body style="margin:25px">'+buildDocHtml({...base,tpl,qrDataUrl:qr})+'</body>');
 }
+test('all sales templates include complete issuer address independently of customer address', () => {
+ for (const tpl of [...SALES_REFERENCE_TEMPLATES, {id:'canar-unified-invoice',accent:'#123456',soft:'#ffffff'}]) {
+  const html=buildDocHtml({...base,tpl,variant:'simplified',org:{...base.org,address:'Issuer <HQ>\nStreet 12',city:'IssuerCity',district:'IssuerDistrict',buildingNo:'8945',postalCode:'76543'},party:{name:'Customer'}});
+  for(const part of ['Issuer &lt;HQ&gt;','Street 12','IssuerCity','IssuerDistrict','8945','76543']) assert.ok(html.includes(part),tpl.id+': '+part);
+  assert.ok(!html.includes('Issuer <HQ>'));
+ }
+});
