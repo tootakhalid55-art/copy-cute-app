@@ -1,0 +1,17 @@
+import assert from 'node:assert/strict';
+import {readFile} from 'node:fs/promises';
+import ts from 'typescript';
+const js=ts.transpileModule(await readFile('src/lib/accounting/invoice-number.ts','utf8'),{compilerOptions:{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.ESNext}}).outputText;
+const {incrementInvoiceNumber,insertSequentialInvoice}=await import('data:text/javascript;base64,'+Buffer.from(js).toString('base64'));
+assert.equal(incrementInvoiceNumber('INV-266644'),'INV-266645');
+assert.equal(incrementInvoiceNumber('INV-009999'),'INV-010000');
+assert.equal(incrementInvoiceNumber(null),'INV-000001');
+const rows=[{org_id:'A',kind:'sales_invoice',doc_number:'INV-100',created:1},{org_id:'A',kind:'sales_invoice',doc_number:'INV-101',created:0},{org_id:'B',kind:'sales_invoice',doc_number:'INV-900',created:2}];
+let fail=false;
+const db={from(){const filters={};let payload;const q={select(){return q},eq(k,v){filters[k]=v;return q},order(){return q},async limit(){return {data:rows.filter(r=>Object.entries(filters).every(([k,v])=>r[k]===v)).sort((a,b)=>b.created-a.created).slice(0,1)}},insert(v){payload=v;return q},async single(){await new Promise(r=>setTimeout(r,1));if(fail)return {error:{code:'42501',message:'forbidden'}};if(rows.some(r=>r.org_id===payload.org_id&&r.kind===payload.kind&&r.doc_number===payload.doc_number))return {error:{code:'23505',message:'documents_org_id_kind_doc_number_key'}};const r={...payload,created:rows.length+1};rows.push(r);return {data:r}}};return q}};
+const results=await Promise.all(Array.from({length:5},()=>insertSequentialInvoice(db,{org_id:'A',kind:'sales_invoice'})));
+assert.deepEqual(results.map(r=>r.doc_number).sort(),['INV-102','INV-103','INV-104','INV-105','INV-106']);
+assert.equal((await insertSequentialInvoice(db,{org_id:'B',kind:'sales_invoice'})).doc_number,'INV-901');
+assert.equal((await insertSequentialInvoice(db,{org_id:'C',kind:'sales_invoice'})).doc_number,'INV-000001');
+fail=true;await assert.rejects(insertSequentialInvoice(db,{org_id:'A',kind:'sales_invoice'}),e=>e.code==='42501');
+console.log('Sequential numbering: last saved, legacy collision, concurrency, org isolation and errors passed');
