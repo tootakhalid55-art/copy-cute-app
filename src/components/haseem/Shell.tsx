@@ -269,9 +269,9 @@ export function Shell({ children }: { children: ReactNode }) {
     .join("") || "U";
 
   return (
-    <div dir="rtl" lang="ar" className="min-h-screen bg-[#fafaf7] text-[#0f2a1d] font-[Cairo,system-ui,sans-serif]">
+    <div dir="rtl" lang="ar" className="h-dvh flex flex-col overflow-hidden bg-[#fafaf7] text-[#0f2a1d] font-[Cairo,system-ui,sans-serif]">
       {impersonation.active && (
-        <div className="bg-[#7c2d12] text-white text-center text-sm py-2 px-4 font-semibold flex items-center justify-center gap-2 flex-wrap">
+        <div className="shrink-0 bg-[#7c2d12] text-white text-center text-sm py-2 px-4 font-semibold flex items-center justify-center gap-2 flex-wrap">
           <ShieldCheck className="w-4 h-4" />
           <span>وضع Super Admin impersonation مفعّل</span>
           <span className="opacity-90">
@@ -279,7 +279,7 @@ export function Shell({ children }: { children: ReactNode }) {
           </span>
         </div>
       )}
-      <header className="flex items-center justify-between px-6 py-3 bg-white border-b border-[#eceae2] sticky top-0 z-30">
+      <header className="shrink-0 flex items-center justify-between px-6 py-3 bg-white border-b border-[#eceae2] sticky top-0 z-30">
         <div className="flex items-center gap-3">
           <Link to="/dashboard" className="w-24 h-16 shrink-0 rounded-lg bg-white flex items-center justify-center">
             <img src={BRAND.logoSrc} alt={BRAND.nameEn} className="h-full w-full object-contain rounded-md" />
@@ -340,11 +340,11 @@ export function Shell({ children }: { children: ReactNode }) {
         </div>
       </header>
 
-      <div className="flex">
+      <div className="flex flex-1 min-h-0 overflow-hidden">
         <aside
           className={`${
             sidebarCollapsed ? "w-16" : "w-64"
-          } shrink-0 bg-white border-l border-[#eceae2] min-h-[calc(100vh-105px)] p-3 sticky top-[65px] self-start transition-all duration-200`}
+          } shrink-0 bg-white border-l border-[#eceae2] min-h-0 overflow-y-auto overscroll-contain p-3 transition-[width] duration-200`}
         >
           <nav className="space-y-1">
             {navItems.map((s) => {
@@ -436,7 +436,7 @@ export function Shell({ children }: { children: ReactNode }) {
           )}
         </aside>
 
-        <main className="flex-1 p-6 space-y-5 min-w-0">{children}</main>
+        <main className="flex-1 min-h-0 overflow-y-auto overscroll-contain p-6 space-y-5 min-w-0">{children}</main>
       </div>
 
       <button className="fixed bottom-5 left-5 w-12 h-12 rounded-full bg-[#25D366] text-white flex items-center justify-center shadow-lg" aria-label="whatsapp">
