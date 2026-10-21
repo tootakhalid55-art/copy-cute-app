@@ -1,3 +1,4 @@
+import { incrementInvoiceNumber } from "@/lib/accounting/invoice-number";
 import { useImageKV } from "@/lib/haseem/use-image-kv";
 import { prepareBrandingImage } from "@/lib/haseem/branding-image";
 import { fullAddress } from "@/lib/haseem/full-address";
@@ -83,10 +84,17 @@ export function DocumentForm({
     { logo: "", stamp: "" }
   );
   const [refEditing, setRefEditing] = useState(false);
+  const [manualInvoiceNumber, setManualInvoiceNumber] = useState(false);
 
   const [ref, setRef] = useState(
-    existing?.ref ?? `${docPrefix}-${Math.floor(100000 + Math.random() * 900000)}`
+    existing?.ref ?? (kind === "invoice" ? "INV-000001" : `${docPrefix}-${Math.floor(100000 + Math.random() * 900000)}`)
   );
+  useEffect(() => {
+    if (existing || kind !== "invoice" || manualInvoiceNumber) return;
+    const latest = [...docs].sort((a,b) => String(b.createdAt ?? "").localeCompare(String(a.createdAt ?? "")) || String(b.id).localeCompare(String(a.id)))[0];
+    setRef(incrementInvoiceNumber(latest?.ref));
+  }, [docs, existing, kind, manualInvoiceNumber]);
+
   const today = new Date().toISOString().slice(0, 10);
   const [date, setDate] = useState(existing?.date ?? today);
   const [dueDate, setDueDate] = useState(existing?.dueDate ?? today);
@@ -484,6 +492,7 @@ export function DocumentForm({
     // journal entry commits in the same server transaction.
     const payload: any = {
       ref, date, dueDate, partyId, partyName, notes,
+      ...(!existing && kind === "invoice" ? { autoInvoiceNumber: !manualInvoiceNumber } : {}),
       status: finalStatus, lines, subtotal, tax, total,
       contractValue, previousCertified, retentionPct, advanceRecoveryPct,
       verifyToken,
@@ -685,7 +694,7 @@ export function DocumentForm({
             <input
               readOnly={!refEditing}
               value={ref}
-              onChange={(e) => setRef(e.target.value)}
+              onChange={(e) => { setManualInvoiceNumber(true); setRef(e.target.value); }}
               className={`border border-[#eceae2] rounded-lg px-3 py-2 flex-1 ${refEditing ? "bg-white" : "bg-[#f7f6f0]"}`}
             />
             <button

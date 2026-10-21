@@ -1,3 +1,4 @@
+import { insertSequentialInvoice } from "../accounting/invoice-number";
 // Unified Documents API — single entry point for every business document
 // (invoices, quotations, POs, bills, credit/debit notes, delivery notes, GRN,
 // payments, receipts, journal vouchers…).
@@ -120,11 +121,14 @@ export async function createDocument(input: CreateDocumentInput) {
     meta: input.meta ?? {},
     ...rest,
   };
-  const { data: doc, error } = await (supabase.from("documents") as any)
-    .insert(payload)
-    .select("*")
-    .single();
-  if (error) throw error;
+  let doc: any;
+  if (input.meta?.autoInvoiceNumber && input.kind === "sales_invoice") {
+    doc = await insertSequentialInvoice(supabase, payload);
+  } else {
+    const result = await (supabase.from("documents") as any).insert(payload).select("*").single();
+    if (result.error) throw result.error;
+    doc = result.data;
+  }
 
   if (lines.length) {
     const rows = lines.map((l: any, i: number) => ({
