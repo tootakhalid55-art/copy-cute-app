@@ -424,16 +424,16 @@ export function buildDocHtml(d: PrintDocData): string {
   // is identical across variants; only the visual frame changes.
   const itemsTable = (variant: "boxed" | "lines" | "grid") => {
     const wrapStyle = variant === "grid"
-      ? `width:100%;border-collapse:collapse;font-size:11px;background:#fff;border:1.5px solid ${ink}`
+      ? `width:100%;border-collapse:collapse;font-size:${useDetailedTaxTable ? 13 : 11}px;line-height:1.6;background:#fff;border:1.5px solid ${ink}`
       : variant === "lines"
-      ? `width:100%;border-collapse:collapse;font-size:11px;background:#fff`
-      : `width:100%;border-collapse:collapse;font-size:11px;background:#fff;border:1px solid ${line};border-radius:12px;overflow:hidden`;
+      ? `width:100%;border-collapse:collapse;font-size:${useDetailedTaxTable ? 13 : 11}px;line-height:1.6;background:#fff`
+      : `width:100%;border-collapse:collapse;font-size:${useDetailedTaxTable ? 13 : 11}px;line-height:1.6;background:#fff;border:1px solid ${line};border-radius:12px;overflow:hidden`;
     const theadStyle = variant === "grid" ? `background:${accent};color:${tpl.onAccent}` : variant === "lines" ? `` : `background:${soft}`;
     const thBase = variant === "grid"
-      ? `padding:9px 8px;text-align:center;font-size:9.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;border:1px solid ${tpl.onAccent}44`
+      ? `padding:9px 8px;text-align:center;font-size:${useDetailedTaxTable ? 12 : 9.5}px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;border:1px solid ${tpl.onAccent}44`
       : variant === "lines"
-      ? `padding:8px 6px;text-align:center;font-size:9.5px;color:${accent};font-weight:700;letter-spacing:.06em;text-transform:uppercase;border-bottom:1.5px solid ${ink}`
-      : `padding:11px 8px;text-align:center;font-size:9.5px;color:${muted};font-weight:700;letter-spacing:.06em;text-transform:uppercase`;
+      ? `padding:8px 6px;text-align:center;font-size:${useDetailedTaxTable ? 12 : 9.5}px;color:${accent};font-weight:700;letter-spacing:.06em;text-transform:uppercase;border-bottom:1.5px solid ${ink}`
+      : `padding:11px 8px;text-align:center;font-size:${useDetailedTaxTable ? 12 : 9.5}px;color:${muted};font-weight:700;letter-spacing:.06em;text-transform:uppercase`;
     const th = (label: string, extra = "") => `<th style="${thBase}${extra}">${label}</th>`;
     const tdBorder = variant === "grid" ? `border:1px solid ${ink}66` : variant === "lines" ? `border-bottom:1px solid ${line}` : `border-bottom:1px solid ${line}`;
     const bodyRows = (useDetailedTaxTable ? lineTaxRows : lines.map((l, i) => ({ line: l, calc: lineCalcs[i] || { net: 0, taxAmt: 0, gross: 0 }, rate: Number(l.tax) })))
