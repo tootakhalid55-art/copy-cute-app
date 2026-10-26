@@ -7,7 +7,7 @@ import { buildDocHtml, type PrintDocData } from "@/lib/haseem/printDoc";
 // already reverses seller/buyer roles for bills (the supplier issues the bill).
 export function PurchasePreview(props: any) {
   const {
-    tpl, scanExtras, org, party: partyProp, partyName, partyLabel, partyAddress, ref_, date, dueDate, issuedAtIso,
+    invoiceColor, tpl, scanExtras, org, party: partyProp, partyName, partyLabel, partyAddress, ref_, date, dueDate, issuedAtIso,
     lines, lineCalcs, subtotal, tax, total, notes, branding, currency, kind,
     qrDataUrl, qrLabel, usesZatcaQr, verify, layoutVariant, progressBilling, structure,
   } = props;
@@ -43,7 +43,7 @@ export function PurchasePreview(props: any) {
       qrDataUrl: isBill && usesZatcaQr ? qrDataUrl : undefined,
       verify: !isBill ? verify : undefined,
       branding,
-      tpl,
+      invoiceColor, tpl,
       scanExtras,
       layoutVariant,
       progressBilling,
@@ -51,7 +51,7 @@ export function PurchasePreview(props: any) {
     };
     return buildDocHtml(data);
   }, [
-    tpl, scanExtras, org, party, partyLabel, partyAddress, ref_, date, dueDate, issuedAtIso,
+    invoiceColor, tpl, scanExtras, org, party, partyLabel, partyAddress, ref_, date, dueDate, issuedAtIso,
     lines, lineCalcs, subtotal, tax, total, notes, branding, currency,
     qrDataUrl, qrLabel, usesZatcaQr, verify, layoutVariant, progressBilling, structure, isBill,
   ]);
