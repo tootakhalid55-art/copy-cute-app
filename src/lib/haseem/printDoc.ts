@@ -55,6 +55,7 @@ export type PrintDocData = {
   date: string;
   dueDate?: string;
   supplyDate?: string;
+  invoiceColor?: string;
   expiry?: string;
   org: { name: string; taxNumber: string; address?: string; commercialReg?: string };
   party?: { name?: string; taxNumber?: string; phone?: string; email?: string; address?: string; commercialReg?: string } | null;

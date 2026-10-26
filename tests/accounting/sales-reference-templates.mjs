@@ -65,3 +65,21 @@ test('supply date template renders an independent saved date and leaves other te
  const old=buildDocHtml({...base,tpl:SALES_REFERENCE_TEMPLATES.find(t=>t.id==='sales-reference-detailed'),supplyDate:'2026-10-25'});
  assert.ok(!old.includes('Supply Date'));
 });
+test('supply metadata is four columns and two rows',()=>{
+ const tpl=SALES_REFERENCE_TEMPLATES.find(t=>t.id==='sales-reference-supply-date');
+ const html=buildDocHtml({...base,tpl});
+ const table=html.match(/<table data-supply-metadata[\s\S]*?<\/table>/)[0];
+ assert.equal((table.match(/<tr>/g)||[]).length,2);
+ assert.equal((table.match(/<th style/g)||[]).length,4);
+ assert.equal((table.match(/<td style/g)||[]).length,4);
+});
+test('custom color renders in every sales template and unified purchase invoice',()=>{
+ for(const tpl of [...SALES_REFERENCE_TEMPLATES,{id:'canar-unified-invoice'}]) {
+  const html=buildDocHtml({...base,tpl,invoiceColor:'#b51b84'});
+  assert.ok(html.includes('#b51b84'),tpl.id);
+  const normalized=unifiedInvoiceAppearance({...base,tpl,invoiceColor:'#ffffff'});
+  assert.equal(normalized.tpl.onAccent,'#0f2a1d');
+  assert.equal(unifiedInvoiceAppearance({...base,tpl,invoiceColor:'red;display:none'}).tpl.accent,unifiedInvoiceAppearance({...base,tpl}).tpl.accent);
+ }
+ assert.ok(buildDocHtml({...base,kind:'bill',tpl:{id:'canar-unified-invoice'},invoiceColor:'#b51b84'}).includes('#b51b84'));
+});
