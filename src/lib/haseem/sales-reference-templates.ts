@@ -2,6 +2,7 @@ import type { InvoiceTemplate } from "./templates";
 import type { PrintDocData } from "./printDoc";
 
 export const SALES_REFERENCE_TEMPLATES: InvoiceTemplate[] = [
+  { id: "sales-reference-supply-date", name: "مبيعات — تاريخ التوريد", desc: "فاتورة تفصيلية تتضمن تاريخ التوريد مستقلًا عن الإصدار والاستحقاق", kinds: ["invoice"], builtin: true, accent: "#263640", onAccent: "#ffffff", soft: "#e1f1f6" },
   { id: "sales-reference-simple-tax", name: "مبيعات — الضريبي البسيط", desc: "تصميم أبيض من مرجع Invoice: شعار جانبي، جدول مفتوح ومجاميع وشروط مع QR", kinds: ["invoice"], builtin: true, accent: "#111111", onAccent: "#ffffff", soft: "#eeeeee" },
   { id: "sales-reference-detailed", name: "مبيعات — الجدول التفصيلي", desc: "مستخرج من مرجع Receipt: عنوان مركزي، بيانات طرفين وجدول تفصيلي بأزرق فاتح", kinds: ["invoice"], builtin: true, accent: "#263640", onAccent: "#ffffff", soft: "#e1f1f6" },
   { id: "sales-reference-green", name: "مبيعات — الأخضر التجاري", desc: "مستخرج من مرجع SBT: ترويسة جانبية، جدول أخضر وملخص بجوار QR", kinds: ["invoice"], builtin: true, accent: "#66ad35", onAccent: "#ffffff", soft: "#e3efd8" },
@@ -16,12 +17,12 @@ export function renderSalesReference(d: PrintDocData): string {
   const t = salesReferenceTemplate(d.tpl.id);
   if (!t) throw new Error("Unknown sales reference template");
   if (t.id === "sales-reference-simple-tax") return renderSimpleTax(d);
-  const detailed = t.id === "sales-reference-detailed", blue = t.id === "sales-reference-blue";
+  const detailed = t.id === "sales-reference-detailed" || t.id === "sales-reference-supply-date", blue = t.id === "sales-reference-blue";
   const rule = "border:1px solid #333;padding:5px 6px;overflow-wrap:anywhere;";
   const row = (label: string,value: unknown) => `<tr><td style="${rule}width:36%;font-size:10px">${label}</td><td style="${rule}">${esc(value || "—")}</td></tr>`;
   const party = (name: string,p: {name?:string;taxNumber?:string;address?:string;commercialReg?:string;phone?:string}|null|undefined) => `<table style="width:100%;border-collapse:collapse;table-layout:fixed"><thead><tr><th colspan="2" style="${rule}background:${t.soft}">${name}</th></tr></thead><tbody>${row("الاسم · Name",p?.name)}${row("العنوان · Address",p?.address)}${row("السجل التجاري · CR",p?.commercialReg)}${row("الرقم الضريبي · VAT",p?.taxNumber)}${detailed?row("الهاتف · Phone",p?.phone):""}</tbody></table>`;
   const title = `<div style="border:1px solid #222;text-align:center;padding:8px;font-size:20px;background:${detailed?t.soft:"white"}">${esc(d.title || "فاتورة ضريبية")} · TAX INVOICE</div>`;
-  const metadata = `<table style="width:100%;border-collapse:collapse;margin-top:5px;table-layout:fixed">${row("رقم الفاتورة · Invoice No",d.ref)}${row("التاريخ · Date",d.date)}${row("تاريخ الاستحقاق · Due",d.dueDate)}</table>`;
+  const metadata = `<table style="width:100%;border-collapse:collapse;margin-top:5px;table-layout:fixed">${row("رقم الفاتورة · Invoice No",d.ref)}${row("التاريخ · Date",d.date)}${t.id === "sales-reference-supply-date" ? row("تاريخ التوريد · Supply Date",d.supplyDate) : ""}${row("تاريخ الاستحقاق · Due",d.dueDate)}</table>`;
   const brand = `<div style="display:flex;align-items:center;justify-content:center;gap:12px;min-height:100px">${d.branding?.logo?`<img src="${esc(d.branding.logo)}" alt="شعار المنشأة" style="width:100px;height:80px;object-fit:contain"/>`:""}<div><strong style="font-size:23px;color:${t.accent}">${esc(d.org.name)}</strong><div style="margin-top:7px">الرقم الضريبي: ${esc(d.org.taxNumber)}</div></div></div>`;
   const labels = detailed ? ["م<br/>S.N","رمز الصنف<br/>Code","الصنف<br/>Description","الموقع<br/>Location","الكمية<br/>QTY","السعر<br/>Price","الخاضع للضريبة<br/>Taxable","الخصم<br/>Discount","نسبة الضريبة<br/>VAT %","الضريبة<br/>VAT","الإجمالي<br/>Total"] : ["م<br/>S.No","البيان<br/>Description","الكمية<br/>QTY","الوحدة<br/>Unit","سعر الوحدة<br/>Unit Price","الخاضع للضريبة<br/>Taxable","نسبة الضريبة<br/>VAT %","الضريبة<br/>Tax"];
   const widths = detailed ? [4,8,21,6,6,9,10,7,6,10,13] : [5,33,7,7,12,14,9,13];

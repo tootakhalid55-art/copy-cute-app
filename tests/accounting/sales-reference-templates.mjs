@@ -57,3 +57,11 @@ test('seller-table templates omit duplicate header address but preserve seller a
   assert.ok(html.slice(sellerStart).includes('UNIQUE_SELLER_ADDRESS'));
  }
 });
+test('supply date template renders an independent saved date and leaves other templates unchanged', () => {
+ const tpl=SALES_REFERENCE_TEMPLATES.find(t=>t.id==='sales-reference-supply-date');
+ const html=buildDocHtml({...base,tpl,supplyDate:'2026-10-25',dueDate:'2026-11-15'});
+ for(const value of ['Supply Date','2026-10-25','2026-11-15',base.date]) assert.ok(html.includes(value));
+ const empty=buildDocHtml({...base,tpl});assert.ok(empty.includes('Supply Date'));assert.ok(!empty.includes('undefined'));
+ const old=buildDocHtml({...base,tpl:SALES_REFERENCE_TEMPLATES.find(t=>t.id==='sales-reference-detailed'),supplyDate:'2026-10-25'});
+ assert.ok(!old.includes('Supply Date'));
+});

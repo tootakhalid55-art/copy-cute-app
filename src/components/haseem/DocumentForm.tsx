@@ -97,6 +97,7 @@ export function DocumentForm({
 
   const today = new Date().toISOString().slice(0, 10);
   const [date, setDate] = useState(existing?.date ?? today);
+  const [supplyDate, setSupplyDate] = useState(existing?.supplyDate ?? "");
   const [dueDate, setDueDate] = useState(existing?.dueDate ?? today);
   const [partyId, setPartyId] = useState(existing?.partyId ?? "");
   const [notes, setNotes] = useState(existing?.notes ?? "");
@@ -115,6 +116,7 @@ export function DocumentForm({
       setRef(existing.ref);
       setDate(existing.date);
       setDueDate(existing.dueDate);
+      setSupplyDate(existing.supplyDate ?? "");
       setPartyId(existing.partyId ?? "");
       setNotes(existing.notes ?? "");
       setLines(existing.lines ?? [{ description: "", qty: 1, price: 0, tax: 15 }]);
@@ -379,7 +381,7 @@ export function DocumentForm({
         titleEn: docTitle.en,
         variant: docTitle.variant,
         issuedAtIso,
-        ref, date, dueDate,
+        ref, date, dueDate, supplyDate,
         expiry: printKind === "quotation" ? dueDate : undefined,
         terms: printKind === "quotation" ? notes : undefined,
         org,
@@ -491,7 +493,7 @@ export function DocumentForm({
     // status is "مؤكد" it also calls the atomic `post_document` RPC so the
     // journal entry commits in the same server transaction.
     const payload: any = {
-      ref, date, dueDate, partyId, partyName, notes,
+      ref, date, dueDate, supplyDate, partyId, partyName, notes,
       ...(!existing && kind === "invoice" ? { autoInvoiceNumber: !manualInvoiceNumber } : {}),
       status: finalStatus, lines, subtotal, tax, total,
       contractValue, previousCertified, retentionPct, advanceRecoveryPct,
@@ -661,6 +663,7 @@ export function DocumentForm({
           ref_={ref}
           date={date}
           dueDate={dueDate}
+          supplyDate={supplyDate}
           issuedAtIso={issuedAtIso}
           lines={lines}
           lineCalcs={lineCalcs}
@@ -715,6 +718,7 @@ export function DocumentForm({
             className="border border-[#eceae2] rounded-lg px-3 py-2"
           />
         </FormField>
+        {kind === "invoice" && <FormField label="تاريخ التوريد"><input type="date" value={supplyDate} onChange={(e) => setSupplyDate(e.target.value)} className="border border-[#eceae2] rounded-lg px-3 py-2" /></FormField>}
         <FormField label="الاستحقاق">
           <input
             type="date"
@@ -1056,6 +1060,7 @@ export function DocumentForm({
                 ref_={ref}
                 date={date}
                 dueDate={dueDate}
+          supplyDate={supplyDate}
                 issuedAtIso={issuedAtIso}
                 lines={lines}
                 lineCalcs={lineCalcs}
@@ -1402,6 +1407,7 @@ function DocumentLivePreview({
   ref_,
   date,
   dueDate,
+  supplyDate,
   issuedAtIso,
   lines,
   lineCalcs,
@@ -1427,20 +1433,20 @@ function DocumentLivePreview({
   structure,
 }: any) {
   if (kind === "quotation") {
-    return <QuotationPreview {...{ tpl, org, party, partyName, partyLabel, partyAddress, ref_, date, dueDate, issuedAtIso, lines, lineCalcs, subtotal, tax, total, notes, terms, branding, currency, verify, structure }} />;
+    return <QuotationPreview {...{ tpl, org, party, partyName, partyLabel, partyAddress, ref_, date, dueDate, supplyDate, issuedAtIso, lines, lineCalcs, subtotal, tax, total, notes, terms, branding, currency, verify, structure }} />;
   }
   if (kind === "credit-note" || kind === "debit-note") {
     return <CreditNotePreview {...{ tpl, org, party, partyName, partyLabel, partyAddress, ref_, date, issuedAtIso, lines, lineCalcs, subtotal, tax, total, notes, originalRef, reason, branding, qrDataUrl, usesZatcaQr, verify, currency, structure, kind }} />;
   }
   if (kind === "purchase-order" || kind === "bill") {
     return <PurchasePreview {...{
-      tpl, scanExtras, org, party, partyName, partyLabel, partyAddress, ref_, date, dueDate, issuedAtIso,
+      tpl, scanExtras, org, party, partyName, partyLabel, partyAddress, ref_, date, dueDate, supplyDate, issuedAtIso,
       lines, lineCalcs, subtotal, tax, total, notes, branding, currency, kind,
       qrDataUrl, qrLabel, usesZatcaQr: usesSupplierZatcaQr, verify,
       layoutVariant, progressBilling, structure,
     }} />;
   }
-  return <InvoicePreview {...{ tpl, org, party, partyName, partyLabel, partyAddress, ref_, date, dueDate, issuedAtIso, lines, lineCalcs, subtotal, tax, total, notes, branding, qrDataUrl, usesZatcaQr, docTitle, currency, layoutVariant, progressBilling, structure }} />;
+  return <InvoicePreview {...{ tpl, org, party, partyName, partyLabel, partyAddress, ref_, date, dueDate, supplyDate, issuedAtIso, lines, lineCalcs, subtotal, tax, total, notes, branding, qrDataUrl, usesZatcaQr, docTitle, currency, layoutVariant, progressBilling, structure }} />;
 }
 
 // Extra Live-View pages for AI-scanned purchase invoices: page 1 is the
