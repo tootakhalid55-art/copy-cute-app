@@ -9,7 +9,7 @@ import { buildDocHtml, type PrintDocData } from "@/lib/haseem/printDoc";
 // guarantees screen/print match by construction, not by careful editing.
 export function InvoicePreview(props: any) {
   const {
-    tpl, org, party, partyAddress, ref_, date, dueDate, issuedAtIso,
+    tpl, org, party, partyAddress, ref_, date, dueDate, supplyDate, issuedAtIso,
     lines, lineCalcs, subtotal, tax, total, notes, branding, qrDataUrl,
     usesZatcaQr, docTitle, currency, layoutVariant, progressBilling,
     partyLabel, structure,
@@ -25,6 +25,7 @@ export function InvoicePreview(props: any) {
       ref: ref_,
       date,
       dueDate,
+      supplyDate,
       org,
       party: party ? { ...party, address: partyAddress } : party,
       partyLabel,
@@ -44,7 +45,7 @@ export function InvoicePreview(props: any) {
     };
     return buildDocHtml(data);
   }, [
-    tpl, org, party, partyAddress, ref_, date, dueDate, issuedAtIso,
+    tpl, org, party, partyAddress, ref_, date, dueDate, supplyDate, issuedAtIso,
     lines, lineCalcs, subtotal, tax, total, notes, branding, qrDataUrl,
     usesZatcaQr, docTitle, currency, layoutVariant, progressBilling,
     partyLabel, structure,
