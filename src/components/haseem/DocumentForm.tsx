@@ -79,6 +79,8 @@ export function DocumentForm({
     taxNumber: "312756062700003",
   });
 
+  const [invoiceBanks] = useKV<any[]>("bank-accounts", []);
+  const invoicePayment = { bankAccounts: invoiceBanks, paidAmount: typeof existing?.paidAmount === "number" ? existing.paidAmount : undefined, paymentMethod: existing?.paymentMethod, paymentStatus: existing?.paymentStatus };
   const [branding, setBranding] = useImageKV<{ logo: string; stamp: string }>(
     "branding",
     { logo: "", stamp: "" }
@@ -383,6 +385,7 @@ export function DocumentForm({
         titleEn: docTitle.en,
         variant: docTitle.variant,
         issuedAtIso,
+        ...invoicePayment,
         ref, date, dueDate, supplyDate, invoiceColor,
         expiry: printKind === "quotation" ? dueDate : undefined,
         terms: printKind === "quotation" ? notes : undefined,
@@ -671,6 +674,7 @@ export function DocumentForm({
           dueDate={dueDate}
           supplyDate={supplyDate}
           invoiceColor={invoiceColor}
+          invoicePayment={invoicePayment}
           issuedAtIso={issuedAtIso}
           lines={lines}
           lineCalcs={lineCalcs}
@@ -1069,6 +1073,7 @@ export function DocumentForm({
                 dueDate={dueDate}
           supplyDate={supplyDate}
           invoiceColor={invoiceColor}
+          invoicePayment={invoicePayment}
                 issuedAtIso={issuedAtIso}
                 lines={lines}
                 lineCalcs={lineCalcs}
@@ -1417,6 +1422,7 @@ function DocumentLivePreview({
   dueDate,
   supplyDate,
   invoiceColor,
+  invoicePayment,
   issuedAtIso,
   lines,
   lineCalcs,
@@ -1455,7 +1461,7 @@ function DocumentLivePreview({
       layoutVariant, progressBilling, structure,
     }} />;
   }
-  return <InvoicePreview {...{ tpl, org, party, partyName, partyLabel, partyAddress, ref_, date, dueDate, supplyDate, invoiceColor, issuedAtIso, lines, lineCalcs, subtotal, tax, total, notes, branding, qrDataUrl, usesZatcaQr, docTitle, currency, layoutVariant, progressBilling, structure }} />;
+  return <InvoicePreview {...invoicePayment} {...{ tpl, org, party, partyName, partyLabel, partyAddress, ref_, date, dueDate, supplyDate, invoiceColor, issuedAtIso, lines, lineCalcs, subtotal, tax, total, notes, branding, qrDataUrl, usesZatcaQr, docTitle, currency, layoutVariant, progressBilling, structure }} />;
 }
 
 // Extra Live-View pages for AI-scanned purchase invoices: page 1 is the

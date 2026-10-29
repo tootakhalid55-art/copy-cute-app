@@ -12,12 +12,12 @@ export function InvoicePreview(props: any) {
     tpl, org, party, partyAddress, ref_, date, dueDate, supplyDate, invoiceColor, issuedAtIso,
     lines, lineCalcs, subtotal, tax, total, notes, branding, qrDataUrl,
     usesZatcaQr, docTitle, currency, layoutVariant, progressBilling,
-    partyLabel, structure,
+    partyLabel, structure, bankAccounts, paidAmount, paymentMethod, paymentStatus,
   } = props;
 
   const html = useMemo(() => {
     const data: PrintDocData = {
-      kind: "invoice",
+      kind: "invoice", bankAccounts, paidAmount, paymentMethod, paymentStatus,
       title: docTitle?.ar ?? "",
       titleEn: docTitle?.en,
       variant: docTitle?.variant,
@@ -49,7 +49,7 @@ export function InvoicePreview(props: any) {
     tpl, org, party, partyAddress, ref_, date, dueDate, supplyDate, invoiceColor, issuedAtIso,
     lines, lineCalcs, subtotal, tax, total, notes, branding, qrDataUrl,
     usesZatcaQr, docTitle, currency, layoutVariant, progressBilling,
-    partyLabel, structure,
+    partyLabel, structure, bankAccounts, paidAmount, paymentMethod, paymentStatus,
   ]);
 
   return (

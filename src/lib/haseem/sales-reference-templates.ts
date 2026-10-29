@@ -1,7 +1,9 @@
+import { renderReference330 } from "./reference-330";
 import type { InvoiceTemplate } from "./templates";
 import type { PrintDocData } from "./printDoc";
 
 export const SALES_REFERENCE_TEMPLATES: InvoiceTemplate[] = [
+  { id: "sales-reference-330", name: "مبيعات — مطابق مرجع 330", desc: "ترويسة بإطار وQR مركزي، جدول سبعة أعمدة وملخص دفع جانبي", kinds: ["invoice"], builtin: true, accent: "#111111", onAccent: "#ffffff", soft: "#eeeeee" },
   { id: "sales-reference-supply-date", name: "مبيعات — تاريخ التوريد", desc: "فاتورة تفصيلية تتضمن تاريخ التوريد مستقلًا عن الإصدار والاستحقاق", kinds: ["invoice"], builtin: true, accent: "#263640", onAccent: "#ffffff", soft: "#e1f1f6" },
   { id: "sales-reference-simple-tax", name: "مبيعات — الضريبي البسيط", desc: "تصميم أبيض من مرجع Invoice: شعار جانبي، جدول مفتوح ومجاميع وشروط مع QR", kinds: ["invoice"], builtin: true, accent: "#111111", onAccent: "#ffffff", soft: "#eeeeee" },
   { id: "sales-reference-detailed", name: "مبيعات — الجدول التفصيلي", desc: "مستخرج من مرجع Receipt: عنوان مركزي، بيانات طرفين وجدول تفصيلي بأزرق فاتح", kinds: ["invoice"], builtin: true, accent: "#263640", onAccent: "#ffffff", soft: "#e1f1f6" },
@@ -16,6 +18,7 @@ const money = (v: unknown) => Number(v || 0).toLocaleString("en-US", {minimumFra
 export function renderSalesReference(d: PrintDocData): string {
   const t = salesReferenceTemplate(d.tpl.id) ? d.tpl : undefined;
   if (!t) throw new Error("Unknown sales reference template");
+  if (t.id === "sales-reference-330") return renderReference330(d);
   if (t.id === "sales-reference-simple-tax") return renderSimpleTax(d);
   const detailed = t.id === "sales-reference-detailed" || t.id === "sales-reference-supply-date", blue = t.id === "sales-reference-blue";
   const rule = "border:1px solid #333;padding:5px 6px;overflow-wrap:anywhere;";
