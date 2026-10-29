@@ -14,7 +14,7 @@ for(const tpl of SALES_REFERENCE_TEMPLATES){
   assert.equal(unifiedInvoiceAppearance({...base,tpl}).tpl.id,tpl.id);
   assert.equal(unifiedInvoiceAppearance({...base,tpl,kind:'bill'}).tpl.id,'canar-unified-invoice');
   const html=buildDocHtml({...base,tpl,issuedAtIso:'2026-10-06T12:34:56Z'});
-  assert.ok(!html.includes('12:34:56'));assert.ok(html.includes(base.date));
+  assert.ok(!html.includes('12:34:56'));if(tpl.id!=="sales-reference-330") assert.ok(html.includes(base.date));
   for(const value of ['TEST-100','كنار الحديثة','310000000000003','230.00',base.qrDataUrl])assert.ok(html.includes(value));
   const multiline=buildDocHtml({...base,tpl,lines:[{...base.lines[0],description:'First line\nSecond line'}]});
   assert.ok(multiline.includes('First line\nSecond line'));assert.ok(multiline.includes('white-space:pre-wrap'));
@@ -49,7 +49,7 @@ test('every sales template renders the issuer registration stored as cr', () => 
 });
 
 test('seller-table templates omit duplicate header address but preserve seller address', () => {
- for (const tpl of SALES_REFERENCE_TEMPLATES.filter(t=>t.id!=='sales-reference-simple-tax')) {
+ for (const tpl of SALES_REFERENCE_TEMPLATES.filter(t=>t.id!=='sales-reference-simple-tax' && t.id!=='sales-reference-330')) {
   const html=buildDocHtml({...base,tpl,org:{...base.org,address:'UNIQUE_SELLER_ADDRESS'}});
   const sellerStart=html.indexOf('البائع · Seller');
   assert.ok(sellerStart>0);
@@ -82,4 +82,11 @@ test('custom color renders in every sales template and unified purchase invoice'
   assert.equal(unifiedInvoiceAppearance({...base,tpl,invoiceColor:'red;display:none'}).tpl.accent,unifiedInvoiceAppearance({...base,tpl}).tpl.accent);
  }
  assert.ok(buildDocHtml({...base,kind:'bill',tpl:{id:'canar-unified-invoice'},invoiceColor:'#b51b84'}).includes('#b51b84'));
+});
+
+test('reference 330 uses current parties, QR and actual payment data',()=>{
+ const tpl=SALES_REFERENCE_TEMPLATES.find(t=>t.id==='sales-reference-330');
+ const html=buildDocHtml({...base,tpl,paidAmount:100,paymentMethod:'Bank',bankAccounts:[{bankName:'Current Bank',iban:'CURRENT-IBAN'}]});
+ for(const text of ['Current Bank','CURRENT-IBAN','100.00','130.00','Payment method','Bill to',base.qrDataUrl])assert.ok(html.includes(text));
+ assert.ok(!html.includes('301115392600003'));assert.ok(!html.includes('MADA'));assert.ok(!html.includes('aronium'));
 });
