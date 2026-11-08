@@ -227,6 +227,7 @@ export function buildDocHtml(d: PrintDocData): string {
 
   const metaGrid = [
     metaCell("التاريخ", "Date", esc(d.date)),
+    d.kind === "invoice" ? metaCell("تاريخ التوريد", "Supply Date", esc(d.supplyDate || "—")) : "",
     stamp ? metaCell("وقت الإصدار", "Timestamp", `<span style="direction:ltr;display:inline-block">${esc(stamp)}</span>`) : "",
     metaCell(d.expiry ? "الصلاحية" : "الاستحقاق", d.expiry ? "Expiry" : "Due", esc(d.expiry || d.dueDate || "—")),
     d.poNumber ? metaCell("أمر الشراء", "PO No.", esc(d.poNumber)) : "",
