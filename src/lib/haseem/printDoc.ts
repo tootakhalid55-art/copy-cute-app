@@ -438,7 +438,9 @@ export function buildDocHtml(d: PrintDocData): string {
       : variant === "lines"
       ? `padding:8px 6px;text-align:center;font-size:${useDetailedTaxTable ? 12 : 9.5}px;color:${accent};font-weight:700;letter-spacing:.06em;text-transform:uppercase;border-bottom:1.5px solid ${ink}`
       : `padding:11px 8px;text-align:center;font-size:${useDetailedTaxTable ? 12 : 9.5}px;color:${muted};font-weight:700;letter-spacing:.06em;text-transform:uppercase`;
-    const th = (label: string, extra = "") => `<th style="${thBase}${extra}">${label}</th>`;
+    const wideDescription = d.kind === "invoice" && tpl.id === "canar-unified-invoice";
+    const th = (label: string, extra = "") => `<th style="${thBase}${wideDescription ? extra.replace(/;width:[^;]+/g, "") + ";padding-inline:4px;font-size:11px;letter-spacing:normal;overflow-wrap:normal" : extra}">${wideDescription ? label.replace("margin-inline-start:6px", "margin-inline-start:0;display:block;letter-spacing:normal") : label}</th>`;
+    const widths = [4, 38 - (isSupply ? 6 : 0) + (useDetailedTaxTable ? 0 : 11), ...(isSupply ? [6] : []), 6, 10, 8, 11, ...(useDetailedTaxTable ? [11] : []), 12];
     const tdBorder = variant === "grid" ? `border:1px solid ${ink}66` : variant === "lines" ? `border-bottom:1px solid ${line}` : `border-bottom:1px solid ${line}`;
     const bodyRows = (useDetailedTaxTable ? lineTaxRows : lines.map((l, i) => ({ line: l, calc: lineCalcs[i] || { net: 0, taxAmt: 0, gross: 0 }, rate: Number(l.tax) })))
       .map((row: any, i: number) => `
@@ -454,9 +456,10 @@ export function buildDocHtml(d: PrintDocData): string {
           <td style="${tdBorder};padding:9px 10px;text-align:center;font-variant-numeric:tabular-nums;font-weight:700">${fmt(row.calc.gross)}</td>
         </tr>`)
       .join("");
-    const colCount = 6 + (isSupply ? 1 : 0) + (useDetailedTaxTable ? 1 : 0);
+    const colCount = 7 + (isSupply ? 1 : 0) + (useDetailedTaxTable ? 1 : 0);
     return `
-      <table style="${wrapStyle}">
+      <table style="${wrapStyle}${wideDescription ? ";table-layout:fixed" : ""}">
+        ${wideDescription ? `<colgroup>${widths.map(width => `<col style="width:${width}%">`).join("")}</colgroup>` : ""}
         <thead><tr style="${theadStyle}">
           ${th("#", `;width:32px`)}
           ${th(`الوصف${en("Description")}`, `;text-align:right`)}
@@ -468,7 +471,7 @@ export function buildDocHtml(d: PrintDocData): string {
           ${useDetailedTaxTable ? th(`الضريبة${en("VAT")}`, `;width:92px`) : ""}
           ${th(`الإجمالي${en("Line Total")}`, `;width:96px`)}
         </tr></thead>
-        <tbody>${bodyRows || `<tr><td colspan="${colCount}" style="padding:24px;text-align:center;color:#b7bdb2;font-size:11px">لا توجد بنود</td></tr>`}</tbody>
+        <tbody>${(wideDescription ? bodyRows.replace(/padding:9px (?:8|10)px/g, "padding:10px 4px;vertical-align:top;overflow-wrap:anywhere") : bodyRows) || `<tr><td colspan="${colCount}" style="padding:24px;text-align:center;color:#b7bdb2;font-size:11px">لا توجد بنود</td></tr>`}</tbody>
       </table>`;
   };
 
